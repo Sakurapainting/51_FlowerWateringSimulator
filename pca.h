@@ -27,10 +27,6 @@ typedef struct {
 extern SYS_PARAMS SysPara1;
 extern unsigned char dispbuff[8];
 
-// 方波发生器相关定义
-#define FLOWMETER_PIN P1_0   // 方波输出引脚 (P1.0)
-#define WAVE_FREQ     5      // 方波频率 (Hz)
-
 // 函数声明
 void PCA_Init(void);                      // PCA初始化函数
 void delay_ms(unsigned int ms);           // 延时函数
@@ -38,9 +34,6 @@ void FillDispBuf(BYTE hour, BYTE min, BYTE sec); // 填充显示缓冲区
 void SendTo595(unsigned char data_seg, unsigned char data_bit); // 发送数据到595
 void disp(void);                          // 显示函数
 void Resetdispbuff(void);                 // 重置显示缓冲区
-void WaveGen_Init(void);                  // 方波发生器初始化
-void WaveGen_Start(void);                 // 启动方波发生器
-void WaveGen_Stop(void);                  // 停止方波发生器
-BYTE WaveGen_GetState(void);              // 获取方波发生器状态
+void FillCustomDispBuf(BYTE val1, BYTE val2, BYTE val3, BYTE val4, BYTE val5, BYTE val6); // 自定义显示缓冲区填充
 
 #endif /* __PCA_H__ */

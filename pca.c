@@ -1,6 +1,7 @@
 #include "reg51.h"
 #include "intrins.h"
-#include "pca.h" // 包含头文件
+#include "pca.h"     // 包含头文件
+#include "flowmeter.h" // 添加flowmeter.h以获取FLOW_MODE_OFF定义
 
 #define FOSC    11059200L
 #define T100Hz  (FOSC / 12 / 100)
@@ -97,6 +98,19 @@ void FillDispBuf(BYTE hour, BYTE min, BYTE sec) {
     dispbuff[5] = LED[hour / 10];
 }
 
+// 自定义显示缓冲区填充函数
+void FillCustomDispBuf(BYTE val1, BYTE val2, BYTE val3, BYTE val4, BYTE val5, BYTE val6) {
+    Resetdispbuff();
+    
+    // 填充6个数字位
+    dispbuff[0] = LED[val1];
+    dispbuff[1] = LED[val2];
+    dispbuff[2] = LED[val3];
+    dispbuff[3] = LED[val4];
+    dispbuff[4] = LED[val5];
+    dispbuff[5] = LED[val6];
+}
+
 void disp(void) {
     unsigned char i;
     static unsigned char pos = 0;  // 当前扫描的位置
@@ -162,6 +176,10 @@ void PCA_isr() interrupt 7
             cnt = 0;                    // 1秒计时
             PCA_LED = !PCA_LED;         // 闪烁LED指示灯
             
+            // 调用流量计计算函数（不更新显示），改为更频繁调用
+            FlowMeter_CalcFlow();
+            
+            // 更新时钟，但不直接更新显示
             SysPara1.sec++;
             if(SysPara1.sec >= 60) {
                 SysPara1.sec = 0;
@@ -174,7 +192,14 @@ void PCA_isr() interrupt 7
                 }
             }
             
-            FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
+            // 只有在流量计模式为关闭时才更新时钟显示的缓冲区
+            if (FlowMeter_GetMode() == FLOW_MODE_OFF) {
+                FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
+            }
+        }
+        else if(cnt % 20 == 0 && FlowMeter_GetMode() != FLOW_MODE_OFF) {
+            // 每0.2秒也调用一次流量计算，以减少刷新延迟
+            FlowMeter_CalcFlow();
         }
     }
 }

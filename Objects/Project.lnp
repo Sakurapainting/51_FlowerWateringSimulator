@@ -1,5 +1,7 @@
 ".\Objects\main.obj",
 ".\Objects\pca.obj",
-".\Objects\relay.obj" 
+".\Objects\relay.obj",
+".\Objects\wavegen.obj",
+".\Objects\flowmeter.obj" 
 TO ".\Objects\Project" 
 PRINT(".\Listings\Project.m51") RAMSIZE(256) 

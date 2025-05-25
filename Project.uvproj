@@ -401,6 +401,26 @@
               <FileType>5</FileType>
               <FilePath>.\relay.h</FilePath>
             </File>
+            <File>
+              <FileName>wavegen.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\wavegen.c</FilePath>
+            </File>
+            <File>
+              <FileName>wavegen.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\wavegen.h</FilePath>
+            </File>
+            <File>
+              <FileName>flowmeter.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\flowmeter.c</FilePath>
+            </File>
+            <File>
+              <FileName>flowmeter.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\flowmeter.h</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>
