@@ -56,37 +56,26 @@ void delay_ms(unsigned int ms) {
         for (j = 0; j < 120; j++);
 }
 
-void SendTo595(unsigned char data_seg, unsigned char data_bit) {
-    unsigned char i;
-    OE = 1;
+// void SendTo595(unsigned char data_seg, unsigned char data_bit) {
+//     unsigned char i;
+//     OE = 1;
     
-    for(i = 0; i < 8; i++) {
-        DATA = (data_bit & 0x80) ? 1 : 0;
-        SCK = 0; SCK = 1;
-        data_bit <<= 1;
-    }
+//     for(i = 0; i < 8; i++) {
+//         DATA = (data_bit & 0x80) ? 1 : 0;
+//         SCK = 0; SCK = 1;
+//         data_bit <<= 1;
+//     }
     
-    for(i = 0; i < 8; i++) {
-        DATA = (data_seg & 0x80) ? 1 : 0;
-        SCK = 0; SCK = 1;
-        data_seg <<= 1;
-    }
+//     for(i = 0; i < 8; i++) {
+//         DATA = (data_seg & 0x80) ? 1 : 0;
+//         SCK = 0; SCK = 1;
+//         data_seg <<= 1;
+//     }
     
-    RCK = 0; RCK = 1;
-    OE = 0;
-    delay_ms(1);
-}
-
-void display_from_right(unsigned char target[]) {
-    unsigned char i;
-    static unsigned char mark = 0x01;
-    
-    for(i = 0; i < 8; i++) {
-        SendTo595(target[i], ~(mark << i));
-    }
-    SendTo595(SEG_OFF, 0xFF);
-    mark = 0x01;
-}
+//     RCK = 0; RCK = 1;
+//     OE = 0;
+//     delay_ms(1);
+// }
 
 void Resetdispbuff() {
     unsigned char i;
@@ -223,12 +212,5 @@ void PCA_Init(void)
 
     // 初始化时钟显示
     FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
-}
-
-BYTE checktime(BYTE h, BYTE m, BYTE s){
-    if(h > 23) return 0;
-    if(m > 59) return 0;
-    if(s > 59) return 0;
-    return 1;
 }
 

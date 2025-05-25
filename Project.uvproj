@@ -391,6 +391,16 @@
               <FileType>5</FileType>
               <FilePath>.\pca.h</FilePath>
             </File>
+            <File>
+              <FileName>relay.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\relay.c</FilePath>
+            </File>
+            <File>
+              <FileName>relay.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\relay.h</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>

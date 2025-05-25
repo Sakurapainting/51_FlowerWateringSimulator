@@ -1,4 +1,4 @@
-C51 COMPILER V9.54   MAIN                                                                  05/25/2025 12:58:35 PAGE 1   
+C51 COMPILER V9.54   MAIN                                                                  05/25/2025 13:41:36 PAGE 1   
 
 
 C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
@@ -11,30 +11,36 @@ line level    source
    1          #include <reg51.h>
    2          #include <INTRINS.H>
    3          #include "pca.h"
-   4          
-   5          #define multiplier 1.085
-   6          
-   7          void main(void) {
-   8   1          EA = 1;            // 开启总中断
-   9   1          P0 = 0xFF;
-  10   1          
-  11   1          // 验证初始时间是否合法
-  12   1          if(!checktime(0, 0, 0)) {
-  13   2              // 如果时间不合法
-  14   2      
-  15   2          }
-  16   1          
-  17   1          PCA_Init();        // 初始化PCA模块，包含时钟功能
-  18   1      
-  19   1          while (1) {
-  20   2              // 主循环中不需要处理时钟显示
-  21   2              // PCA中断会自动处理时钟和刷新显示
-  22   2          }
-  23   1      }
+   4          #include "relay.h"  // 包含继电器控制头文件
+   5          
+   6          #define multiplier 1.085
+   7          
+   8          void main(void) {
+   9   1          EA = 1;            // 开启总中断
+  10   1          P0 = 0xFF;
+  11   1          
+  12   1          PCA_Init();        // 初始化PCA模块，包含时钟功能
+  13   1          Relay_Init();      // 初始化继电器
+  14   1      
+  15   1          while (1) {
+  16   2              // // 10s切换一次继电器状态
+  17   2              // if((SysPara1.sec % 10) == 0 && SysPara1.sec != 0) {
+  18   2              //     // 获取当前继电器状态并切换
+  19   2              //     if(Relay_GetState()) {
+  20   2              //         Relay_Off();  // 如果继电器开着，就关闭它
+  21   2              //     } else {
+  22   2              //         Relay_On();   // 如果继电器关着，就开启它
+  23   2              //     }
+  24   2                  
+  25   2              //     // 短暂延时，避免在同一秒内多次切换
+  26   2              //     delay_ms(500);
+  27   2              // }
+  28   2          }
+  29   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =     17    ----
+   CODE SIZE        =     13    ----
    CONSTANT SIZE    =   ----    ----
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----
