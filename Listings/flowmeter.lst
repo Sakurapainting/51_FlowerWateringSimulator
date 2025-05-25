@@ -1,4 +1,4 @@
-C51 COMPILER V9.54   FLOWMETER                                                             05/25/2025 17:00:45 PAGE 1   
+C51 COMPILER V9.54   FLOWMETER                                                             05/25/2025 20:50:47 PAGE 1   
 
 
 C51 COMPILER V9.54, COMPILATION OF MODULE FLOWMETER
@@ -62,7 +62,7 @@ line level    source
   50   2              needUpdateDisplay = 1;
   51   2              initialDisplayDelay = 2;       // 设置初始显示延迟
   52   2          }
-C51 COMPILER V9.54   FLOWMETER                                                             05/25/2025 17:00:45 PAGE 2   
+C51 COMPILER V9.54   FLOWMETER                                                             05/25/2025 20:50:47 PAGE 2   
 
   53   1      }
   54          
@@ -126,7 +126,7 @@ line level    source
  111   4                      // 确保有最小显示值
  112   4                      if (currentFlow < 25) currentFlow = 25;  // 最小25毫升/秒
  113   4                  } else {
-C51 COMPILER V9.54   FLOWMETER                                                             05/25/2025 17:00:45 PAGE 3   
+C51 COMPILER V9.54   FLOWMETER                                                             05/25/2025 20:50:47 PAGE 3   
 
  114   4                      // 如果没有脉冲但系统仍在运行，保持最小流量显示
  115   4                      currentFlow = 25;  // 显示25毫升/秒
@@ -190,7 +190,7 @@ line level    source
  173   1          val3 = (currentFlow / 1000) % 10; // 千位（毫升/秒）
  174   1          val4 = (currentFlow / 100) % 10;  // 百位（毫升/秒）
  175   1          val5 = (currentFlow / 10) % 10;  // 十位（毫升/秒）
-C51 COMPILER V9.54   FLOWMETER                                                             05/25/2025 17:00:45 PAGE 4   
+C51 COMPILER V9.54   FLOWMETER                                                             05/25/2025 20:50:47 PAGE 4   
 
  176   1          val6 = currentFlow % 10;     // 个位（毫升/秒）
  177   1          
@@ -254,7 +254,7 @@ line level    source
  235          void INT0_ISR() interrupt 0 {
  236   1          pulseCount++;  // 每次中断增加脉冲计数
  237   1      }
-C51 COMPILER V9.54   FLOWMETER                                                             05/25/2025 17:00:45 PAGE 5   
+C51 COMPILER V9.54   FLOWMETER                                                             05/25/2025 20:50:47 PAGE 5   
 
 
 

@@ -190,6 +190,21 @@ void PCA_IncreaseTimeValue(BYTE position) {
     FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
 }
 
+// 直接设置时间函数
+void PCA_SetTime(BYTE hour, BYTE min, BYTE sec) {
+    // 验证输入时间是否有效
+    if(hour < 24 && min < 60 && sec < 60) {
+        SysPara1.hour = hour;
+        SysPara1.min = min;
+        SysPara1.sec = sec;
+        
+        // 如果当前是时钟显示模式，更新显示
+        if(FlowMeter_GetMode() == FLOW_MODE_OFF && timeEditMode == 0) {
+            FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
+        }
+    }
+}
+
 // 修改PCA中断服务函数，加入闪烁处理逻辑
 void PCA_isr() interrupt 7
 {

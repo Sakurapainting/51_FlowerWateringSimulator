@@ -4,6 +4,7 @@
 #include "relay.h"     // 包含继电器控制头文件
 #include "wavegen.h"   // 包含方波发生器头文件
 #include "flowmeter.h" // 包含流量计头文件
+#include "uart.h"      // 添加串口通信头文件
 
 #define multiplier 1.085
 
@@ -118,6 +119,8 @@ void main(void) {
      * 3. P3.2 (INT0) - 输入：外部中断，接收流量计脉冲进行计数
      * 4. P3.3 - 输入：按键输入，控制浇水系统的开关
      * 5. P2.0-P2.3 - 输出：连接到74HC595，控制数码管显示
+     * 6. P3.0 (RxD) - 输入：串行接收数据引脚
+     * 7. P3.1 (TxD) - 输出：串行发送数据引脚
      * 
      * 浇水工作过程：
      * - 按下P3.3按键后，系统开始浇水：P1.1输出高电平，继电器闭合
@@ -132,6 +135,7 @@ void main(void) {
      * - 系统关闭状态下，长按按键进入时间设置模式
      * - 短按按键增加当前设置的时间值
      * - 长按并释放切换到下一个设置项（小时->分钟->秒->退出）
+     * - 通过串口发送命令"TIME:HH:MM:SS"设置时间（例如：TIME:14:30:00）
      */
     
     PCA_Init();           // 初始化PCA模块，包含时钟功能
@@ -139,10 +143,12 @@ void main(void) {
     WaveGen_Init();       // 初始化方波发生器
     WaveGen_Start();      // 启动方波发生器产生5Hz方波
     FlowMeter_Init();     // 初始化流量计
+    UART_Init();          // 初始化串口通信
     
     while (1) {
         processKey();               // 处理按键输入
         FlowMeter_UpdateDisplay();  // 检查并更新流量显示
+        UART_ProcessCommand();      // 处理串口命令
         
         // 添加一个简短延时以避免CPU高速空转
         delay_ms(10);

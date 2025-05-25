@@ -1,4 +1,4 @@
-C51 COMPILER V9.54   MAIN                                                                  05/25/2025 17:45:10 PAGE 1   
+C51 COMPILER V9.54   MAIN                                                                  05/25/2025 20:54:31 PAGE 1   
 
 
 C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
@@ -14,158 +14,164 @@ line level    source
    4          #include "relay.h"     // 包含继电器控制头文件
    5          #include "wavegen.h"   // 包含方波发生器头文件
    6          #include "flowmeter.h" // 包含流量计头文件
-   7          
-   8          #define multiplier 1.085
-   9          
-  10          // 系统状态定义
-  11          #define SYS_STATE_OFF      0  // 系统关闭
-  12          #define SYS_STATE_WATERING 1  // 系统浇水中
-  13          #define SYS_STATE_SET_HOUR 2  // 设置小时
-  14          #define SYS_STATE_SET_MIN  3  // 设置分钟
-  15          #define SYS_STATE_SET_SEC  4  // 设置秒
-  16          
-  17          // 当前系统状态
-  18          BYTE sysState = SYS_STATE_OFF;
-  19          
-  20          // 按键和浇水控制相关变量
-  21          sbit KEY = P3^3;            // 按键连接到P3.3
-  22          bit keyPressed = 0;         // 按键按下标志
-  23          bit justEnteredSetMode = 0; // 标志是否刚刚进入设置模式
-  24          unsigned int keyPressTime = 0; // 按键按下持续时间（以10ms为单位）
-  25          #define LONG_PRESS_TIME 500   // 长按时间阈值（约1秒）
-  26          
-  27          // 按键处理函数
-  28          void processKey() {
-  29   1          if (KEY == 0 && !keyPressed) {  // 按键按下（低电平有效）
-  30   2              keyPressed = 1;
-  31   2              keyPressTime = 0;  // 重置按键计时器
-  32   2          } 
-  33   1          else if (KEY == 0 && keyPressed) {  // 按键持续按下
-  34   2              keyPressTime++;
-  35   2              
-  36   2              // 检测长按（约1秒）- 仅在系统关闭状态下有效
-  37   2              if (keyPressTime == LONG_PRESS_TIME && sysState == SYS_STATE_OFF) {
-  38   3                  // 进入时间设置模式
-  39   3                  sysState = SYS_STATE_SET_HOUR;
-  40   3                  // 设置小时位闪烁
-  41   3                  PCA_SetTimeEditMode(sysState - SYS_STATE_SET_HOUR + 1);
-  42   3                  justEnteredSetMode = 1;  // 设置刚刚进入设置模式标志
-  43   3              }
-  44   2          }
-  45   1          else if (KEY == 1 && keyPressed) {  // 按键释放
-  46   2              if (keyPressTime < LONG_PRESS_TIME) {  // 短按
-  47   3                  switch (sysState) {
-  48   4                      case SYS_STATE_OFF:
-  49   4                          // 开启浇水系统
-  50   4                          sysState = SYS_STATE_WATERING;
-  51   4                          Relay_On();                    // 打开继电器
-  52   4                          
-  53   4                          // 重置和启动流量计
-  54   4                          FlowMeter_Reset();             // 重置流量计计数
-C51 COMPILER V9.54   MAIN                                                                  05/25/2025 17:45:10 PAGE 2   
+   7          #include "uart.h"      // 添加串口通信头文件
+   8          
+   9          #define multiplier 1.085
+  10          
+  11          // 系统状态定义
+  12          #define SYS_STATE_OFF      0  // 系统关闭
+  13          #define SYS_STATE_WATERING 1  // 系统浇水中
+  14          #define SYS_STATE_SET_HOUR 2  // 设置小时
+  15          #define SYS_STATE_SET_MIN  3  // 设置分钟
+  16          #define SYS_STATE_SET_SEC  4  // 设置秒
+  17          
+  18          // 当前系统状态
+  19          BYTE sysState = SYS_STATE_OFF;
+  20          
+  21          // 按键和浇水控制相关变量
+  22          sbit KEY = P3^3;            // 按键连接到P3.3
+  23          bit keyPressed = 0;         // 按键按下标志
+  24          bit justEnteredSetMode = 0; // 标志是否刚刚进入设置模式
+  25          unsigned int keyPressTime = 0; // 按键按下持续时间（以10ms为单位）
+  26          #define LONG_PRESS_TIME 500   // 长按时间阈值（约1秒）
+  27          
+  28          // 按键处理函数
+  29          void processKey() {
+  30   1          if (KEY == 0 && !keyPressed) {  // 按键按下（低电平有效）
+  31   2              keyPressed = 1;
+  32   2              keyPressTime = 0;  // 重置按键计时器
+  33   2          } 
+  34   1          else if (KEY == 0 && keyPressed) {  // 按键持续按下
+  35   2              keyPressTime++;
+  36   2              
+  37   2              // 检测长按（约1秒）- 仅在系统关闭状态下有效
+  38   2              if (keyPressTime == LONG_PRESS_TIME && sysState == SYS_STATE_OFF) {
+  39   3                  // 进入时间设置模式
+  40   3                  sysState = SYS_STATE_SET_HOUR;
+  41   3                  // 设置小时位闪烁
+  42   3                  PCA_SetTimeEditMode(sysState - SYS_STATE_SET_HOUR + 1);
+  43   3                  justEnteredSetMode = 1;  // 设置刚刚进入设置模式标志
+  44   3              }
+  45   2          }
+  46   1          else if (KEY == 1 && keyPressed) {  // 按键释放
+  47   2              if (keyPressTime < LONG_PRESS_TIME) {  // 短按
+  48   3                  switch (sysState) {
+  49   4                      case SYS_STATE_OFF:
+  50   4                          // 开启浇水系统
+  51   4                          sysState = SYS_STATE_WATERING;
+  52   4                          Relay_On();                    // 打开继电器
+  53   4                          
+  54   4                          // 重置和启动流量计
+C51 COMPILER V9.54   MAIN                                                                  05/25/2025 20:54:31 PAGE 2   
 
-  55   4                          FlowMeter_Start();             // 启动流量计
-  56   4                          FlowMeter_SetMode(FLOW_MODE_CURR); // 设置为显示当前流量
-  57   4                          
-  58   4                          // 强制立即更新显示
-  59   4                          FlowMeter_UpdateDisplay();
-  60   4                          break;
-  61   4                          
-  62   4                      case SYS_STATE_WATERING:
-  63   4                          // 关闭浇水系统
-  64   4                          sysState = SYS_STATE_OFF;
-  65   4                          Relay_Off();                  // 关闭继电器
-  66   4                          FlowMeter_Stop();             // 停止流量计
-  67   4                          FlowMeter_SetMode(FLOW_MODE_OFF); // 设置为显示时间
-  68   4                          break;
-  69   4                          
-  70   4                      case SYS_STATE_SET_HOUR:
-  71   4                          // 小时值加1
-  72   4                          PCA_IncreaseTimeValue(HOUR_POS);
-  73   4                          break;
-  74   4                          
-  75   4                      case SYS_STATE_SET_MIN:
-  76   4                          // 分钟值加1
-  77   4                          PCA_IncreaseTimeValue(MIN_POS);
-  78   4                          break;
-  79   4                          
-  80   4                      case SYS_STATE_SET_SEC:
-  81   4                          // 秒值加1
-  82   4                          PCA_IncreaseTimeValue(SEC_POS);
-  83   4                          break;
-  84   4                  }
-  85   3              } 
-  86   2              else if (keyPressTime >= LONG_PRESS_TIME) {  // 长按释放
-  87   3                  if (justEnteredSetMode) {
-  88   4                      // 如果刚刚进入设置模式，不做任何状态转换，只清除标志
-  89   4                      justEnteredSetMode = 0;
-  90   4                  }
-  91   3                  else if (sysState >= SYS_STATE_SET_HOUR && sysState <= SYS_STATE_SET_SEC) {
-  92   4                      // 在设置模式下，长按释放后切换到下一个设置项
-  93   4                      sysState++;
-  94   4                      
-  95   4                      if (sysState > SYS_STATE_SET_SEC) {  // 完成所有设置
-  96   5                          sysState = SYS_STATE_OFF;
-  97   5                          PCA_ExitTimeEditMode();  // 退出时间编辑模式
-  98   5                      } else {
-  99   5                          // 设置相应位闪烁
- 100   5                          PCA_SetTimeEditMode(sysState - SYS_STATE_SET_HOUR + 1);
- 101   5                      }
- 102   4                  }
- 103   3              }
- 104   2              
- 105   2              keyPressed = 0;
- 106   2              keyPressTime = 0;
- 107   2              delay_ms(20);  // 简单消抖
- 108   2          }
- 109   1      }
- 110          
- 111          void main(void) {
- 112   1          EA = 1;               // 开启总中断
- 113   1          P0 = 0xFF;
- 114   1          
- 115   1          /* 浇花系统引脚连接与工作说明：
- 116   1           * 1. P1.1 - 输出：控制继电器，高电平开启浇水，低电平关闭浇水
-C51 COMPILER V9.54   MAIN                                                                  05/25/2025 17:45:10 PAGE 3   
+  55   4                          FlowMeter_Reset();             // 重置流量计计数
+  56   4                          FlowMeter_Start();             // 启动流量计
+  57   4                          FlowMeter_SetMode(FLOW_MODE_CURR); // 设置为显示当前流量
+  58   4                          
+  59   4                          // 强制立即更新显示
+  60   4                          FlowMeter_UpdateDisplay();
+  61   4                          break;
+  62   4                          
+  63   4                      case SYS_STATE_WATERING:
+  64   4                          // 关闭浇水系统
+  65   4                          sysState = SYS_STATE_OFF;
+  66   4                          Relay_Off();                  // 关闭继电器
+  67   4                          FlowMeter_Stop();             // 停止流量计
+  68   4                          FlowMeter_SetMode(FLOW_MODE_OFF); // 设置为显示时间
+  69   4                          break;
+  70   4                          
+  71   4                      case SYS_STATE_SET_HOUR:
+  72   4                          // 小时值加1
+  73   4                          PCA_IncreaseTimeValue(HOUR_POS);
+  74   4                          break;
+  75   4                          
+  76   4                      case SYS_STATE_SET_MIN:
+  77   4                          // 分钟值加1
+  78   4                          PCA_IncreaseTimeValue(MIN_POS);
+  79   4                          break;
+  80   4                          
+  81   4                      case SYS_STATE_SET_SEC:
+  82   4                          // 秒值加1
+  83   4                          PCA_IncreaseTimeValue(SEC_POS);
+  84   4                          break;
+  85   4                  }
+  86   3              } 
+  87   2              else if (keyPressTime >= LONG_PRESS_TIME) {  // 长按释放
+  88   3                  if (justEnteredSetMode) {
+  89   4                      // 如果刚刚进入设置模式，不做任何状态转换，只清除标志
+  90   4                      justEnteredSetMode = 0;
+  91   4                  }
+  92   3                  else if (sysState >= SYS_STATE_SET_HOUR && sysState <= SYS_STATE_SET_SEC) {
+  93   4                      // 在设置模式下，长按释放后切换到下一个设置项
+  94   4                      sysState++;
+  95   4                      
+  96   4                      if (sysState > SYS_STATE_SET_SEC) {  // 完成所有设置
+  97   5                          sysState = SYS_STATE_OFF;
+  98   5                          PCA_ExitTimeEditMode();  // 退出时间编辑模式
+  99   5                      } else {
+ 100   5                          // 设置相应位闪烁
+ 101   5                          PCA_SetTimeEditMode(sysState - SYS_STATE_SET_HOUR + 1);
+ 102   5                      }
+ 103   4                  }
+ 104   3              }
+ 105   2              
+ 106   2              keyPressed = 0;
+ 107   2              keyPressTime = 0;
+ 108   2              delay_ms(20);  // 简单消抖
+ 109   2          }
+ 110   1      }
+ 111          
+ 112          void main(void) {
+ 113   1          EA = 1;               // 开启总中断
+ 114   1          P0 = 0xFF;
+ 115   1          
+ 116   1          /* 浇花系统引脚连接与工作说明：
+C51 COMPILER V9.54   MAIN                                                                  05/25/2025 20:54:31 PAGE 3   
 
- 117   1           * 2. P1.0 - 输出：方波发生器，输出5Hz脉冲，模拟流量计信号
- 118   1           * 3. P3.2 (INT0) - 输入：外部中断，接收流量计脉冲进行计数
- 119   1           * 4. P3.3 - 输入：按键输入，控制浇水系统的开关
- 120   1           * 5. P2.0-P2.3 - 输出：连接到74HC595，控制数码管显示
- 121   1           * 
- 122   1           * 浇水工作过程：
- 123   1           * - 按下P3.3按键后，系统开始浇水：P1.1输出高电平，继电器闭合
- 124   1           * - 继电器闭合使P1.0的方波信号传导到P3.2 (INT0)
- 125   1           * - INT0接收脉冲信号并计数，根据脉冲数计算流量
- 126   1           * - 显示屏轮流显示当前流量和累计流量
- 127   1           * - 再次按下按键，系统停止浇水：P1.1输出低电平，继电器断开
- 128   1           * - 断开后不再有脉冲传到INT0，流量计数停止
- 129   1           * - 显示屏切换回时间显示模式
- 130   1           * 
- 131   1           * 时间设置说明：
- 132   1           * - 系统关闭状态下，长按按键进入时间设置模式
- 133   1           * - 短按按键增加当前设置的时间值
- 134   1           * - 长按并释放切换到下一个设置项（小时->分钟->秒->退出）
- 135   1           */
- 136   1          
- 137   1          PCA_Init();           // 初始化PCA模块，包含时钟功能
- 138   1          Relay_Init();         // 初始化继电器
- 139   1          WaveGen_Init();       // 初始化方波发生器
- 140   1          WaveGen_Start();      // 启动方波发生器产生5Hz方波
- 141   1          FlowMeter_Init();     // 初始化流量计
- 142   1          
- 143   1          while (1) {
- 144   2              processKey();               // 处理按键输入
- 145   2              FlowMeter_UpdateDisplay();  // 检查并更新流量显示
- 146   2              
- 147   2              // 添加一个简短延时以避免CPU高速空转
- 148   2              delay_ms(10);
- 149   2          }
- 150   1      }
+ 117   1           * 1. P1.1 - 输出：控制继电器，高电平开启浇水，低电平关闭浇水
+ 118   1           * 2. P1.0 - 输出：方波发生器，输出5Hz脉冲，模拟流量计信号
+ 119   1           * 3. P3.2 (INT0) - 输入：外部中断，接收流量计脉冲进行计数
+ 120   1           * 4. P3.3 - 输入：按键输入，控制浇水系统的开关
+ 121   1           * 5. P2.0-P2.3 - 输出：连接到74HC595，控制数码管显示
+ 122   1           * 6. P3.0 (RxD) - 输入：串行接收数据引脚
+ 123   1           * 7. P3.1 (TxD) - 输出：串行发送数据引脚
+ 124   1           * 
+ 125   1           * 浇水工作过程：
+ 126   1           * - 按下P3.3按键后，系统开始浇水：P1.1输出高电平，继电器闭合
+ 127   1           * - 继电器闭合使P1.0的方波信号传导到P3.2 (INT0)
+ 128   1           * - INT0接收脉冲信号并计数，根据脉冲数计算流量
+ 129   1           * - 显示屏轮流显示当前流量和累计流量
+ 130   1           * - 再次按下按键，系统停止浇水：P1.1输出低电平，继电器断开
+ 131   1           * - 断开后不再有脉冲传到INT0，流量计数停止
+ 132   1           * - 显示屏切换回时间显示模式
+ 133   1           * 
+ 134   1           * 时间设置说明：
+ 135   1           * - 系统关闭状态下，长按按键进入时间设置模式
+ 136   1           * - 短按按键增加当前设置的时间值
+ 137   1           * - 长按并释放切换到下一个设置项（小时->分钟->秒->退出）
+ 138   1           * - 通过串口发送命令"TIME:HH:MM:SS"设置时间（例如：TIME:14:30:00）
+ 139   1           */
+ 140   1          
+ 141   1          PCA_Init();           // 初始化PCA模块，包含时钟功能
+ 142   1          Relay_Init();         // 初始化继电器
+ 143   1          WaveGen_Init();       // 初始化方波发生器
+ 144   1          WaveGen_Start();      // 启动方波发生器产生5Hz方波
+ 145   1          FlowMeter_Init();     // 初始化流量计
+ 146   1          UART_Init();          // 初始化串口通信
+ 147   1          
+ 148   1          while (1) {
+ 149   2              processKey();               // 处理按键输入
+ 150   2              FlowMeter_UpdateDisplay();  // 检查并更新流量显示
+ 151   2              UART_ProcessCommand();      // 处理串口命令
+ 152   2              
+ 153   2              // 添加一个简短延时以避免CPU高速空转
+ 154   2              delay_ms(10);
+ 155   2          }
+ 156   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    259    ----
+   CODE SIZE        =    265    ----
    CONSTANT SIZE    =   ----    ----
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----

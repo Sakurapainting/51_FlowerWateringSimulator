@@ -45,5 +45,6 @@ void FillCustomDispBuf(BYTE val1, BYTE val2, BYTE val3, BYTE val4, BYTE val5, BY
 void PCA_SetTimeEditMode(BYTE position);   // 设置时间编辑模式
 void PCA_ExitTimeEditMode(void);          // 退出时间编辑模式
 void PCA_IncreaseTimeValue(BYTE position); // 增加时间值
+void PCA_SetTime(BYTE hour, BYTE min, BYTE sec); // 直接设置时间
 
 #endif /* __PCA_H__ */
