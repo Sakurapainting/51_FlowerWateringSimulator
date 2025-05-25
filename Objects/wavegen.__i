@@ -1,1 +1,0 @@
-"wavegen.c" OPTIMIZE (8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\wavegen.lst) OBJECT(.\Objects\wavegen.obj)

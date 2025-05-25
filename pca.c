@@ -158,6 +158,39 @@ void disp(void) {
     if(mark == 0) mark = 0x01;  // 确保非零
 }
 
+// 时间编辑相关变量
+static BYTE timeEditMode = 0;  // 0: 正常显示, 1: 编辑小时, 2: 编辑分钟, 3: 编辑秒
+static BYTE blinkState = 0;    // 闪烁状态: 0 显示, 1 不显示
+
+// 设置时间编辑模式
+void PCA_SetTimeEditMode(BYTE position) {
+    timeEditMode = position;
+    blinkState = 0;  // 开始时处于显示状态
+}
+
+// 退出时间编辑模式
+void PCA_ExitTimeEditMode(void) {
+    timeEditMode = 0;
+    FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
+}
+
+// 增加时间值
+void PCA_IncreaseTimeValue(BYTE position) {
+    switch (position) {
+        case HOUR_POS:
+            SysPara1.hour = (SysPara1.hour + 1) % 24;
+            break;
+        case MIN_POS:
+            SysPara1.min = (SysPara1.min + 1) % 60;
+            break;
+        case SEC_POS:
+            SysPara1.sec = (SysPara1.sec + 1) % 60;
+            break;
+    }
+    FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
+}
+
+// 修改PCA中断服务函数，加入闪烁处理逻辑
 void PCA_isr() interrupt 7
 {
     if(CCF1){
@@ -195,14 +228,61 @@ void PCA_isr() interrupt 7
                 }
             }
             
-            // 只有在流量计模式为关闭时才更新时钟显示的缓冲区
-            if (FlowMeter_GetMode() == FLOW_MODE_OFF) {
+            // 时间编辑模式闪烁控制 (每秒切换一次)
+            if (timeEditMode > 0) {
+                blinkState = !blinkState;
+                FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
+                
+                // 根据编辑模式和闪烁状态，设置相应位为不显示
+                if (blinkState) {
+                    switch (timeEditMode) {
+                        case HOUR_POS:  // 编辑小时
+                            dispbuff[4] = SEG_OFF;
+                            dispbuff[5] = SEG_OFF;
+                            break;
+                        case MIN_POS:  // 编辑分钟
+                            dispbuff[2] = SEG_OFF;
+                            dispbuff[3] = SEG_OFF;
+                            break;
+                        case SEC_POS:  // 编辑秒
+                            dispbuff[0] = SEG_OFF;
+                            dispbuff[1] = SEG_OFF;
+                            break;
+                    }
+                }
+            }
+            
+            // 只有在流量计模式为关闭且不在时间编辑模式时才更新时钟显示的缓冲区
+            else if (FlowMeter_GetMode() == FLOW_MODE_OFF) {
                 FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
             }
         }
         else if(cnt % 20 == 0 && FlowMeter_GetMode() != FLOW_MODE_OFF) {
             // 每0.2秒也调用一次流量计算，以减少刷新延迟
             FlowMeter_CalcFlow();
+        }
+        else if(cnt % 50 == 0 && timeEditMode > 0) {
+            // 在时间编辑模式下，每0.5秒切换一次闪烁状态
+            blinkState = !blinkState;
+            FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
+            
+            // 根据编辑模式和闪烁状态，设置相应位为不显示
+            if (blinkState) {
+                switch (timeEditMode) {
+                    case HOUR_POS:  // 编辑小时
+                        dispbuff[4] = SEG_OFF;
+                        dispbuff[5] = SEG_OFF;
+                        break;
+                    case MIN_POS:  // 编辑分钟
+                        dispbuff[2] = SEG_OFF;
+                        dispbuff[3] = SEG_OFF;
+                        break;
+                    case SEC_POS:  // 编辑秒
+                        dispbuff[0] = SEG_OFF;
+                        dispbuff[1] = SEG_OFF;
+                        break;
+                }
+            }
         }
     }
 }

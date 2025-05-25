@@ -1,4 +1,4 @@
-C51 COMPILER V9.54   FLOWMETER                                                             05/25/2025 15:11:47 PAGE 1   
+C51 COMPILER V9.54   FLOWMETER                                                             05/25/2025 17:00:45 PAGE 1   
 
 
 C51 COMPILER V9.54, COMPILATION OF MODULE FLOWMETER
@@ -24,7 +24,8 @@ line level    source
   14          #define PULSE_FACTOR 1                   // 降低脉冲因子，使每个脉冲代表更多水量（原�
              -�5）
   15          #define FLOW_UPDATE_INTERVAL 1           // 更快地更新流量值（每秒更新）
-  16          #define FLOW_SPEED_MULTIPLIER 4          // 流量倍增因子
+  16          #define FLOW_SPEED_MULTIPLIER 1          // 流量倍增因子
+*** WARNING C317 IN LINE 16 OF flowmeter.c: attempt to redefine macro 'FLOW_SPEED_MULTIPLIER'
   17          
   18          // 流量计初始化
   19          void FlowMeter_Init(void) {
@@ -61,9 +62,9 @@ line level    source
   50   2              needUpdateDisplay = 1;
   51   2              initialDisplayDelay = 2;       // 设置初始显示延迟
   52   2          }
-  53   1      }
-C51 COMPILER V9.54   FLOWMETER                                                             05/25/2025 15:11:47 PAGE 2   
+C51 COMPILER V9.54   FLOWMETER                                                             05/25/2025 17:00:45 PAGE 2   
 
+  53   1      }
   54          
   55          // 停止流量计
   56          void FlowMeter_Stop(void) {
@@ -125,9 +126,9 @@ line level    source
  111   4                      // 确保有最小显示值
  112   4                      if (currentFlow < 25) currentFlow = 25;  // 最小25毫升/秒
  113   4                  } else {
- 114   4                      // 如果没有脉冲但系统仍在运行，保持最小流量显示
-C51 COMPILER V9.54   FLOWMETER                                                             05/25/2025 15:11:47 PAGE 3   
+C51 COMPILER V9.54   FLOWMETER                                                             05/25/2025 17:00:45 PAGE 3   
 
+ 114   4                      // 如果没有脉冲但系统仍在运行，保持最小流量显示
  115   4                      currentFlow = 25;  // 显示25毫升/秒
  116   4                  }
  117   3                  
@@ -135,126 +136,125 @@ line level    source
  119   3                  if (pulseCount > 0) {
  120   4                      totalFlow += (unsigned long)pulseCount * 1000 * FLOW_SPEED_MULTIPLIER / PULSE_FACTOR;
  121   4                  } else {
- 122   4                      // 即使没有脉冲也稍微增加累计流量，以确保显示变化
- 123   4                      totalFlow += 100;  // 每次增加100毫升（原为50毫升）
- 124   4                  }
- 125   3              }
- 126   2              
- 127   2              // 重置脉冲计数，准备下次统计
- 128   2              pulseCount = 0;
- 129   2              
- 130   2              // 设置显示需更新标志，但不在中断中更新
- 131   2              needUpdateDisplay = 1;
- 132   2          }
- 133   1          
- 134   1          // 轮流显示切换逻辑
- 135   1          if (isRunning) {
- 136   2              static BYTE displayToggle = 0;
- 137   2              
- 138   2              // 轮流显示当前流量和累计流量
- 139   2              if (++displayToggle >= 3) {  // 加快切换速度
- 140   3                  displayToggle = 0;
- 141   3                  
- 142   3                  // 仅切换模式，不执行显示操作
- 143   3                  flowMode = (flowMode == FLOW_MODE_CURR) ? FLOW_MODE_TOTAL : FLOW_MODE_CURR;
- 144   3                  
- 145   3                  // 设置显示需更新标志
- 146   3                  needUpdateDisplay = 1;
- 147   3              }
- 148   2          }
- 149   1      }
- 150          
- 151          // 检查并更新显示（在主循环中调用，不在中断中）
- 152          void FlowMeter_UpdateDisplay(void) {
- 153   1          if (needUpdateDisplay) {
- 154   2              needUpdateDisplay = 0;  // 清除标志
- 155   2              
- 156   2              // 根据当前模式更新显示
- 157   2              if (flowMode == FLOW_MODE_CURR) {
- 158   3                  UpdateCurrentFlowDisplay();
- 159   3              } else if (flowMode == FLOW_MODE_TOTAL) {
- 160   3                  UpdateTotalFlowDisplay();
- 161   3              }
- 162   2          }
- 163   1      }
- 164          
- 165          // 更新当前流量显示
- 166          void UpdateCurrentFlowDisplay(void) {
- 167   1          BYTE val1, val2, val3, val4, val5, val6;
- 168   1          
- 169   1          // 提取当前流量各位数字（毫升/秒）
- 170   1          
- 171   1          // 构造显示数字
- 172   1          val1 = 10;  // 10，表示当前流量显示模式
- 173   1          val2 = (currentFlow / 10000) % 10; // 万位（毫升/秒）
- 174   1          val3 = (currentFlow / 1000) % 10; // 千位（毫升/秒）
- 175   1          val4 = (currentFlow / 100) % 10;  // 百位（毫升/秒）
- 176   1          val5 = (currentFlow / 10) % 10;  // 十位（毫升/秒）
-C51 COMPILER V9.54   FLOWMETER                                                             05/25/2025 15:11:47 PAGE 4   
+ 122   4                      totalFlow += 100;  // 每次增加100毫升
+ 123   4                  }
+ 124   3              }
+ 125   2              
+ 126   2              // 重置脉冲计数，准备下次统计
+ 127   2              pulseCount = 0;
+ 128   2              
+ 129   2              // 设置显示需更新标志，但不在中断中更新
+ 130   2              needUpdateDisplay = 1;
+ 131   2          }
+ 132   1          
+ 133   1          // 轮流显示切换逻辑
+ 134   1          if (isRunning) {
+ 135   2              static BYTE displayToggle = 0;
+ 136   2              
+ 137   2              // 轮流显示当前流量和累计流量
+ 138   2              if (++displayToggle >= 3) {  
+ 139   3                  displayToggle = 0;
+ 140   3                  
+ 141   3                  // 仅切换模式，不执行显示操作
+ 142   3                  flowMode = (flowMode == FLOW_MODE_CURR) ? FLOW_MODE_TOTAL : FLOW_MODE_CURR;
+ 143   3                  
+ 144   3                  // 设置显示需更新标志
+ 145   3                  needUpdateDisplay = 1;
+ 146   3              }
+ 147   2          }
+ 148   1      }
+ 149          
+ 150          // 检查并更新显示（在主循环中调用，不在中断中）
+ 151          void FlowMeter_UpdateDisplay(void) {
+ 152   1          if (needUpdateDisplay) {
+ 153   2              needUpdateDisplay = 0;  // 清除标志
+ 154   2              
+ 155   2              // 根据当前模式更新显示
+ 156   2              if (flowMode == FLOW_MODE_CURR) {
+ 157   3                  UpdateCurrentFlowDisplay();
+ 158   3              } else if (flowMode == FLOW_MODE_TOTAL) {
+ 159   3                  UpdateTotalFlowDisplay();
+ 160   3              }
+ 161   2          }
+ 162   1      }
+ 163          
+ 164          // 更新当前流量显示
+ 165          void UpdateCurrentFlowDisplay(void) {
+ 166   1          BYTE val1, val2, val3, val4, val5, val6;
+ 167   1          
+ 168   1          // 提取当前流量各位数字（毫升/秒）
+ 169   1          
+ 170   1          // 构造显示数字
+ 171   1          val1 = 10;  // 10，表示当前流量显示模式
+ 172   1          val2 = (currentFlow / 10000) % 10; // 万位（毫升/秒）
+ 173   1          val3 = (currentFlow / 1000) % 10; // 千位（毫升/秒）
+ 174   1          val4 = (currentFlow / 100) % 10;  // 百位（毫升/秒）
+ 175   1          val5 = (currentFlow / 10) % 10;  // 十位（毫升/秒）
+C51 COMPILER V9.54   FLOWMETER                                                             05/25/2025 17:00:45 PAGE 4   
 
- 177   1          val6 = currentFlow % 10;     // 个位（毫升/秒）
- 178   1          
- 179   1          // 直接填充显示缓冲区
- 180   1          FillCustomDispBuf(val6, val5, val4, val3, val2, val1);
- 181   1      }
- 182          
- 183          // 更新累计流量显示
- 184          void UpdateTotalFlowDisplay(void) {
- 185   1          BYTE val1, val2, val3, val4, val5, val6;
- 186   1          
- 187   1          // 提取总流量各位数字
- 188   1          unsigned long flow_liter = totalFlow / 1000;  // 转换为升
- 189   1          
- 190   1          // 构造显示数字
- 191   1          val1 = 11;  // 11,累计流量显示模式
- 192   1          val2 = (BYTE)((flow_liter / 10000) % 10); // 万位（升）
- 193   1          val3 = (BYTE)((flow_liter / 1000) % 10); // 千位（升）
- 194   1          val4 = (BYTE)((flow_liter / 100) % 10);  // 百位（升）
- 195   1          val5 = (BYTE)((flow_liter / 10) % 10);   // 十位（升）
- 196   1          val6 = (BYTE)(flow_liter % 10);        // 个位（升）
- 197   1          
- 198   1          // 直接填充显示缓冲区
- 199   1          FillCustomDispBuf(val6, val5, val4, val3, val2, val1);
- 200   1      }
- 201          
- 202          // 显示当前流量（这个函数仅供外部调用，不在内部调用链中使用）
- 203          void FlowMeter_DisplayCurrent(void) {
- 204   1          UpdateCurrentFlowDisplay();
- 205   1      }
- 206          
- 207          // 显示累计流量（这个函数仅供外部调用，不在内部调用链中使用）
- 208          void FlowMeter_DisplayTotal(void) {
- 209   1          UpdateTotalFlowDisplay();
- 210   1      }
- 211          
- 212          // 设置流量显示模式
- 213          void FlowMeter_SetMode(BYTE mode) {
- 214   1          flowMode = mode;
- 215   1          
- 216   1          // 仅设置更新标志，实际显示在主循环中执行
- 217   1          needUpdateDisplay = 1;
- 218   1      }
- 219          
- 220          // 获取当前流量显示模式
- 221          BYTE FlowMeter_GetMode(void) {
- 222   1          return flowMode;
- 223   1      }
- 224          
- 225          // 获取当前流量
- 226          WORD FlowMeter_GetCurrentFlow(void) {
- 227   1          return currentFlow;
- 228   1      }
- 229          
- 230          // 获取累计流量
- 231          unsigned long FlowMeter_GetTotalFlow(void) {
- 232   1          return totalFlow;
- 233   1      }
- 234          
- 235          // 外部中断0服务函数 - 用于脉冲计数
- 236          void INT0_ISR() interrupt 0 {
- 237   1          pulseCount++;  // 每次中断增加脉冲计数
- 238   1      }
-C51 COMPILER V9.54   FLOWMETER                                                             05/25/2025 15:11:47 PAGE 5   
+ 176   1          val6 = currentFlow % 10;     // 个位（毫升/秒）
+ 177   1          
+ 178   1          // 直接填充显示缓冲区
+ 179   1          FillCustomDispBuf(val6, val5, val4, val3, val2, val1);
+ 180   1      }
+ 181          
+ 182          // 更新累计流量显示
+ 183          void UpdateTotalFlowDisplay(void) {
+ 184   1          BYTE val1, val2, val3, val4, val5, val6;
+ 185   1          
+ 186   1          // 提取总流量各位数字
+ 187   1          unsigned long flow_liter = totalFlow / 1000;  // 转换为升
+ 188   1          
+ 189   1          // 构造显示数字
+ 190   1          val1 = 11;  // 11,累计流量显示模式
+ 191   1          val2 = (BYTE)((flow_liter / 10000) % 10); // 万位（升）
+ 192   1          val3 = (BYTE)((flow_liter / 1000) % 10); // 千位（升）
+ 193   1          val4 = (BYTE)((flow_liter / 100) % 10);  // 百位（升）
+ 194   1          val5 = (BYTE)((flow_liter / 10) % 10);   // 十位（升）
+ 195   1          val6 = (BYTE)(flow_liter % 10);        // 个位（升）
+ 196   1          
+ 197   1          // 直接填充显示缓冲区
+ 198   1          FillCustomDispBuf(val6, val5, val4, val3, val2, val1);
+ 199   1      }
+ 200          
+ 201          // 显示当前流量（这个函数仅供外部调用，不在内部调用链中使用）
+ 202          void FlowMeter_DisplayCurrent(void) {
+ 203   1          UpdateCurrentFlowDisplay();
+ 204   1      }
+ 205          
+ 206          // 显示累计流量（这个函数仅供外部调用，不在内部调用链中使用）
+ 207          void FlowMeter_DisplayTotal(void) {
+ 208   1          UpdateTotalFlowDisplay();
+ 209   1      }
+ 210          
+ 211          // 设置流量显示模式
+ 212          void FlowMeter_SetMode(BYTE mode) {
+ 213   1          flowMode = mode;
+ 214   1          
+ 215   1          // 仅设置更新标志，实际显示在主循环中执行
+ 216   1          needUpdateDisplay = 1;
+ 217   1      }
+ 218          
+ 219          // 获取当前流量显示模式
+ 220          BYTE FlowMeter_GetMode(void) {
+ 221   1          return flowMode;
+ 222   1      }
+ 223          
+ 224          // 获取当前流量
+ 225          WORD FlowMeter_GetCurrentFlow(void) {
+ 226   1          return currentFlow;
+ 227   1      }
+ 228          
+ 229          // 获取累计流量
+ 230          unsigned long FlowMeter_GetTotalFlow(void) {
+ 231   1          return totalFlow;
+ 232   1      }
+ 233          
+ 234          // 外部中断0服务函数 - 用于脉冲计数
+ 235          void INT0_ISR() interrupt 0 {
+ 236   1          pulseCount++;  // 每次中断增加脉冲计数
+ 237   1      }
+C51 COMPILER V9.54   FLOWMETER                                                             05/25/2025 17:00:45 PAGE 5   
 
 
 
@@ -269,4 +269,4 @@ MODULE INFORMATION:   STATIC OVERLAYABLE
 END OF MODULE INFORMATION.
 
 
-C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
+C51 COMPILATION COMPLETE.  1 WARNING(S),  0 ERROR(S)

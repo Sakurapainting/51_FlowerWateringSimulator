@@ -1,4 +1,4 @@
-BL51 BANKED LINKER/LOCATER V6.22                                                        05/25/2025  15:11:47  PAGE 1
+BL51 BANKED LINKER/LOCATER V6.22                                                        05/25/2025  17:45:10  PAGE 1
 
 
 BL51 BANKED LINKER/LOCATER V6.22, INVOKED BY:
@@ -31,13 +31,13 @@ LINK MAP OF MODULE:  .\Objects\Project (MAIN)
 
             * * * * * * *   D A T A   M E M O R Y   * * * * * * *
             REG     0000H     0008H     ABSOLUTE     "REG BANK 0"
-            DATA    0008H     0012H     UNIT         ?DT?PCA
-            DATA    001AH     0001H     UNIT         ?DT?MAIN
-                    001BH     0005H                  *** GAP ***
-            BIT     0020H.0   0000H.2   UNIT         ?BI?FLOWMETER
-            BIT     0020H.2   0000H.1   UNIT         ?BI?MAIN
-            BIT     0020H.3   0000H.1   UNIT         ?BI?WAVEGEN
-                    0020H.4   0000H.4                *** GAP ***
+            DATA    0008H     0014H     UNIT         ?DT?PCA
+            DATA    001CH     0003H     UNIT         ?DT?MAIN
+                    001FH     0001H                  *** GAP ***
+            BIT     0020H.0   0000H.2   UNIT         ?BI?MAIN
+            BIT     0020H.2   0000H.2   UNIT         ?BI?FLOWMETER
+            BIT     0020H.4   0000H.1   UNIT         ?BI?WAVEGEN
+                    0020H.5   0000H.3                *** GAP ***
             DATA    0021H     000FH     UNIT         _DATA_GROUP_
             DATA    0030H     000CH     UNIT         ?DT?FLOWMETER
             IDATA   003CH     0001H     UNIT         ?STACK
@@ -51,45 +51,48 @@ LINK MAP OF MODULE:  .\Objects\Project (MAIN)
             CODE    003BH     0003H     ABSOLUTE     
                     003EH     07C2H                  *** GAP ***
             CODE    0800H     0162H     UNIT         ?C?LIB_CODE
-            CODE    0962H     00C1H     UNIT         ?PR?PCA_ISR?PCA
-            CODE    0A23H     00B2H     UNIT         ?PR?UPDATETOTALFLOWDISPLAY?FLOWMETER
-            CODE    0AD5H     00AFH     UNIT         ?PR?FLOWMETER_CALCFLOW?FLOWMETER
-            CODE    0B84H     008CH     UNIT         ?C_C51STARTUP
-            CODE    0C10H     006EH     UNIT         ?PR?UPDATECURRENTFLOWDISPLAY?FLOWMETER
-            CODE    0C7EH     0060H     UNIT         ?PR?DISP?PCA
-            CODE    0CDEH     0050H     UNIT         ?PR?PCA_INIT?PCA
-            CODE    0D2EH     0042H     UNIT         ?PR?PROCESSKEY?MAIN
-BL51 BANKED LINKER/LOCATER V6.22                                                      05/25/2025  15:11:47  PAGE 2
+            CODE    0962H     0130H     UNIT         ?PR?PCA_ISR?PCA
+            CODE    0A92H     00E0H     UNIT         ?PR?PROCESSKEY?MAIN
+            CODE    0B72H     00B2H     UNIT         ?PR?UPDATETOTALFLOWDISPLAY?FLOWMETER
+            CODE    0C24H     00AFH     UNIT         ?PR?FLOWMETER_CALCFLOW?FLOWMETER
+            CODE    0CD3H     008CH     UNIT         ?C_C51STARTUP
+            CODE    0D5FH     006EH     UNIT         ?PR?UPDATECURRENTFLOWDISPLAY?FLOWMETER
+            CODE    0DCDH     0060H     UNIT         ?PR?DISP?PCA
+            CODE    0E2DH     0050H     UNIT         ?PR?PCA_INIT?PCA
+BL51 BANKED LINKER/LOCATER V6.22                                                      05/25/2025  17:45:10  PAGE 2
 
 
-            CODE    0D70H     003FH     UNIT         ?PR?_FILLDISPBUF?PCA
-            CODE    0DAFH     003BH     UNIT         ?C_INITSEG
-            CODE    0DEAH     0024H     UNIT         ?PR?_FILLCUSTOMDISPBUF?PCA
-            CODE    0E0EH     0023H     UNIT         ?PR?MAIN?MAIN
-            CODE    0E31H     0020H     UNIT         ?PR?_DELAY_MS?PCA
-            CODE    0E51H     001AH     UNIT         ?PR?FLOWMETER_INIT?FLOWMETER
-            CODE    0E6BH     0016H     UNIT         ?PR?FLOWMETER_START?FLOWMETER
-            CODE    0E81H     0016H     UNIT         ?PR?FLOWMETER_UPDATEDISPLAY?FLOWMETER
-            CODE    0E97H     0015H     UNIT         ?PR?WAVEGEN_INIT?WAVEGEN
-            CODE    0EACH     0012H     UNIT         ?PR?FLOWMETER_RESET?FLOWMETER
-            CODE    0EBEH     000EH     UNIT         ?PR?WAVEGEN_START?WAVEGEN
-            CODE    0ECCH     000DH     UNIT         ?PR?INT0_ISR?FLOWMETER
-            CODE    0ED9H     000CH     UNIT         ?CO?PCA
-            CODE    0EE5H     000AH     UNIT         ?PR?RESETDISPBUFF?PCA
-            CODE    0EEFH     0009H     UNIT         ?PR?T0_ISR?WAVEGEN
-            CODE    0EF8H     0009H     UNIT         ?PR?FLOWMETER_GETTOTALFLOW?FLOWMETER
-            CODE    0F01H     0007H     UNIT         ?PR?RELAY_INIT?RELAY
-            CODE    0F08H     0007H     UNIT         ?PR?WAVEGEN_STOP?WAVEGEN
-            CODE    0F0FH     0006H     UNIT         ?PR?RELAY_GETSTATE?RELAY
-            CODE    0F15H     0006H     UNIT         ?PR?WAVEGEN_GETSTATE?WAVEGEN
-            CODE    0F1BH     0005H     UNIT         ?PR?_FLOWMETER_SETMODE?FLOWMETER
-            CODE    0F20H     0005H     UNIT         ?PR?FLOWMETER_GETCURRENTFLOW?FLOWMETER
-            CODE    0F25H     0003H     UNIT         ?PR?RELAY_ON?RELAY
-            CODE    0F28H     0003H     UNIT         ?PR?RELAY_OFF?RELAY
-            CODE    0F2BH     0003H     UNIT         ?PR?FLOWMETER_STOP?FLOWMETER
-            CODE    0F2EH     0003H     UNIT         ?PR?FLOWMETER_DISPLAYCURRENT?FLOWMETER
-            CODE    0F31H     0003H     UNIT         ?PR?FLOWMETER_DISPLAYTOTAL?FLOWMETER
-            CODE    0F34H     0003H     UNIT         ?PR?FLOWMETER_GETMODE?FLOWMETER
+            CODE    0E7DH     004CH     UNIT         ?PR?_PCA_INCREASETIMEVALUE?PCA
+            CODE    0EC9H     0047H     UNIT         ?C_INITSEG
+            CODE    0F10H     0047H     UNIT         ?PR?_FILLDISPBUF?PCA
+            CODE    0F57H     0024H     UNIT         ?PR?_FILLCUSTOMDISPBUF?PCA
+            CODE    0F7BH     0023H     UNIT         ?PR?MAIN?MAIN
+            CODE    0F9EH     0020H     UNIT         ?PR?_DELAY_MS?PCA
+            CODE    0FBEH     001AH     UNIT         ?PR?FLOWMETER_INIT?FLOWMETER
+            CODE    0FD8H     0016H     UNIT         ?PR?FLOWMETER_START?FLOWMETER
+            CODE    0FEEH     0016H     UNIT         ?PR?FLOWMETER_UPDATEDISPLAY?FLOWMETER
+            CODE    1004H     0015H     UNIT         ?PR?WAVEGEN_INIT?WAVEGEN
+            CODE    1019H     0012H     UNIT         ?PR?FLOWMETER_RESET?FLOWMETER
+            CODE    102BH     000EH     UNIT         ?PR?WAVEGEN_START?WAVEGEN
+            CODE    1039H     000DH     UNIT         ?PR?INT0_ISR?FLOWMETER
+            CODE    1046H     000CH     UNIT         ?PR?PCA_EXITTIMEEDITMODE?PCA
+            CODE    1052H     000CH     UNIT         ?CO?PCA
+            CODE    105EH     000AH     UNIT         ?PR?RESETDISPBUFF?PCA
+            CODE    1068H     0009H     UNIT         ?PR?T0_ISR?WAVEGEN
+            CODE    1071H     0009H     UNIT         ?PR?FLOWMETER_GETTOTALFLOW?FLOWMETER
+            CODE    107AH     0007H     UNIT         ?PR?RELAY_INIT?RELAY
+            CODE    1081H     0007H     UNIT         ?PR?WAVEGEN_STOP?WAVEGEN
+            CODE    1088H     0006H     UNIT         ?PR?_PCA_SETTIMEEDITMODE?PCA
+            CODE    108EH     0006H     UNIT         ?PR?RELAY_GETSTATE?RELAY
+            CODE    1094H     0006H     UNIT         ?PR?WAVEGEN_GETSTATE?WAVEGEN
+            CODE    109AH     0005H     UNIT         ?PR?_FLOWMETER_SETMODE?FLOWMETER
+            CODE    109FH     0005H     UNIT         ?PR?FLOWMETER_GETCURRENTFLOW?FLOWMETER
+            CODE    10A4H     0003H     UNIT         ?PR?RELAY_ON?RELAY
+            CODE    10A7H     0003H     UNIT         ?PR?RELAY_OFF?RELAY
+            CODE    10AAH     0003H     UNIT         ?PR?FLOWMETER_STOP?FLOWMETER
+            CODE    10ADH     0003H     UNIT         ?PR?FLOWMETER_DISPLAYCURRENT?FLOWMETER
+            CODE    10B0H     0003H     UNIT         ?PR?FLOWMETER_DISPLAYTOTAL?FLOWMETER
+            CODE    10B3H     0003H     UNIT         ?PR?FLOWMETER_GETMODE?FLOWMETER
 
 
 
@@ -102,8 +105,8 @@ SEGMENT                                          DATA_GROUP
 ?PR?PCA_ISR?PCA                                -----    -----
   +--> ?PR?DISP?PCA
   +--> ?PR?FLOWMETER_CALCFLOW?FLOWMETER
-  +--> ?PR?FLOWMETER_GETMODE?FLOWMETER
   +--> ?PR?_FILLDISPBUF?PCA
+  +--> ?PR?FLOWMETER_GETMODE?FLOWMETER
 
 ?PR?_FILLDISPBUF?PCA                           -----    -----
   +--> ?PR?RESETDISPBUFF?PCA
@@ -116,12 +119,12 @@ SEGMENT                                          DATA_GROUP
   +--> ?C_INITSEG
 
 ?PR?MAIN?MAIN                                  -----    -----
+BL51 BANKED LINKER/LOCATER V6.22                                                      05/25/2025  17:45:10  PAGE 3
+
+
   +--> ?PR?PCA_INIT?PCA
   +--> ?PR?RELAY_INIT?RELAY
   +--> ?PR?WAVEGEN_INIT?WAVEGEN
-BL51 BANKED LINKER/LOCATER V6.22                                                      05/25/2025  15:11:47  PAGE 3
-
-
   +--> ?PR?WAVEGEN_START?WAVEGEN
   +--> ?PR?FLOWMETER_INIT?FLOWMETER
   +--> ?PR?PROCESSKEY?MAIN
@@ -132,6 +135,7 @@ SEGMENT                                          DATA_GROUP
   +--> ?PR?_FILLDISPBUF?PCA
 
 ?PR?PROCESSKEY?MAIN                            -----    -----
+  +--> ?PR?_PCA_SETTIMEEDITMODE?PCA
   +--> ?PR?RELAY_ON?RELAY
   +--> ?PR?FLOWMETER_RESET?FLOWMETER
   +--> ?PR?FLOWMETER_START?FLOWMETER
@@ -139,6 +143,8 @@ SEGMENT                                          DATA_GROUP
   +--> ?PR?FLOWMETER_UPDATEDISPLAY?FLOWMETER
   +--> ?PR?RELAY_OFF?RELAY
   +--> ?PR?FLOWMETER_STOP?FLOWMETER
+  +--> ?PR?_PCA_INCREASETIMEVALUE?PCA
+  +--> ?PR?PCA_EXITTIMEEDITMODE?PCA
   +--> ?PR?_DELAY_MS?PCA
 
 ?PR?FLOWMETER_UPDATEDISPLAY?FLOWMETER          -----    -----
@@ -155,6 +161,12 @@ SEGMENT                                          DATA_GROUP
 ?PR?UPDATETOTALFLOWDISPLAY?FLOWMETER           0021H    0009H
   +--> ?PR?_FILLCUSTOMDISPBUF?PCA
 
+?PR?_PCA_INCREASETIMEVALUE?PCA                 -----    -----
+  +--> ?PR?_FILLDISPBUF?PCA
+
+?PR?PCA_EXITTIMEEDITMODE?PCA                   -----    -----
+  +--> ?PR?_FILLDISPBUF?PCA
+
 
 
 SYMBOL TABLE OF MODULE:  .\Objects\Project (MAIN)
@@ -167,53 +179,95 @@ SYMBOL TABLE OF MODULE:  .\Objects\Project (MAIN)
   D:0080H         PUBLIC        P0
   D:00B0H         PUBLIC        P3
   B:00A8H.7       PUBLIC        EA
-  B:0020H.2       PUBLIC        keyPressed
-  C:0E0EH         PUBLIC        main
-  C:0D2EH         PUBLIC        processKey
-  D:001AH         PUBLIC        sysState
+BL51 BANKED LINKER/LOCATER V6.22                                                      05/25/2025  17:45:10  PAGE 4
+
+
+  B:0020H.0       PUBLIC        keyPressed
+  C:0F7BH         PUBLIC        main
+  C:0A92H         PUBLIC        processKey
+  B:0020H.1       PUBLIC        justEnteredSetMode
+  D:001CH         PUBLIC        sysState
   B:00B0H.3       PUBLIC        KEY
+  D:001DH         PUBLIC        keyPressTime
   -------         PROC          PROCESSKEY
-  C:0D2EH         LINE#         22
-  C:0D2EH         LINE#         23
-  C:0D34H         LINE#         24
-  C:0D36H         LINE#         27
-  C:0D3AH         LINE#         29
-  C:0D3DH         LINE#         30
-BL51 BANKED LINKER/LOCATER V6.22                                                      05/25/2025  15:11:47  PAGE 4
+  C:0A92H         LINE#         28
+  C:0A92H         LINE#         29
+  C:0A98H         LINE#         30
+  C:0A9AH         LINE#         31
+  C:0A9FH         LINE#         32
+  C:0AA0H         LINE#         33
+  C:0AA6H         LINE#         34
+  C:0AAEH         LINE#         37
+  C:0AC2H         LINE#         39
+  C:0AC5H         LINE#         41
+  C:0ACCH         LINE#         42
+  C:0ACEH         LINE#         43
+  C:0ACEH         LINE#         44
+  C:0ACFH         LINE#         45
+  C:0ADBH         LINE#         46
+  C:0AE6H         LINE#         47
+  C:0AF8H         LINE#         48
+  C:0AF8H         LINE#         50
+  C:0AFBH         LINE#         51
+  C:0AFEH         LINE#         54
+  C:0B01H         LINE#         55
+  C:0B04H         LINE#         56
+  C:0B09H         LINE#         59
+  C:0B0CH         LINE#         60
+  C:0B0EH         LINE#         62
+  C:0B0EH         LINE#         64
+  C:0B11H         LINE#         65
+  C:0B14H         LINE#         66
+  C:0B17H         LINE#         67
+  C:0B1CH         LINE#         68
+  C:0B1EH         LINE#         70
+  C:0B1EH         LINE#         72
+  C:0B20H         LINE#         73
+  C:0B22H         LINE#         75
+  C:0B22H         LINE#         77
+  C:0B24H         LINE#         78
+  C:0B26H         LINE#         80
+  C:0B26H         LINE#         82
+  C:0B2BH         LINE#         83
+  C:0B2DH         LINE#         84
+  C:0B2DH         LINE#         85
+  C:0B2DH         LINE#         86
+  C:0B38H         LINE#         87
+  C:0B3BH         LINE#         89
+  C:0B3DH         LINE#         90
+  C:0B3FH         LINE#         91
+  C:0B4DH         LINE#         93
+  C:0B4FH         LINE#         95
+  C:0B55H         LINE#         96
+BL51 BANKED LINKER/LOCATER V6.22                                                      05/25/2025  17:45:10  PAGE 5
 
 
-  C:0D40H         LINE#         33
-  C:0D43H         LINE#         34
-  C:0D46H         LINE#         35
-  C:0D4BH         LINE#         38
-  C:0D4EH         LINE#         39
-  C:0D50H         LINE#         41
-  C:0D53H         LINE#         42
-  C:0D56H         LINE#         43
-  C:0D59H         LINE#         44
-  C:0D5EH         LINE#         45
-  C:0D5EH         LINE#         47
-  C:0D5EH         LINE#         48
-  C:0D60H         LINE#         49
-  C:0D66H         LINE#         50
-  C:0D68H         LINE#         51
-  C:0D6FH         LINE#         52
-  C:0D6FH         LINE#         53
+  C:0B58H         LINE#         97
+  C:0B5BH         LINE#         98
+  C:0B5DH         LINE#         100
+  C:0B64H         LINE#         101
+  C:0B64H         LINE#         102
+  C:0B64H         LINE#         103
+  C:0B64H         LINE#         105
+  C:0B66H         LINE#         106
+  C:0B6BH         LINE#         107
+  C:0B71H         LINE#         108
+  C:0B71H         LINE#         109
   -------         ENDPROC       PROCESSKEY
   -------         PROC          MAIN
-  C:0E0EH         LINE#         55
-  C:0E0EH         LINE#         56
-  C:0E10H         LINE#         57
-  C:0E13H         LINE#         76
-  C:0E16H         LINE#         77
-  C:0E19H         LINE#         78
-  C:0E1CH         LINE#         79
-  C:0E1FH         LINE#         80
-  C:0E22H         LINE#         82
-  C:0E22H         LINE#         83
-  C:0E25H         LINE#         84
-  C:0E28H         LINE#         87
-  C:0E2FH         LINE#         88
+  C:0F7BH         LINE#         111
+  C:0F7BH         LINE#         112
+  C:0F7DH         LINE#         113
+  C:0F80H         LINE#         137
+  C:0F83H         LINE#         138
+  C:0F86H         LINE#         139
+  C:0F89H         LINE#         140
+  C:0F8CH         LINE#         141
+  C:0F8FH         LINE#         143
+  C:0F8FH         LINE#         144
+  C:0F92H         LINE#         145
+  C:0F95H         LINE#         148
+  C:0F9CH         LINE#         149
   -------         ENDPROC       MAIN
   -------         ENDMOD        MAIN
 
@@ -222,6 +276,7 @@ SYMBOL TABLE OF MODULE:  .\Objects\Project (MAIN)
   D:0090H         PUBLIC        P1
   D:00A0H         PUBLIC        P2
   C:0962H         PUBLIC        PCA_isr
+  C:1088H         PUBLIC        _PCA_SetTimeEditMode
   B:00A8H.7       PUBLIC        EA
   B:0090H.0       PUBLIC        PCA_LED
   D:00F9H         PUBLIC        CH
@@ -234,26 +289,30 @@ SYMBOL TABLE OF MODULE:  .\Objects\Project (MAIN)
   D:00EBH         PUBLIC        CCAP1L
   D:00DAH         PUBLIC        CCAPM0
   D:00DBH         PUBLIC        CCAPM1
+  D:000AH         SYMBOL        blinkState
   B:00A0H.0       PUBLIC        DATA
-  D:000AH         PUBLIC        value
+  D:000BH         PUBLIC        value
   D:00D9H         PUBLIC        CMOD
   D:00D8H         PUBLIC        CCON
-  C:0C7EH         PUBLIC        disp
-BL51 BANKED LINKER/LOCATER V6.22                                                      05/25/2025  15:11:47  PAGE 5
+  C:0DCDH         PUBLIC        disp
+  C:0F57H         PUBLIC        _FillCustomDispBuf
+  C:0F18H         PUBLIC        _FillDispBuf
+  D:000DH         SYMBOL        timeEditMode
+  D:000EH         PUBLIC        cnt
+BL51 BANKED LINKER/LOCATER V6.22                                                      05/25/2025  17:45:10  PAGE 6
 
 
-  C:0DEAH         PUBLIC        _FillCustomDispBuf
-  C:0D70H         PUBLIC        _FillDispBuf
-  D:000CH         PUBLIC        cnt
-  C:0CDEH         PUBLIC        PCA_Init
-  D:000DH         PUBLIC        value1
-  C:0E31H         PUBLIC        _delay_ms
-  C:0ED9H         SYMBOL        LED
-  D:000FH         PUBLIC        dispbuff
-  C:0EE5H         PUBLIC        Resetdispbuff
+  C:0E2DH         PUBLIC        PCA_Init
+  D:000FH         PUBLIC        value1
+  C:0F9EH         PUBLIC        _delay_ms
+  C:1052H         SYMBOL        LED
+  D:0011H         PUBLIC        dispbuff
+  C:105EH         PUBLIC        Resetdispbuff
   B:00A0H.2       PUBLIC        RCK
   B:00A0H.1       PUBLIC        SCK
-  D:0017H         PUBLIC        SysPara1
+  C:1046H         PUBLIC        PCA_ExitTimeEditMode
+  C:0E7DH         PUBLIC        _PCA_IncreaseTimeValue
+  D:0019H         PUBLIC        SysPara1
   B:00D8H.0       PUBLIC        CCF0
   B:00D8H.1       PUBLIC        CCF1
   -------         PROC          _DELAY_MS
@@ -262,32 +321,36 @@ SYMBOL TABLE OF MODULE:  .\Objects\Project (MAIN)
   D:0004H         SYMBOL        i
   D:0002H         SYMBOL        j
   -------         ENDDO         
-  C:0E31H         LINE#         57
-  C:0E31H         LINE#         59
-  C:0E3BH         LINE#         60
-  C:0E50H         LINE#         61
+  C:0F9EH         LINE#         57
+  C:0F9EH         LINE#         59
+  C:0FA8H         LINE#         60
+  C:0FBDH         LINE#         61
   -------         ENDPROC       _DELAY_MS
   -------         PROC          RESETDISPBUFF
   -------         DO            
   D:0007H         SYMBOL        i
   -------         ENDDO         
-  C:0EE5H         LINE#         84
-  C:0EE5H         LINE#         86
-  C:0EEEH         LINE#         87
+  C:105EH         LINE#         84
+  C:105EH         LINE#         86
+  C:1067H         LINE#         87
   -------         ENDPROC       RESETDISPBUFF
+  C:0F12H         SYMBOL        L?0069
+  -------         PROC          L?0068
+  -------         ENDPROC       L?0068
+  C:0F12H         SYMBOL        L?0069
   -------         PROC          _FILLDISPBUF
   D:0006H         SYMBOL        hour
   D:0005H         SYMBOL        min
   D:0003H         SYMBOL        sec
-  C:0D70H         LINE#         89
-  C:0D72H         LINE#         90
-  C:0D75H         LINE#         92
-  C:0D82H         LINE#         93
-  C:0D8AH         LINE#         96
-  C:0D94H         LINE#         97
-  C:0D9CH         LINE#         100
-  C:0DA6H         LINE#         101
-  C:0DAEH         LINE#         102
+  C:0F18H         LINE#         89
+  C:0F1AH         LINE#         90
+  C:0F1DH         LINE#         92
+  C:0F2AH         LINE#         93
+  C:0F32H         LINE#         96
+  C:0F3CH         LINE#         97
+  C:0F44H         LINE#         100
+  C:0F4EH         LINE#         101
+  C:0F56H         LINE#         102
   -------         ENDPROC       _FILLDISPBUF
   -------         PROC          _FILLCUSTOMDISPBUF
   D:0006H         SYMBOL        val1
@@ -296,18 +359,18 @@ SYMBOL TABLE OF MODULE:  .\Objects\Project (MAIN)
   D:002DH         SYMBOL        val4
   D:002EH         SYMBOL        val5
   D:002FH         SYMBOL        val6
-  C:0DEAH         LINE#         105
-  C:0DECH         LINE#         106
-  C:0DEFH         LINE#         109
-BL51 BANKED LINKER/LOCATER V6.22                                                      05/25/2025  15:11:47  PAGE 6
+BL51 BANKED LINKER/LOCATER V6.22                                                      05/25/2025  17:45:10  PAGE 7
 
 
-  C:0DF6H         LINE#         110
-  C:0DFAH         LINE#         111
-  C:0DFEH         LINE#         112
-  C:0E03H         LINE#         113
-  C:0E08H         LINE#         114
-  C:0E0DH         LINE#         115
+  C:0F57H         LINE#         105
+  C:0F59H         LINE#         106
+  C:0F5CH         LINE#         109
+  C:0F63H         LINE#         110
+  C:0F67H         LINE#         111
+  C:0F6BH         LINE#         112
+  C:0F70H         LINE#         113
+  C:0F75H         LINE#         114
+  C:0F7AH         LINE#         115
   -------         ENDPROC       _FILLCUSTOMDISPBUF
   -------         PROC          DISP
   -------         DO            
@@ -316,132 +379,203 @@ SYMBOL TABLE OF MODULE:  .\Objects\Project (MAIN)
   D:0009H         SYMBOL        mark
   D:0007H         SYMBOL        tmpdata
   -------         ENDDO         
-  C:0C7EH         LINE#         117
-  C:0C7EH         LINE#         124
-  C:0C80H         LINE#         127
-  C:0C84H         LINE#         130
-  C:0C86H         LINE#         132
-  C:0C90H         LINE#         133
-  C:0C92H         LINE#         134
-  C:0C94H         LINE#         135
-  C:0C98H         LINE#         136
-  C:0C9CH         LINE#         139
-  C:0CA3H         LINE#         140
-  C:0CA5H         LINE#         142
-  C:0CAFH         LINE#         143
-  C:0CB1H         LINE#         144
-  C:0CB3H         LINE#         145
-  C:0CB7H         LINE#         146
-  C:0CBBH         LINE#         149
-  C:0CBDH         LINE#         150
-  C:0CBFH         LINE#         153
-  C:0CC1H         LINE#         156
-  C:0CC8H         LINE#         157
-  C:0CD8H         LINE#         158
-  C:0CDDH         LINE#         159
+  C:0DCDH         LINE#         117
+  C:0DCDH         LINE#         124
+  C:0DCFH         LINE#         127
+  C:0DD3H         LINE#         130
+  C:0DD5H         LINE#         132
+  C:0DDFH         LINE#         133
+  C:0DE1H         LINE#         134
+  C:0DE3H         LINE#         135
+  C:0DE7H         LINE#         136
+  C:0DEBH         LINE#         139
+  C:0DF2H         LINE#         140
+  C:0DF4H         LINE#         142
+  C:0DFEH         LINE#         143
+  C:0E00H         LINE#         144
+  C:0E02H         LINE#         145
+  C:0E06H         LINE#         146
+  C:0E0AH         LINE#         149
+  C:0E0CH         LINE#         150
+  C:0E0EH         LINE#         153
+  C:0E10H         LINE#         156
+  C:0E17H         LINE#         157
+  C:0E27H         LINE#         158
+  C:0E2CH         LINE#         159
   -------         ENDPROC       DISP
+  -------         PROC          _PCA_SETTIMEEDITMODE
+  D:0007H         SYMBOL        position
+  C:1088H         LINE#         166
+  C:1088H         LINE#         167
+  C:108AH         LINE#         168
+  C:108DH         LINE#         169
+  -------         ENDPROC       _PCA_SETTIMEEDITMODE
+  -------         PROC          PCA_EXITTIMEEDITMODE
+  C:1046H         LINE#         172
+  C:1046H         LINE#         173
+  C:1049H         LINE#         174
+  -------         ENDPROC       PCA_EXITTIMEEDITMODE
+  -------         PROC          _PCA_INCREASETIMEVALUE
+  D:0007H         SYMBOL        position
+  C:0E7DH         LINE#         178
+  C:0E7DH         LINE#         179
+BL51 BANKED LINKER/LOCATER V6.22                                                      05/25/2025  17:45:10  PAGE 8
+
+
+  C:0E89H         LINE#         180
+  C:0E89H         LINE#         181
+  C:0E9AH         LINE#         182
+  C:0E9CH         LINE#         183
+  C:0E9CH         LINE#         184
+  C:0EADH         LINE#         185
+  C:0EAFH         LINE#         186
+  C:0EAFH         LINE#         187
+  C:0EC0H         LINE#         188
+  C:0EC0H         LINE#         189
+  C:0EC0H         LINE#         190
+  -------         ENDPROC       _PCA_INCREASETIMEVALUE
   -------         PROC          PCA_ISR
-  C:0962H         LINE#         161
-  C:097FH         LINE#         163
-  C:0982H         LINE#         164
-  C:0984H         LINE#         165
-  C:0987H         LINE#         166
-  C:098BH         LINE#         167
-  C:0997H         LINE#         168
-  C:099AH         LINE#         169
-  C:099AH         LINE#         171
-  C:099DH         LINE#         172
-  C:099FH         LINE#         173
-  C:09A2H         LINE#         174
-  C:09A6H         LINE#         175
-  C:09B1H         LINE#         176
-  C:09B3H         LINE#         178
-  C:09BAH         LINE#         179
-  C:09BDH         LINE#         180
-  C:09BFH         LINE#         183
-BL51 BANKED LINKER/LOCATER V6.22                                                      05/25/2025  15:11:47  PAGE 7
+  C:0962H         LINE#         194
+  C:097FH         LINE#         196
+  C:0982H         LINE#         197
+  C:0984H         LINE#         198
+  C:0987H         LINE#         199
+  C:098BH         LINE#         200
+  C:0997H         LINE#         201
+  C:099AH         LINE#         202
+  C:099AH         LINE#         204
+  C:09A0H         LINE#         205
+  C:09A2H         LINE#         206
+  C:09A5H         LINE#         207
+  C:09A9H         LINE#         208
+  C:09B4H         LINE#         209
+  C:09B6H         LINE#         211
+  C:09BDH         LINE#         212
+  C:09C0H         LINE#         213
+  C:09C2H         LINE#         216
+  C:09C5H         LINE#         219
+  C:09C7H         LINE#         220
+  C:09CEH         LINE#         221
+  C:09D1H         LINE#         222
+  C:09D3H         LINE#         223
+  C:09D9H         LINE#         224
+  C:09DCH         LINE#         225
+  C:09DEH         LINE#         226
+  C:09E4H         LINE#         227
+  C:09E7H         LINE#         228
+  C:09E7H         LINE#         229
+  C:09E7H         LINE#         232
+  C:09EEH         LINE#         233
+  C:09F8H         LINE#         234
+  C:09FBH         LINE#         237
+  C:09FFH         LINE#         238
+  C:0A0CH         LINE#         239
+  C:0A0CH         LINE#         240
+  C:0A0CH         LINE#         241
+  C:0A0CH         LINE#         242
+  C:0A0EH         LINE#         243
+  C:0A0EH         LINE#         244
+  C:0A0EH         LINE#         245
+  C:0A0EH         LINE#         246
+  C:0A10H         LINE#         247
+  C:0A10H         LINE#         248
+BL51 BANKED LINKER/LOCATER V6.22                                                      05/25/2025  17:45:10  PAGE 9
 
 
-  C:09C2H         LINE#         186
-  C:09C4H         LINE#         187
-  C:09CBH         LINE#         188
-  C:09CEH         LINE#         189
-  C:09D0H         LINE#         190
-  C:09D6H         LINE#         191
-  C:09D9H         LINE#         192
-  C:09DBH         LINE#         193
-  C:09E1H         LINE#         194
-  C:09E4H         LINE#         195
-  C:09E4H         LINE#         196
-  C:09E4H         LINE#         199
-  C:09EAH         LINE#         200
-  C:09F3H         LINE#         201
-  C:09F3H         LINE#         202
-  C:09F5H         LINE#         203
-  C:0A05H         LINE#         205
-  C:0A08H         LINE#         206
-  C:0A08H         LINE#         207
-  C:0A08H         LINE#         208
+  C:0A10H         LINE#         249
+  C:0A10H         LINE#         250
+  C:0A12H         LINE#         251
+  C:0A12H         LINE#         252
+  C:0A12H         LINE#         253
+  C:0A12H         LINE#         256
+  C:0A18H         LINE#         257
+  C:0A1BH         LINE#         258
+  C:0A1BH         LINE#         259
+  C:0A1DH         LINE#         260
+  C:0A2DH         LINE#         262
+  C:0A30H         LINE#         263
+  C:0A32H         LINE#         264
+  C:0A43H         LINE#         266
+  C:0A4DH         LINE#         267
+  C:0A50H         LINE#         270
+  C:0A54H         LINE#         271
+  C:0A61H         LINE#         272
+  C:0A61H         LINE#         273
+  C:0A64H         LINE#         274
+  C:0A67H         LINE#         275
+  C:0A69H         LINE#         276
+  C:0A69H         LINE#         277
+  C:0A6CH         LINE#         278
+  C:0A6FH         LINE#         279
+  C:0A71H         LINE#         280
+  C:0A71H         LINE#         281
+  C:0A74H         LINE#         282
+  C:0A77H         LINE#         283
+  C:0A77H         LINE#         284
+  C:0A77H         LINE#         285
+  C:0A77H         LINE#         286
+  C:0A77H         LINE#         287
+  C:0A77H         LINE#         288
   -------         ENDPROC       PCA_ISR
   -------         PROC          PCA_INIT
-  C:0CDEH         LINE#         210
-  C:0CDEH         LINE#         211
-  C:0CDEH         LINE#         212
-  C:0CE1H         LINE#         216
-  C:0CE3H         LINE#         217
-  C:0CE5H         LINE#         218
-  C:0CE7H         LINE#         222
-  C:0CEDH         LINE#         223
-  C:0CF0H         LINE#         224
-  C:0CF4H         LINE#         225
-  C:0D00H         LINE#         226
-  C:0D03H         LINE#         230
-  C:0D09H         LINE#         231
-  C:0D0CH         LINE#         232
-  C:0D10H         LINE#         233
-  C:0D1BH         LINE#         234
-  C:0D1EH         LINE#         237
-  C:0D20H         LINE#         238
-  C:0D22H         LINE#         239
-  C:0D25H         LINE#         242
+  C:0E2DH         LINE#         290
+  C:0E2DH         LINE#         291
+  C:0E2DH         LINE#         292
+  C:0E30H         LINE#         296
+  C:0E32H         LINE#         297
+  C:0E34H         LINE#         298
+  C:0E36H         LINE#         302
+  C:0E3CH         LINE#         303
+  C:0E3FH         LINE#         304
+  C:0E43H         LINE#         305
+  C:0E4FH         LINE#         306
+  C:0E52H         LINE#         310
+  C:0E58H         LINE#         311
+  C:0E5BH         LINE#         312
+  C:0E5FH         LINE#         313
+  C:0E6AH         LINE#         314
+  C:0E6DH         LINE#         317
+  C:0E6FH         LINE#         318
+  C:0E71H         LINE#         319
+  C:0E74H         LINE#         322
   -------         ENDPROC       PCA_INIT
+BL51 BANKED LINKER/LOCATER V6.22                                                      05/25/2025  17:45:10  PAGE 10
+
+
   -------         ENDMOD        PCA
 
   -------         MODULE        RELAY
   C:0000H         SYMBOL        _ICE_DUMMY_
   D:0090H         PUBLIC        P1
   D:00B0H         PUBLIC        P3
-  C:0F0FH         PUBLIC        Relay_GetState
+  C:108EH         PUBLIC        Relay_GetState
   B:0090H.1       PUBLIC        RELAY_CTRL
-  C:0F25H         PUBLIC        Relay_On
+  C:10A4H         PUBLIC        Relay_On
   B:0090H.0       PUBLIC        RELAY_NODE1
   B:00B0H.2       PUBLIC        RELAY_NODE2
-  C:0F01H         PUBLIC        Relay_Init
-  C:0F28H         PUBLIC        Relay_Off
+  C:107AH         PUBLIC        Relay_Init
+  C:10A7H         PUBLIC        Relay_Off
   -------         PROC          RELAY_INIT
-BL51 BANKED LINKER/LOCATER V6.22                                                      05/25/2025  15:11:47  PAGE 8
-
-
-  C:0F01H         LINE#         10
-  C:0F01H         LINE#         11
-  C:0F03H         LINE#         12
-  C:0F05H         LINE#         13
-  C:0F07H         LINE#         26
+  C:107AH         LINE#         10
+  C:107AH         LINE#         11
+  C:107CH         LINE#         12
+  C:107EH         LINE#         13
+  C:1080H         LINE#         26
   -------         ENDPROC       RELAY_INIT
   -------         PROC          RELAY_ON
-  C:0F25H         LINE#         28
-  C:0F25H         LINE#         29
-  C:0F27H         LINE#         30
+  C:10A4H         LINE#         28
+  C:10A4H         LINE#         29
+  C:10A6H         LINE#         30
   -------         ENDPROC       RELAY_ON
   -------         PROC          RELAY_OFF
-  C:0F28H         LINE#         32
-  C:0F28H         LINE#         33
-  C:0F2AH         LINE#         34
+  C:10A7H         LINE#         32
+  C:10A7H         LINE#         33
+  C:10A9H         LINE#         34
   -------         ENDPROC       RELAY_OFF
   -------         PROC          RELAY_GETSTATE
-  C:0F0FH         LINE#         36
-  C:0F0FH         LINE#         37
-  C:0F14H         LINE#         38
+  C:108EH         LINE#         36
+  C:108EH         LINE#         37
+  C:1093H         LINE#         38
   -------         ENDPROC       RELAY_GETSTATE
   -------         ENDMOD        RELAY
 
@@ -449,126 +583,126 @@ SYMBOL TABLE OF MODULE:  .\Objects\Project (MAIN)
   C:0000H         SYMBOL        _ICE_DUMMY_
   D:0090H         PUBLIC        P1
   B:0090H.0       PUBLIC        WAVE_OUT
-  C:0EBEH         PUBLIC        WaveGen_Start
-  C:0E97H         PUBLIC        WaveGen_Init
+  C:102BH         PUBLIC        WaveGen_Start
+  C:1004H         PUBLIC        WaveGen_Init
   D:0089H         PUBLIC        TMOD
-  C:0F15H         PUBLIC        WaveGen_GetState
-  C:0F08H         PUBLIC        WaveGen_Stop
-  B:0020H.3       SYMBOL        isRunning
+  C:1094H         PUBLIC        WaveGen_GetState
+  C:1081H         PUBLIC        WaveGen_Stop
+  B:0020H.4       SYMBOL        isRunning
   B:00A8H.1       PUBLIC        ET0
   D:008CH         PUBLIC        TH0
   D:008AH         PUBLIC        TL0
-  C:0EEFH         PUBLIC        T0_ISR
+  C:1068H         PUBLIC        T0_ISR
   B:0088H.4       PUBLIC        TR0
   -------         PROC          WAVEGEN_INIT
-  C:0E97H         LINE#         20
-  C:0E97H         LINE#         21
-  C:0E9AH         LINE#         22
-  C:0E9DH         LINE#         23
-  C:0EA0H         LINE#         24
-  C:0EA3H         LINE#         25
-  C:0EA5H         LINE#         26
-  C:0EA7H         LINE#         27
-  C:0EA9H         LINE#         28
-  C:0EABH         LINE#         36
+  C:1004H         LINE#         20
+  C:1004H         LINE#         21
+  C:1007H         LINE#         22
+  C:100AH         LINE#         23
+BL51 BANKED LINKER/LOCATER V6.22                                                      05/25/2025  17:45:10  PAGE 11
+
+
+  C:100DH         LINE#         24
+  C:1010H         LINE#         25
+  C:1012H         LINE#         26
+  C:1014H         LINE#         27
+  C:1016H         LINE#         28
+  C:1018H         LINE#         36
   -------         ENDPROC       WAVEGEN_INIT
   -------         PROC          WAVEGEN_START
-  C:0EBEH         LINE#         39
-  C:0EBEH         LINE#         40
-  C:0EC1H         LINE#         41
-  C:0EC4H         LINE#         42
-  C:0EC7H         LINE#         43
-  C:0EC9H         LINE#         44
-BL51 BANKED LINKER/LOCATER V6.22                                                      05/25/2025  15:11:47  PAGE 9
-
-
-  C:0ECBH         LINE#         45
-  C:0ECBH         LINE#         46
+  C:102BH         LINE#         39
+  C:102BH         LINE#         40
+  C:102EH         LINE#         41
+  C:1031H         LINE#         42
+  C:1034H         LINE#         43
+  C:1036H         LINE#         44
+  C:1038H         LINE#         45
+  C:1038H         LINE#         46
   -------         ENDPROC       WAVEGEN_START
   -------         PROC          WAVEGEN_STOP
-  C:0F08H         LINE#         49
-  C:0F08H         LINE#         50
-  C:0F0AH         LINE#         51
-  C:0F0CH         LINE#         52
-  C:0F0EH         LINE#         53
+  C:1081H         LINE#         49
+  C:1081H         LINE#         50
+  C:1083H         LINE#         51
+  C:1085H         LINE#         52
+  C:1087H         LINE#         53
   -------         ENDPROC       WAVEGEN_STOP
   -------         PROC          WAVEGEN_GETSTATE
-  C:0F15H         LINE#         56
-  C:0F15H         LINE#         57
-  C:0F1AH         LINE#         58
+  C:1094H         LINE#         56
+  C:1094H         LINE#         57
+  C:1099H         LINE#         58
   -------         ENDPROC       WAVEGEN_GETSTATE
   -------         PROC          T0_ISR
-  C:0EEFH         LINE#         61
-  C:0EEFH         LINE#         63
-  C:0EF2H         LINE#         64
-  C:0EF5H         LINE#         67
-  C:0EF7H         LINE#         68
+  C:1068H         LINE#         61
+  C:1068H         LINE#         63
+  C:106BH         LINE#         64
+  C:106EH         LINE#         67
+  C:1070H         LINE#         68
   -------         ENDPROC       T0_ISR
   -------         ENDMOD        WAVEGEN
 
   -------         MODULE        FLOWMETER
   C:0000H         SYMBOL        _ICE_DUMMY_
-  C:0EACH         PUBLIC        FlowMeter_Reset
-  C:0AD5H         PUBLIC        FlowMeter_CalcFlow
-  C:0E6BH         PUBLIC        FlowMeter_Start
-  C:0E51H         PUBLIC        FlowMeter_Init
-  C:0F20H         PUBLIC        FlowMeter_GetCurrentFlow
+  C:1019H         PUBLIC        FlowMeter_Reset
+  C:0C24H         PUBLIC        FlowMeter_CalcFlow
+  C:0FD8H         PUBLIC        FlowMeter_Start
+  C:0FBEH         PUBLIC        FlowMeter_Init
+  C:109FH         PUBLIC        FlowMeter_GetCurrentFlow
   D:0032H         SYMBOL        currentFlow
-  C:0F2BH         PUBLIC        FlowMeter_Stop
-  C:0F34H         PUBLIC        FlowMeter_GetMode
-  C:0F1BH         PUBLIC        _FlowMeter_SetMode
+  C:10AAH         PUBLIC        FlowMeter_Stop
+  C:10B3H         PUBLIC        FlowMeter_GetMode
+  C:109AH         PUBLIC        _FlowMeter_SetMode
   D:0034H         SYMBOL        pulseCount
   D:0036H         SYMBOL        initialDisplayDelay
-  C:0E81H         PUBLIC        FlowMeter_UpdateDisplay
-  C:0F2EH         PUBLIC        FlowMeter_DisplayCurrent
-  C:0EF8H         PUBLIC        FlowMeter_GetTotalFlow
+  C:0FEEH         PUBLIC        FlowMeter_UpdateDisplay
+  C:10ADH         PUBLIC        FlowMeter_DisplayCurrent
+  C:1071H         PUBLIC        FlowMeter_GetTotalFlow
   D:0037H         SYMBOL        totalFlow
   D:003BH         SYMBOL        flowMode
-  B:0020H.0       SYMBOL        isRunning
-  C:0C10H         PUBLIC        UpdateCurrentFlowDisplay
+  B:0020H.2       SYMBOL        isRunning
+BL51 BANKED LINKER/LOCATER V6.22                                                      05/25/2025  17:45:10  PAGE 12
+
+
+  C:0D5FH         PUBLIC        UpdateCurrentFlowDisplay
   B:00A8H.0       PUBLIC        EX0
   B:0088H.0       PUBLIC        IT0
-  C:0F31H         PUBLIC        FlowMeter_DisplayTotal
-  B:0020H.1       SYMBOL        needUpdateDisplay
-  C:0A23H         PUBLIC        UpdateTotalFlowDisplay
-  C:0ECCH         PUBLIC        INT0_ISR
+  C:10B0H         PUBLIC        FlowMeter_DisplayTotal
+  B:0020H.3       SYMBOL        needUpdateDisplay
+  C:0B72H         PUBLIC        UpdateTotalFlowDisplay
+  C:1039H         PUBLIC        INT0_ISR
   -------         PROC          FLOWMETER_INIT
-  C:0E51H         LINE#         19
-  C:0E51H         LINE#         20
-  C:0E53H         LINE#         21
-  C:0E55H         LINE#         22
-  C:0E5AH         LINE#         23
-  C:0E5EH         LINE#         24
-BL51 BANKED LINKER/LOCATER V6.22                                                      05/25/2025  15:11:47  PAGE 10
-
-
-  C:0E66H         LINE#         25
-  C:0E68H         LINE#         26
-  C:0E6AH         LINE#         37
+  C:0FBEH         LINE#         19
+  C:0FBEH         LINE#         20
+  C:0FC0H         LINE#         21
+  C:0FC2H         LINE#         22
+  C:0FC7H         LINE#         23
+  C:0FCBH         LINE#         24
+  C:0FD3H         LINE#         25
+  C:0FD5H         LINE#         26
+  C:0FD7H         LINE#         37
   -------         ENDPROC       FLOWMETER_INIT
   -------         PROC          FLOWMETER_START
-  C:0E6BH         LINE#         40
-  C:0E6BH         LINE#         41
-  C:0E6EH         LINE#         42
-  C:0E73H         LINE#         43
-  C:0E75H         LINE#         44
-  C:0E77H         LINE#         47
-  C:0E7BH         LINE#         50
-  C:0E7DH         LINE#         51
-  C:0E80H         LINE#         52
-  C:0E80H         LINE#         53
+  C:0FD8H         LINE#         40
+  C:0FD8H         LINE#         41
+  C:0FDBH         LINE#         42
+  C:0FE0H         LINE#         43
+  C:0FE2H         LINE#         44
+  C:0FE4H         LINE#         47
+  C:0FE8H         LINE#         50
+  C:0FEAH         LINE#         51
+  C:0FEDH         LINE#         52
+  C:0FEDH         LINE#         53
   -------         ENDPROC       FLOWMETER_START
   -------         PROC          FLOWMETER_STOP
-  C:0F2BH         LINE#         56
-  C:0F2BH         LINE#         57
-  C:0F2DH         LINE#         59
+  C:10AAH         LINE#         56
+  C:10AAH         LINE#         57
+  C:10ACH         LINE#         59
   -------         ENDPROC       FLOWMETER_STOP
   -------         PROC          FLOWMETER_RESET
-  C:0EACH         LINE#         62
-  C:0EACH         LINE#         63
-  C:0EB1H         LINE#         64
-  C:0EB5H         LINE#         65
-  C:0EBDH         LINE#         66
+  C:1019H         LINE#         62
+  C:1019H         LINE#         63
+  C:101EH         LINE#         64
+  C:1022H         LINE#         65
+  C:102AH         LINE#         66
   -------         ENDPROC       FLOWMETER_RESET
   -------         PROC          FLOWMETER_CALCFLOW
   -------         DO            
@@ -577,54 +711,54 @@ SYMBOL TABLE OF MODULE:  .\Objects\Project (MAIN)
   D:0030H         SYMBOL        displayToggle
   -------         ENDDO         
   -------         ENDDO         
-  C:0AD5H         LINE#         90
-  C:0AD5H         LINE#         93
-  C:0ADCH         LINE#         94
-  C:0ADFH         LINE#         95
-  C:0ADFH         LINE#         97
-  C:0AE1H         LINE#         98
-  C:0AE1H         LINE#         99
-  C:0AE1H         LINE#         102
-  C:0AEAH         LINE#         103
-  C:0AEDH         LINE#         105
-  C:0AF0H         LINE#         107
-  C:0AFBH         LINE#         109
-  C:0B0AH         LINE#         112
-  C:0B15H         LINE#         113
-  C:0B17H         LINE#         115
-  C:0B1DH         LINE#         116
-  C:0B1DH         LINE#         119
-  C:0B28H         LINE#         120
-  C:0B47H         LINE#         121
-  C:0B49H         LINE#         123
-  C:0B5EH         LINE#         124
-  C:0B5EH         LINE#         125
-BL51 BANKED LINKER/LOCATER V6.22                                                      05/25/2025  15:11:47  PAGE 11
+  C:0C24H         LINE#         90
+  C:0C24H         LINE#         93
+  C:0C2BH         LINE#         94
+  C:0C2EH         LINE#         95
+  C:0C2EH         LINE#         97
+  C:0C30H         LINE#         98
+  C:0C30H         LINE#         99
+  C:0C30H         LINE#         102
+BL51 BANKED LINKER/LOCATER V6.22                                                      05/25/2025  17:45:10  PAGE 13
 
 
-  C:0B5EH         LINE#         128
-  C:0B63H         LINE#         131
-  C:0B65H         LINE#         132
-  C:0B65H         LINE#         135
-  C:0B68H         LINE#         139
-  C:0B71H         LINE#         140
-  C:0B74H         LINE#         143
-  C:0B81H         LINE#         146
-  C:0B83H         LINE#         147
-  C:0B83H         LINE#         148
-  C:0B83H         LINE#         149
+  C:0C39H         LINE#         103
+  C:0C3CH         LINE#         105
+  C:0C3FH         LINE#         107
+  C:0C4AH         LINE#         109
+  C:0C59H         LINE#         112
+  C:0C64H         LINE#         113
+  C:0C66H         LINE#         115
+  C:0C6CH         LINE#         116
+  C:0C6CH         LINE#         119
+  C:0C77H         LINE#         120
+  C:0C96H         LINE#         121
+  C:0C98H         LINE#         122
+  C:0CADH         LINE#         123
+  C:0CADH         LINE#         124
+  C:0CADH         LINE#         127
+  C:0CB2H         LINE#         130
+  C:0CB4H         LINE#         131
+  C:0CB4H         LINE#         134
+  C:0CB7H         LINE#         138
+  C:0CC0H         LINE#         139
+  C:0CC3H         LINE#         142
+  C:0CD0H         LINE#         145
+  C:0CD2H         LINE#         146
+  C:0CD2H         LINE#         147
+  C:0CD2H         LINE#         148
   -------         ENDPROC       FLOWMETER_CALCFLOW
   -------         PROC          FLOWMETER_UPDATEDISPLAY
-  C:0E81H         LINE#         152
-  C:0E81H         LINE#         153
-  C:0E84H         LINE#         154
-  C:0E86H         LINE#         157
-  C:0E8BH         LINE#         158
-  C:0E8EH         LINE#         159
-  C:0E93H         LINE#         160
-  C:0E96H         LINE#         161
-  C:0E96H         LINE#         162
-  C:0E96H         LINE#         163
+  C:0FEEH         LINE#         151
+  C:0FEEH         LINE#         152
+  C:0FF1H         LINE#         153
+  C:0FF3H         LINE#         156
+  C:0FF8H         LINE#         157
+  C:0FFBH         LINE#         158
+  C:1000H         LINE#         159
+  C:1003H         LINE#         160
+  C:1003H         LINE#         161
+  C:1003H         LINE#         162
   -------         ENDPROC       FLOWMETER_UPDATEDISPLAY
   -------         PROC          UPDATECURRENTFLOWDISPLAY
   -------         DO            
@@ -635,16 +769,19 @@ SYMBOL TABLE OF MODULE:  .\Objects\Project (MAIN)
   D:0002H         SYMBOL        val5
   D:0007H         SYMBOL        val6
   -------         ENDDO         
-  C:0C10H         LINE#         166
-  C:0C10H         LINE#         172
-  C:0C13H         LINE#         173
-  C:0C27H         LINE#         174
-  C:0C3BH         LINE#         175
-  C:0C4FH         LINE#         176
-  C:0C63H         LINE#         177
-  C:0C70H         LINE#         180
+  C:0D5FH         LINE#         165
+  C:0D5FH         LINE#         171
+  C:0D62H         LINE#         172
+  C:0D76H         LINE#         173
+  C:0D8AH         LINE#         174
+  C:0D9EH         LINE#         175
+  C:0DB2H         LINE#         176
+  C:0DBFH         LINE#         179
   -------         ENDPROC       UPDATECURRENTFLOWDISPLAY
   -------         PROC          UPDATETOTALFLOWDISPLAY
+BL51 BANKED LINKER/LOCATER V6.22                                                      05/25/2025  17:45:10  PAGE 14
+
+
   -------         DO            
   D:0021H         SYMBOL        val1
   D:0022H         SYMBOL        val2
@@ -654,57 +791,57 @@ SYMBOL TABLE OF MODULE:  .\Objects\Project (MAIN)
   D:0007H         SYMBOL        val6
   D:0026H         SYMBOL        flow_liter
   -------         ENDDO         
-  C:0A23H         LINE#         184
-  C:0A23H         LINE#         188
-  C:0A3DH         LINE#         191
-  C:0A40H         LINE#         192
-  C:0A57H         LINE#         193
-BL51 BANKED LINKER/LOCATER V6.22                                                      05/25/2025  15:11:47  PAGE 12
-
-
-  C:0A76H         LINE#         194
-  C:0A94H         LINE#         195
-  C:0AB2H         LINE#         196
-  C:0AC5H         LINE#         199
+  C:0B72H         LINE#         183
+  C:0B72H         LINE#         187
+  C:0B8CH         LINE#         190
+  C:0B8FH         LINE#         191
+  C:0BA6H         LINE#         192
+  C:0BC5H         LINE#         193
+  C:0BE3H         LINE#         194
+  C:0C01H         LINE#         195
+  C:0C14H         LINE#         198
   -------         ENDPROC       UPDATETOTALFLOWDISPLAY
   -------         PROC          FLOWMETER_DISPLAYCURRENT
-  C:0F2EH         LINE#         203
-  C:0F2EH         LINE#         204
+  C:10ADH         LINE#         202
+  C:10ADH         LINE#         203
   -------         ENDPROC       FLOWMETER_DISPLAYCURRENT
   -------         PROC          FLOWMETER_DISPLAYTOTAL
-  C:0F31H         LINE#         208
-  C:0F31H         LINE#         209
+  C:10B0H         LINE#         207
+  C:10B0H         LINE#         208
   -------         ENDPROC       FLOWMETER_DISPLAYTOTAL
   -------         PROC          _FLOWMETER_SETMODE
   D:0007H         SYMBOL        mode
-  C:0F1BH         LINE#         213
-  C:0F1BH         LINE#         214
-  C:0F1DH         LINE#         217
-  C:0F1FH         LINE#         218
+  C:109AH         LINE#         212
+  C:109AH         LINE#         213
+  C:109CH         LINE#         216
+  C:109EH         LINE#         217
   -------         ENDPROC       _FLOWMETER_SETMODE
   -------         PROC          FLOWMETER_GETMODE
-  C:0F34H         LINE#         221
-  C:0F34H         LINE#         222
-  C:0F36H         LINE#         223
+  C:10B3H         LINE#         220
+  C:10B3H         LINE#         221
+  C:10B5H         LINE#         222
   -------         ENDPROC       FLOWMETER_GETMODE
   -------         PROC          FLOWMETER_GETCURRENTFLOW
-  C:0F20H         LINE#         226
-  C:0F20H         LINE#         227
-  C:0F24H         LINE#         228
+  C:109FH         LINE#         225
+  C:109FH         LINE#         226
+  C:10A3H         LINE#         227
   -------         ENDPROC       FLOWMETER_GETCURRENTFLOW
   -------         PROC          FLOWMETER_GETTOTALFLOW
-  C:0EF8H         LINE#         231
-  C:0EF8H         LINE#         232
-  C:0F00H         LINE#         233
+  C:1071H         LINE#         230
+  C:1071H         LINE#         231
+  C:1079H         LINE#         232
   -------         ENDPROC       FLOWMETER_GETTOTALFLOW
   -------         PROC          INT0_ISR
-  C:0ECCH         LINE#         236
-  C:0ECEH         LINE#         237
-  C:0ED6H         LINE#         238
+  C:1039H         LINE#         235
+  C:103BH         LINE#         236
+  C:1043H         LINE#         237
   -------         ENDPROC       INT0_ISR
   -------         ENDMOD        FLOWMETER
 
   -------         MODULE        ?C?IMUL
+BL51 BANKED LINKER/LOCATER V6.22                                                      05/25/2025  17:45:10  PAGE 15
+
+
   C:0800H         PUBLIC        ?C?IMUL
   -------         ENDMOD        ?C?IMUL
 
@@ -719,9 +856,6 @@ SYMBOL TABLE OF MODULE:  .\Objects\Project (MAIN)
   -------         MODULE        ?C?LIMUL
   C:0935H         PUBLIC        ?C?LIMUL
   -------         ENDMOD        ?C?LIMUL
-BL51 BANKED LINKER/LOCATER V6.22                                                      05/25/2025  15:11:47  PAGE 13
-
-
 
 *** WARNING L16: UNCALLED SEGMENT, IGNORED FOR OVERLAY PROCESS
     SEGMENT: ?PR?RELAY_GETSTATE?RELAY
@@ -745,8 +879,8 @@ SYMBOL TABLE OF MODULE:  .\Objects\Project (MAIN)
     SEGMENT: ?PR?FLOWMETER_GETTOTALFLOW?FLOWMETER
 
 ******************************************************************************
-* RESTRICTED VERSION WITH 0800H BYTE CODE SIZE LIMIT; USED: 0551H BYTE (66%) *
+* RESTRICTED VERSION WITH 0800H BYTE CODE SIZE LIMIT; USED: 06D0H BYTE (85%) *
 ******************************************************************************
 
-Program Size: data=55.4 xdata=0 code=1859
+Program Size: data=59.5 xdata=0 code=2242
 LINK/LOCATE RUN COMPLETE.  7 WARNING(S),  0 ERROR(S)

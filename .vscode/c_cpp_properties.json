@@ -4,7 +4,7 @@
             "name": "Target 1",
             "includePath": [
                 "D:\\Keil5\\C51\\INC",
-                "d:\\51_Lecture\\课程设计"
+                "d:\\51_Lecture\\课程设计\\51_FlowerWateringSimulator"
             ],
             "defines": [
                 "__C51__",
