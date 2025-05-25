@@ -1,4 +1,4 @@
-C51 COMPILER V9.54   MAIN                                                                  05/25/2025 11:04:37 PAGE 1   
+C51 COMPILER V9.54   MAIN                                                                  05/25/2025 12:58:35 PAGE 1   
 
 
 C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
@@ -10,144 +10,35 @@ line level    source
 
    1          #include <reg51.h>
    2          #include <INTRINS.H>
-   3          
-   4          #define multiplier 1.085
-   5          
-   6          // 显示相关定义
-   7          #define DISP_PORT P2  // 八位数码管连接端口
-   8          
-   9          // 引脚定义
-  10          sbit DATA = DISP_PORT^0;  // 串行数据输入
-  11          sbit SCK  = DISP_PORT^1;  // 移位时钟
-  12          sbit RCK  = DISP_PORT^2;  // 存储时钟
-  13          sbit OE   = DISP_PORT^3;  // 输出使能(低有效)
-  14          
-  15          /* 共阴极数码管段码定义 */
-  16          #define SEG_OFF 0x00      // 字段全灭
-  17          
-  18          
-  19          // 替换原来的字符映射表为LED数组形式
-  20          static code const unsigned char LED[] = {0x3F,0x06,0x5B,0x4F,0x66,0x6D,0x7D,0x07,0x7F,0x6F};
-  21          
-  22          // 更新显示缓冲区初始化
-  23          unsigned char dispbuff[8] = {SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF}; // 显示�
-             -�冲区
-  24          
-  25          // 时钟变量
-  26          unsigned char hour = 23, minute = 59, second = 55; // 初始时间
-  27          unsigned int t0_count = 0; // 50ms计数
-  28          
-  29          void delay_ms(unsigned int ms) {
-  30   1          unsigned int i, j;
-  31   1          for (i = 0; i < ms; i++)
-  32   1              for (j = 0; j < 120; j++);
-  33   1      }
-  34          
-  35          void SendTo595(unsigned char data_seg, unsigned char data_bit) {
-  36   1          unsigned char i;
-  37   1          OE = 1;
-  38   1          
-  39   1          for(i = 0; i < 8; i++) {
-  40   2              DATA = (data_bit & 0x80) ? 1 : 0;
-  41   2              SCK = 0; SCK = 1;
-  42   2              data_bit <<= 1;
-  43   2          }
-  44   1          
-  45   1          for(i = 0; i < 8; i++) {
-  46   2              DATA = (data_seg & 0x80) ? 1 : 0;
-  47   2              SCK = 0; SCK = 1;
-  48   2              data_seg <<= 1;
-  49   2          }
-  50   1          
-  51   1          RCK = 0; RCK = 1;
-  52   1          OE = 0;
-  53   1          delay_ms(1);
-C51 COMPILER V9.54   MAIN                                                                  05/25/2025 11:04:37 PAGE 2   
-
-  54   1      }
-  55          
-  56          void display_from_right(unsigned char target[]) {
-  57   1          unsigned char i;
-  58   1          static unsigned char mark = 0x01;
-  59   1          
-  60   1          for(i = 0; i < 8; i++) {
-  61   2              SendTo595(target[i], ~(mark << i));
-  62   2          }
-  63   1          SendTo595(SEG_OFF, 0xFF);
-  64   1          mark = 0x01;
-  65   1      }
-  66          
-  67          void Resetdispbuff() {
-  68   1          unsigned char i;
-  69   1          for(i = 0; i < 8; i++) dispbuff[i] = SEG_OFF;
-  70   1      }
-  71          
-  72          void FillTimeBuff() {
-  73   1          Resetdispbuff();
-  74   1          // 秒部分（右起0-1位）
-  75   1          dispbuff[0] = LED[second % 10]; // 秒个位
-  76   1          dispbuff[1] = LED[second / 10]; // 秒十位
-  77   1          
-  78   1          // 分钟部分（右起2-3位）
-  79   1          dispbuff[2] = LED[minute % 10];
-  80   1          dispbuff[3] = LED[minute / 10];
-  81   1          
-  82   1          // 小时部分（右起4-5位）
-  83   1          dispbuff[4] = LED[hour % 10];
-  84   1          dispbuff[5] = LED[hour / 10];
-  85   1      }
-  86          
-  87          void Timer0_Init() {
-  88   1          TMOD &= 0xF0;     // 清除T0配置
-  89   1          TMOD |= 0x01;     // 定时器0，模式1（16位）
-  90   1          TH0 = 0x4B;       // 50ms初值
-  91   1          TL0 = 0xFD;
-  92   1          ET0 = 1;          // 允许中断
-  93   1          TR0 = 1;          // 启动定时器
-  94   1      }
-  95          
-  96          void main(void) {
-  97   1          EA = 1;           // 开启总中断
-  98   1          Timer0_Init();     // 初始化定时器
-  99   1          P0 = 0xFF;
- 100   1          
- 101   1          while (1) {
- 102   2              FillTimeBuff();          // 更新时间显示缓冲区
- 103   2              display_from_right(dispbuff); // 刷新显示
- 104   2          }
- 105   1      }
- 106          
- 107          // 定时器0中断服务函数
- 108          void Timer0_ISR() interrupt 1 {
- 109   1          TH0 = 0x4B;       // 重装初值
- 110   1          TL0 = 0xFD;
- 111   1          t0_count++;
- 112   1          
- 113   1          if(t0_count >= 20) { // 1秒到
- 114   2              t0_count = 0;
- 115   2              second++;
-C51 COMPILER V9.54   MAIN                                                                  05/25/2025 11:04:37 PAGE 3   
-
- 116   2              
- 117   2              if(second >= 60) {
- 118   3                  second = 0;
- 119   3                  minute++;
- 120   3                  if(minute >= 60) {
- 121   4                      minute = 0;
- 122   4                      hour++;
- 123   4                      if(hour >= 24) hour = 0;
- 124   4                  }
- 125   3              }
- 126   2          }
- 127   1      }
+   3          #include "pca.h"
+   4          
+   5          #define multiplier 1.085
+   6          
+   7          void main(void) {
+   8   1          EA = 1;            // 开启总中断
+   9   1          P0 = 0xFF;
+  10   1          
+  11   1          // 验证初始时间是否合法
+  12   1          if(!checktime(0, 0, 0)) {
+  13   2              // 如果时间不合法
+  14   2      
+  15   2          }
+  16   1          
+  17   1          PCA_Init();        // 初始化PCA模块，包含时钟功能
+  18   1      
+  19   1          while (1) {
+  20   2              // 主循环中不需要处理时钟显示
+  21   2              // PCA中断会自动处理时钟和刷新显示
+  22   2          }
+  23   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    345    ----
-   CONSTANT SIZE    =     10    ----
+   CODE SIZE        =     17    ----
+   CONSTANT SIZE    =   ----    ----
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----
-   DATA SIZE        =     14       4
+   DATA SIZE        =   ----    ----
    IDATA SIZE       =   ----    ----
    BIT SIZE         =   ----    ----
 END OF MODULE INFORMATION.
