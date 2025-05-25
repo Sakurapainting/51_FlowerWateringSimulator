@@ -9,8 +9,9 @@
 #define FLOW_MODE_CURR   1    // 显示当前流量
 #define FLOW_MODE_TOTAL  2    // 显示累计流量
 
-// 模式指示符
+// 模式指示符和单位定义
 #define flow_mode_indicator 5   // 使用数字5表示当前流量模式
+#define FLOW_SPEED_MULTIPLIER 4 // 流速倍增因子，使流量增加更快
 
 // 函数声明
 void FlowMeter_Init(void);              // 初始化流量计
@@ -22,8 +23,8 @@ void FlowMeter_DisplayCurrent(void);    // 显示当前流量
 void FlowMeter_DisplayTotal(void);      // 显示累计流量
 void FlowMeter_SetMode(BYTE mode);      // 设置流量显示模式
 BYTE FlowMeter_GetMode(void);           // 获取当前流量显示模式
-WORD FlowMeter_GetCurrentFlow(void);    // 获取当前流量
-unsigned long FlowMeter_GetTotalFlow(void); // 获取累计流量
+WORD FlowMeter_GetCurrentFlow(void);    // 获取当前流量（毫升/秒）
+unsigned long FlowMeter_GetTotalFlow(void); // 获取累计流量（毫升）
 void UpdateCurrentFlowDisplay(void);    // 更新当前流量显示
 void UpdateTotalFlowDisplay(void);      // 更新累计流量显示
 void FlowMeter_UpdateDisplay(void);       // 检查并更新显示（在主循环中调用）

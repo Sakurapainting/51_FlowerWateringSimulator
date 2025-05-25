@@ -44,8 +44,11 @@ sbit SCK  = DISP_PORT^1;  // 移位时钟
 sbit RCK  = DISP_PORT^2;  // 存储时钟
 sbit OE   = DISP_PORT^3;  // 输出使能(低有效)
 
+#define CURRENTFLOW_MODE 0x39 // 当前流量模式
+#define TOTALFLOW_MODE 0X71   // 累计流量模式
+
 /* 共阴极数码管段码定义 */
-static code const unsigned char LED[] = {0x3F,0x06,0x5B,0x4F,0x66,0x6D,0x7D,0x07,0x7F,0x6F};
+static code const unsigned char LED[] = {0x3F,0x06,0x5B,0x4F,0x66,0x6D,0x7D,0x07,0x7F,0x6F,CURRENTFLOW_MODE,TOTALFLOW_MODE};
 
 // 显示缓冲区
 unsigned char dispbuff[8] = {SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF};

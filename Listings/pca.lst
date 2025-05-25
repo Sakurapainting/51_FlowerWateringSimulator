@@ -1,4 +1,4 @@
-C51 COMPILER V9.54   PCA                                                                   05/25/2025 14:34:34 PAGE 1   
+C51 COMPILER V9.54   PCA                                                                   05/25/2025 15:11:47 PAGE 1   
 
 
 C51 COMPILER V9.54, COMPILATION OF MODULE PCA
@@ -54,214 +54,218 @@ line level    source
   44          sbit RCK  = DISP_PORT^2;  // 存储时钟
   45          sbit OE   = DISP_PORT^3;  // 输出使能(低有效)
   46          
-  47          /* 共阴极数码管段码定义 */
-  48          static code const unsigned char LED[] = {0x3F,0x06,0x5B,0x4F,0x66,0x6D,0x7D,0x07,0x7F,0x6F};
+  47          #define CURRENTFLOW_MODE 0x39 // 当前流量模式
+  48          #define TOTALFLOW_MODE 0X71   // 累计流量模式
   49          
-  50          // 显示缓冲区
-  51          unsigned char dispbuff[8] = {SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF};
+  50          /* 共阴极数码管段码定义 */
+  51          static code const unsigned char LED[] = {0x3F,0x06,0x5B,0x4F,0x66,0x6D,0x7D,0x07,0x7F,0x6F,CURRENTFLOW_MOD
+             -E,TOTALFLOW_MODE};
   52          
-  53          // 实现显示相关函数
-  54          void delay_ms(unsigned int ms) {
-C51 COMPILER V9.54   PCA                                                                   05/25/2025 14:34:34 PAGE 2   
+  53          // 显示缓冲区
+C51 COMPILER V9.54   PCA                                                                   05/25/2025 15:11:47 PAGE 2   
 
-  55   1          unsigned int i, j;
-  56   1          for (i = 0; i < ms; i++)
-  57   1              for (j = 0; j < 120; j++);
-  58   1      }
-  59          
-  60          // void SendTo595(unsigned char data_seg, unsigned char data_bit) {
-  61          //     unsigned char i;
-  62          //     OE = 1;
-  63              
-  64          //     for(i = 0; i < 8; i++) {
-  65          //         DATA = (data_bit & 0x80) ? 1 : 0;
-  66          //         SCK = 0; SCK = 1;
-  67          //         data_bit <<= 1;
-  68          //     }
-  69              
-  70          //     for(i = 0; i < 8; i++) {
-  71          //         DATA = (data_seg & 0x80) ? 1 : 0;
-  72          //         SCK = 0; SCK = 1;
-  73          //         data_seg <<= 1;
-  74          //     }
-  75              
-  76          //     RCK = 0; RCK = 1;
-  77          //     OE = 0;
-  78          //     delay_ms(1);
-  79          // }
-  80          
-  81          void Resetdispbuff() {
-  82   1          unsigned char i;
-  83   1          for(i = 0; i < 8; i++) dispbuff[i] = SEG_OFF;
-  84   1      }
-  85          
-  86          void FillDispBuf(BYTE hour, BYTE min, BYTE sec) {
-  87   1          Resetdispbuff();
-  88   1          // 秒部分（右起0-1位）
-  89   1          dispbuff[0] = LED[sec % 10]; // 秒个位
-  90   1          dispbuff[1] = LED[sec / 10]; // 秒十位
-  91   1          
-  92   1          // 分钟部分（右起2-3位）
-  93   1          dispbuff[2] = LED[min % 10];
-  94   1          dispbuff[3] = LED[min / 10];
-  95   1          
-  96   1          // 小时部分（右起4-5位）
-  97   1          dispbuff[4] = LED[hour % 10];
-  98   1          dispbuff[5] = LED[hour / 10];
-  99   1      }
- 100          
- 101          // 自定义显示缓冲区填充函数
- 102          void FillCustomDispBuf(BYTE val1, BYTE val2, BYTE val3, BYTE val4, BYTE val5, BYTE val6) {
- 103   1          Resetdispbuff();
- 104   1          
- 105   1          // 填充6个数字位
- 106   1          dispbuff[0] = LED[val1];
- 107   1          dispbuff[1] = LED[val2];
- 108   1          dispbuff[2] = LED[val3];
- 109   1          dispbuff[3] = LED[val4];
- 110   1          dispbuff[4] = LED[val5];
- 111   1          dispbuff[5] = LED[val6];
- 112   1      }
- 113          
- 114          void disp(void) {
- 115   1          unsigned char i;
- 116   1          static unsigned char pos = 0;  // 当前扫描的位置
-C51 COMPILER V9.54   PCA                                                                   05/25/2025 14:34:34 PAGE 3   
+  54          unsigned char dispbuff[8] = {SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF};
+  55          
+  56          // 实现显示相关函数
+  57          void delay_ms(unsigned int ms) {
+  58   1          unsigned int i, j;
+  59   1          for (i = 0; i < ms; i++)
+  60   1              for (j = 0; j < 120; j++);
+  61   1      }
+  62          
+  63          // void SendTo595(unsigned char data_seg, unsigned char data_bit) {
+  64          //     unsigned char i;
+  65          //     OE = 1;
+  66              
+  67          //     for(i = 0; i < 8; i++) {
+  68          //         DATA = (data_bit & 0x80) ? 1 : 0;
+  69          //         SCK = 0; SCK = 1;
+  70          //         data_bit <<= 1;
+  71          //     }
+  72              
+  73          //     for(i = 0; i < 8; i++) {
+  74          //         DATA = (data_seg & 0x80) ? 1 : 0;
+  75          //         SCK = 0; SCK = 1;
+  76          //         data_seg <<= 1;
+  77          //     }
+  78              
+  79          //     RCK = 0; RCK = 1;
+  80          //     OE = 0;
+  81          //     delay_ms(1);
+  82          // }
+  83          
+  84          void Resetdispbuff() {
+  85   1          unsigned char i;
+  86   1          for(i = 0; i < 8; i++) dispbuff[i] = SEG_OFF;
+  87   1      }
+  88          
+  89          void FillDispBuf(BYTE hour, BYTE min, BYTE sec) {
+  90   1          Resetdispbuff();
+  91   1          // 秒部分（右起0-1位）
+  92   1          dispbuff[0] = LED[sec % 10]; // 秒个位
+  93   1          dispbuff[1] = LED[sec / 10]; // 秒十位
+  94   1          
+  95   1          // 分钟部分（右起2-3位）
+  96   1          dispbuff[2] = LED[min % 10];
+  97   1          dispbuff[3] = LED[min / 10];
+  98   1          
+  99   1          // 小时部分（右起4-5位）
+ 100   1          dispbuff[4] = LED[hour % 10];
+ 101   1          dispbuff[5] = LED[hour / 10];
+ 102   1      }
+ 103          
+ 104          // 自定义显示缓冲区填充函数
+ 105          void FillCustomDispBuf(BYTE val1, BYTE val2, BYTE val3, BYTE val4, BYTE val5, BYTE val6) {
+ 106   1          Resetdispbuff();
+ 107   1          
+ 108   1          // 填充6个数字位
+ 109   1          dispbuff[0] = LED[val1];
+ 110   1          dispbuff[1] = LED[val2];
+ 111   1          dispbuff[2] = LED[val3];
+ 112   1          dispbuff[3] = LED[val4];
+ 113   1          dispbuff[4] = LED[val5];
+ 114   1          dispbuff[5] = LED[val6];
+ 115   1      }
+C51 COMPILER V9.54   PCA                                                                   05/25/2025 15:11:47 PAGE 3   
 
- 117   1          static unsigned char mark = 0x01;  // 位选掩码
- 118   1          unsigned char tmpdata;
- 119   1          
- 120   1          // 设置输出使能为高，准备数据传输
- 121   1          OE = 1;
+ 116          
+ 117          void disp(void) {
+ 118   1          unsigned char i;
+ 119   1          static unsigned char pos = 0;  // 当前扫描的位置
+ 120   1          static unsigned char mark = 0x01;  // 位选掩码
+ 121   1          unsigned char tmpdata;
  122   1          
- 123   1          // 准备位选数据（低电平有效）
- 124   1          tmpdata = ~mark;
+ 123   1          // 设置输出使能为高，准备数据传输
+ 124   1          OE = 1;
  125   1          
- 126   1          // 发送位选数据到74HC595
- 127   1          for(i = 0; i < 8; i++) {
- 128   2              // 从最高位开始发送
- 129   2              DATA = (tmpdata & 0x80) ? 1 : 0;
- 130   2              SCK = 0;
- 131   2              SCK = 1;
- 132   2              tmpdata <<= 1;
- 133   2          }
- 134   1          
- 135   1          // 发送段码数据到74HC595
- 136   1          tmpdata = dispbuff[pos];
- 137   1          for(i = 0; i < 8; i++) {
- 138   2              // 从最高位开始发送
- 139   2              DATA = (tmpdata & 0x80) ? 1 : 0;
- 140   2              SCK = 0;
- 141   2              SCK = 1;
- 142   2              tmpdata <<= 1;
- 143   2          }
- 144   1          
- 145   1          // 锁存数据并输出
- 146   1          RCK = 0;
- 147   1          RCK = 1;
- 148   1          
- 149   1          // 使能输出
- 150   1          OE = 0;
+ 126   1          // 准备位选数据（低电平有效）
+ 127   1          tmpdata = ~mark;
+ 128   1          
+ 129   1          // 发送位选数据到74HC595
+ 130   1          for(i = 0; i < 8; i++) {
+ 131   2              // 从最高位开始发送
+ 132   2              DATA = (tmpdata & 0x80) ? 1 : 0;
+ 133   2              SCK = 0;
+ 134   2              SCK = 1;
+ 135   2              tmpdata <<= 1;
+ 136   2          }
+ 137   1          
+ 138   1          // 发送段码数据到74HC595
+ 139   1          tmpdata = dispbuff[pos];
+ 140   1          for(i = 0; i < 8; i++) {
+ 141   2              // 从最高位开始发送
+ 142   2              DATA = (tmpdata & 0x80) ? 1 : 0;
+ 143   2              SCK = 0;
+ 144   2              SCK = 1;
+ 145   2              tmpdata <<= 1;
+ 146   2          }
+ 147   1          
+ 148   1          // 锁存数据并输出
+ 149   1          RCK = 0;
+ 150   1          RCK = 1;
  151   1          
- 152   1          // 移动到下一位
- 153   1          pos = (pos + 1) % 8;
- 154   1          mark = (mark << 1) | (mark >> 7);  // 循环左移
- 155   1          if(mark == 0) mark = 0x01;  // 确保非零
- 156   1      }
- 157          
- 158          void PCA_isr() interrupt 7
- 159          {
- 160   1          if(CCF1){
- 161   2              CCF1 = 0;                       // Clear interrupt flag
- 162   2              CCAP1L = value1;
- 163   2              CCAP1H = value1 >> 8;           // Update compare value
- 164   2              value1 += T1000Hz;
- 165   2              disp();                         // 刷新显示
- 166   2          }
- 167   1      
- 168   1          if(CCF0){
- 169   2              CCF0 = 0;                       // Clear interrupt flag
- 170   2              CCAP0L = value;
- 171   2              CCAP0H = value >> 8;            // Update compare value
- 172   2              value += T100Hz;
- 173   2              cnt++;
- 174   2              
- 175   2              if(cnt >= 100) {                // Count 100 times
- 176   3                  cnt = 0;                    // 1秒计时
- 177   3                  PCA_LED = !PCA_LED;         // 闪烁LED指示灯
- 178   3                  
-C51 COMPILER V9.54   PCA                                                                   05/25/2025 14:34:34 PAGE 4   
+ 152   1          // 使能输出
+ 153   1          OE = 0;
+ 154   1          
+ 155   1          // 移动到下一位
+ 156   1          pos = (pos + 1) % 8;
+ 157   1          mark = (mark << 1) | (mark >> 7);  // 循环左移
+ 158   1          if(mark == 0) mark = 0x01;  // 确保非零
+ 159   1      }
+ 160          
+ 161          void PCA_isr() interrupt 7
+ 162          {
+ 163   1          if(CCF1){
+ 164   2              CCF1 = 0;                       // Clear interrupt flag
+ 165   2              CCAP1L = value1;
+ 166   2              CCAP1H = value1 >> 8;           // Update compare value
+ 167   2              value1 += T1000Hz;
+ 168   2              disp();                         // 刷新显示
+ 169   2          }
+ 170   1      
+ 171   1          if(CCF0){
+ 172   2              CCF0 = 0;                       // Clear interrupt flag
+ 173   2              CCAP0L = value;
+ 174   2              CCAP0H = value >> 8;            // Update compare value
+ 175   2              value += T100Hz;
+ 176   2              cnt++;
+ 177   2              
+C51 COMPILER V9.54   PCA                                                                   05/25/2025 15:11:47 PAGE 4   
 
- 179   3                  // 调用流量计计算函数（不更新显示），改为更频繁调用
- 180   3                  FlowMeter_CalcFlow();
+ 178   2              if(cnt >= 100) {                // Count 100 times
+ 179   3                  cnt = 0;                    // 1秒计时
+ 180   3                  PCA_LED = !PCA_LED;         // 闪烁LED指示灯
  181   3                  
- 182   3                  // 更新时钟，但不直接更新显示
- 183   3                  SysPara1.sec++;
- 184   3                  if(SysPara1.sec >= 60) {
- 185   4                      SysPara1.sec = 0;
- 186   4                      SysPara1.min++;
- 187   4                      if(SysPara1.min >= 60) {
- 188   5                          SysPara1.min = 0;
- 189   5                          SysPara1.hour++;
- 190   5                          if(SysPara1.hour >= 24)
- 191   5                              SysPara1.hour = 0;
- 192   5                      }
- 193   4                  }
- 194   3                  
- 195   3                  // 只有在流量计模式为关闭时才更新时钟显示的缓冲区
- 196   3                  if (FlowMeter_GetMode() == FLOW_MODE_OFF) {
- 197   4                      FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
- 198   4                  }
- 199   3              }
- 200   2              else if(cnt % 20 == 0 && FlowMeter_GetMode() != FLOW_MODE_OFF) {
- 201   3                  // 每0.2秒也调用一次流量计算，以减少刷新延迟
- 202   3                  FlowMeter_CalcFlow();
- 203   3              }
- 204   2          }
- 205   1      }
- 206          
- 207          void PCA_Init(void)
- 208          {
- 209   1          CCON = 0;                       // Initial PCA control register
- 210   1                                          // PCA timer stop running
- 211   1                                          // Clear CF flag
- 212   1                                          // Clear all module interrupt flag
- 213   1          CL = 0;                         // Reset PCA base timer
- 214   1          CH = 0;
- 215   1          CMOD = 0x00;                    // Set PCA timer clock source as Fosc/12
- 216   1                                          // Disable PCA timer overflow interrupt
- 217   1          
- 218   1          // 初始化PCA模块1 (1000Hz)
- 219   1          value1 = T1000Hz;
- 220   1          CCAP1L = value1;
- 221   1          CCAP1H = value1 >> 8;           // Initial PCA module-1
- 222   1          value1 += T1000Hz;
- 223   1          CCAPM1 = 0x49;                  // PCA module-1 work in 16-bit timer mode
- 224   1                                          // and enable PCA interrupt
- 225   1          
- 226   1          // 初始化PCA模块0 (100Hz)
- 227   1          value = T100Hz;
- 228   1          CCAP0L = value;
- 229   1          CCAP0H = value >> 8;            // Initial PCA module-0
- 230   1          value += T100Hz;
- 231   1          CCAPM0 = 0x49;                  // PCA module-0 work in 16-bit timer mode
- 232   1                                          // and enable PCA interrupt
- 233   1          
- 234   1          CR = 1;                         // PCA timer start run
- 235   1          EA = 1;                         // Enable global interrupt
- 236   1          cnt = 0;
- 237   1      
- 238   1          // 初始化时钟显示
- 239   1          FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
- 240   1      }
-C51 COMPILER V9.54   PCA                                                                   05/25/2025 14:34:34 PAGE 5   
+ 182   3                  // 调用流量计计算函数（不更新显示），改为更频繁调用
+ 183   3                  FlowMeter_CalcFlow();
+ 184   3                  
+ 185   3                  // 更新时钟，但不直接更新显示
+ 186   3                  SysPara1.sec++;
+ 187   3                  if(SysPara1.sec >= 60) {
+ 188   4                      SysPara1.sec = 0;
+ 189   4                      SysPara1.min++;
+ 190   4                      if(SysPara1.min >= 60) {
+ 191   5                          SysPara1.min = 0;
+ 192   5                          SysPara1.hour++;
+ 193   5                          if(SysPara1.hour >= 24)
+ 194   5                              SysPara1.hour = 0;
+ 195   5                      }
+ 196   4                  }
+ 197   3                  
+ 198   3                  // 只有在流量计模式为关闭时才更新时钟显示的缓冲区
+ 199   3                  if (FlowMeter_GetMode() == FLOW_MODE_OFF) {
+ 200   4                      FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
+ 201   4                  }
+ 202   3              }
+ 203   2              else if(cnt % 20 == 0 && FlowMeter_GetMode() != FLOW_MODE_OFF) {
+ 204   3                  // 每0.2秒也调用一次流量计算，以减少刷新延迟
+ 205   3                  FlowMeter_CalcFlow();
+ 206   3              }
+ 207   2          }
+ 208   1      }
+ 209          
+ 210          void PCA_Init(void)
+ 211          {
+ 212   1          CCON = 0;                       // Initial PCA control register
+ 213   1                                          // PCA timer stop running
+ 214   1                                          // Clear CF flag
+ 215   1                                          // Clear all module interrupt flag
+ 216   1          CL = 0;                         // Reset PCA base timer
+ 217   1          CH = 0;
+ 218   1          CMOD = 0x00;                    // Set PCA timer clock source as Fosc/12
+ 219   1                                          // Disable PCA timer overflow interrupt
+ 220   1          
+ 221   1          // 初始化PCA模块1 (1000Hz)
+ 222   1          value1 = T1000Hz;
+ 223   1          CCAP1L = value1;
+ 224   1          CCAP1H = value1 >> 8;           // Initial PCA module-1
+ 225   1          value1 += T1000Hz;
+ 226   1          CCAPM1 = 0x49;                  // PCA module-1 work in 16-bit timer mode
+ 227   1                                          // and enable PCA interrupt
+ 228   1          
+ 229   1          // 初始化PCA模块0 (100Hz)
+ 230   1          value = T100Hz;
+ 231   1          CCAP0L = value;
+ 232   1          CCAP0H = value >> 8;            // Initial PCA module-0
+ 233   1          value += T100Hz;
+ 234   1          CCAPM0 = 0x49;                  // PCA module-0 work in 16-bit timer mode
+ 235   1                                          // and enable PCA interrupt
+ 236   1          
+ 237   1          CR = 1;                         // PCA timer start run
+ 238   1          EA = 1;                         // Enable global interrupt
+ 239   1          cnt = 0;
+C51 COMPILER V9.54   PCA                                                                   05/25/2025 15:11:47 PAGE 5   
 
- 241          
+ 240   1      
+ 241   1          // 初始化时钟显示
+ 242   1          FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
+ 243   1      }
+ 244          
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
    CODE SIZE        =    510    ----
-   CONSTANT SIZE    =     10    ----
+   CONSTANT SIZE    =     12    ----
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----
    DATA SIZE        =     18       6

@@ -1,4 +1,4 @@
-C51 COMPILER V9.54   WAVEGEN                                                               05/25/2025 14:34:34 PAGE 1   
+C51 COMPILER V9.54   WAVEGEN                                                               05/25/2025 14:48:43 PAGE 1   
 
 
 C51 COMPILER V9.54, COMPILATION OF MODULE WAVEGEN
@@ -62,7 +62,7 @@ line level    source
   52   1          isRunning = 0;
   53   1      }
   54          
-C51 COMPILER V9.54   WAVEGEN                                                               05/25/2025 14:34:34 PAGE 2   
+C51 COMPILER V9.54   WAVEGEN                                                               05/25/2025 14:48:43 PAGE 2   
 
   55          // 获取方波发生器状态
   56          BYTE WaveGen_GetState(void) {

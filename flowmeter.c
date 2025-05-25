@@ -4,15 +4,16 @@
 // 流量计参数
 static BYTE flowMode = FLOW_MODE_OFF;     // 流量显示模式
 static WORD pulseCount = 0;               // 当前流量脉冲计数
-static WORD currentFlow = 0;              // 当前流量值（毫升/分钟）
+static WORD currentFlow = 0;              // 当前流量值（毫升/秒）- 修改单位为毫升/秒
 static unsigned long totalFlow = 0;       // 累计流量值（毫升）
 static bit isRunning = 0;                 // 流量计运行状态
 static bit needUpdateDisplay = 0;         // 显示更新标志
 static BYTE initialDisplayDelay = 0;      // 初始显示延迟计数器
 
 // 流量计参数定义
-#define PULSE_FACTOR 5                   // 流量计每升水的脉冲数（示例值）
-#define FLOW_UPDATE_INTERVAL 2           // 流量更新间隔（秒）- 减少以更快更新显示
+#define PULSE_FACTOR 1                   // 降低脉冲因子，使每个脉冲代表更多水量（原为5）
+#define FLOW_UPDATE_INTERVAL 1           // 更快地更新流量值（每秒更新）
+#define FLOW_SPEED_MULTIPLIER 1          // 流量倍增因子
 
 // 流量计初始化
 void FlowMeter_Init(void) {
@@ -42,8 +43,8 @@ void FlowMeter_Start(void) {
         EX0 = 1;                       // 使能INT0中断
         isRunning = 1;                 // 标记流量计开始运行
         
-        
-        currentFlow = 0;             
+        // 设置初始非零流量值
+        currentFlow = 0; 
         
         // 强制立即更新显示
         needUpdateDisplay = 1;
@@ -64,6 +65,27 @@ void FlowMeter_Reset(void) {
     totalFlow = 0;                     // 重置总流量
 }
 
+/*
+ * 数码管显示说明：
+ * 浇水过程中数码管会轮流显示两种模式：当前流量和累计流量
+ * 
+ * 1. 当前流量显示模式（FLOW_MODE_CURR）:
+ *    - 数码管从右到左依次为：位1-位6
+ *    - 位1: 不显示
+ *    - 位2: 显示数字"5"，表示当前为流量显示模式
+ *    - 位3: 不显示
+ *    - 位4-位6: 显示当前流量数值，单位为毫升/秒
+ *      例如：显示"047 5 "表示当前流量为47毫升/秒
+ * 
+ * 2. 累计流量显示模式（FLOW_MODE_TOTAL）:
+ *    - 数码管从右到左依次为：位1-位6
+ *    - 位1: 显示数字"1"，表示当前为累计流量显示模式
+ *    - 位2-位6: 显示累计流量数值，单位为升
+ *      例如：显示"00231"表示累计流量为23.1升
+ * 
+ * 注：系统会每3秒在这两种显示模式间自动切换
+ */
+
 // 计算流量（每秒调用一次，由中断触发）
 void FlowMeter_CalcFlow(void) {
     static BYTE updateCounter = 0;
@@ -81,23 +103,23 @@ void FlowMeter_CalcFlow(void) {
         updateCounter = 0;
         
         if (isRunning) {
-            // 计算当前流量（毫升/分钟）
-            // 如果脉冲数为0，则保持最小流量以避免显示为0
+            // 计算当前流量（毫升/秒）- 添加乘数以增加流量
             if (pulseCount > 0) {
-                currentFlow = (WORD)(pulseCount * 60 / (PULSE_FACTOR * FLOW_UPDATE_INTERVAL));
+                // 将脉冲数转换为毫升/秒，添加FLOW_SPEED_MULTIPLIER增加流量
+                currentFlow = (WORD)(pulseCount * 1000 * FLOW_SPEED_MULTIPLIER / (PULSE_FACTOR * FLOW_UPDATE_INTERVAL));
+                
                 // 确保有最小显示值
-                if (currentFlow < 100) currentFlow = 100;  // 最小0.1L/分钟
+                if (currentFlow < 25) currentFlow = 25;  // 最小25毫升/秒
             } else {
                 // 如果没有脉冲但系统仍在运行，保持最小流量显示
-                currentFlow = 100;  // 0.1L/分钟
+                currentFlow = 25;  // 显示25毫升/秒
             }
             
-            // 更新累计流量（毫升），即使没有脉冲也增加一点量
+            // 更新累计流量（毫升），增加累积速度
             if (pulseCount > 0) {
-                totalFlow += (unsigned long)pulseCount * 1000 / PULSE_FACTOR;
+                totalFlow += (unsigned long)pulseCount * 1000 * FLOW_SPEED_MULTIPLIER / PULSE_FACTOR;
             } else {
-                // 即使没有脉冲也稍微增加累计流量，以确保显示变化
-                totalFlow += 50;  // 每次增加50毫升
+                totalFlow += 100;  // 每次增加100毫升
             }
         }
         
@@ -113,7 +135,7 @@ void FlowMeter_CalcFlow(void) {
         static BYTE displayToggle = 0;
         
         // 轮流显示当前流量和累计流量
-        if (++displayToggle >= 3) {  // 加快切换速度
+        if (++displayToggle >= 3) {  
             displayToggle = 0;
             
             // 仅切换模式，不执行显示操作
@@ -143,17 +165,15 @@ void FlowMeter_UpdateDisplay(void) {
 void UpdateCurrentFlowDisplay(void) {
     BYTE val1, val2, val3, val4, val5, val6;
     
-    // 提取当前流量各位数字
-    WORD flow_decimal = currentFlow % 1000;  // 小数部分（毫升）
-    BYTE flow_integer = (BYTE)(currentFlow / 1000);  // 整数部分（升）
+    // 提取当前流量各位数字（毫升/秒）
     
     // 构造显示数字
-    val1 = 0;
-    val2 = flow_mode_indicator;  // 显示一个标识符表示当前模式
-    val3 = flow_decimal % 10;
-    val4 = (flow_decimal / 10) % 10;
-    val5 = flow_integer % 10;
-    val6 = flow_integer / 10;
+    val1 = 10;  // 10，表示当前流量显示模式
+    val2 = (currentFlow / 10000) % 10; // 万位（毫升/秒）
+    val3 = (currentFlow / 1000) % 10; // 千位（毫升/秒）
+    val4 = (currentFlow / 100) % 10;  // 百位（毫升/秒）
+    val5 = (currentFlow / 10) % 10;  // 十位（毫升/秒）
+    val6 = currentFlow % 10;     // 个位（毫升/秒）
     
     // 直接填充显示缓冲区
     FillCustomDispBuf(val6, val5, val4, val3, val2, val1);
@@ -167,12 +187,12 @@ void UpdateTotalFlowDisplay(void) {
     unsigned long flow_liter = totalFlow / 1000;  // 转换为升
     
     // 构造显示数字
-    val1 = 1;  // 显示一个标识符表示累计流量模式
-    val2 = (BYTE)(flow_liter % 10);
-    val3 = (BYTE)((flow_liter / 10) % 10);
-    val4 = (BYTE)((flow_liter / 100) % 10);
-    val5 = (BYTE)((flow_liter / 1000) % 10);
-    val6 = (BYTE)((flow_liter / 10000) % 10);
+    val1 = 11;  // 11,累计流量显示模式
+    val2 = (BYTE)((flow_liter / 10000) % 10); // 万位（升）
+    val3 = (BYTE)((flow_liter / 1000) % 10); // 千位（升）
+    val4 = (BYTE)((flow_liter / 100) % 10);  // 百位（升）
+    val5 = (BYTE)((flow_liter / 10) % 10);   // 十位（升）
+    val6 = (BYTE)(flow_liter % 10);        // 个位（升）
     
     // 直接填充显示缓冲区
     FillCustomDispBuf(val6, val5, val4, val3, val2, val1);
