@@ -1,4 +1,4 @@
-C51 COMPILER V9.54   UART                                                                  05/25/2025 20:50:47 PAGE 1   
+C51 COMPILER V9.54   UART                                                                  05/26/2025 21:22:57 PAGE 1   
 
 
 C51 COMPILER V9.54, COMPILATION OF MODULE UART
@@ -9,13 +9,13 @@ COMPILER INVOKED BY: D:\Keil5\C51\BIN\C51.EXE uart.c OPTIMIZE(8,SPEED) BROWSE DE
 line level    source
 
    1          #include "uart.h"
-   2          #include "flowmeter.h"  // 添加这行以引入FlowMeter_GetMode()和FLOW_MODE_OFF
+   2          #include "flowmeter.h"
    3          #include <string.h>
    4          
-   5          // 串口缓冲区及状态变量
-   6          static char uart_buffer[UART_BUF_SIZE];  // 串口接收缓冲区
-   7          static BYTE uart_count = 0;              // 当前缓冲区计数
-   8          static bit uart_complete = 0;            // 接收完成标志
+   5          // 串口缓冲区及状态变量 - 减少缓冲区大小
+   6          static char uart_buffer[16];  // 减少缓冲区大小从32到16
+   7          static BYTE uart_count = 0;
+   8          static bit uart_complete = 0;
    9          
   10          // 初始化串口
   11          void UART_Init(void) {
@@ -39,119 +39,116 @@ line level    source
   29   1          uart_complete = 0;
   30   1          memset(uart_buffer, 0, sizeof(uart_buffer));
   31   1          
-  32   1          // 发送初始提示信息
-  33   1          UART_SendString("\r\n============================\r\n");
-  34   1          UART_SendString(" 浇花系统串口控制界面 \r\n");
-  35   1          UART_SendString("============================\r\n");
-  36   1          UART_SendString("命令格式: TIME:HH:MM:SS\r\n");
-  37   1          UART_SendString("例如: TIME:14:30:00\r\n");
-  38   1      }
-  39          
-  40          // 发送一个字节
-  41          void UART_SendByte(BYTE dat) {
-  42   1          SBUF = dat;             // 将数据写入发送缓冲区
-  43   1          while(!TI);             // 等待发送完成
-  44   1          TI = 0;                 // 清除发送中断标志
-  45   1      }
-  46          
-  47          // 发送字符串
-  48          void UART_SendString(char *s) {
-  49   1          while(*s) {             // 发送字符串，直到遇到null结束符
-  50   2              UART_SendByte(*s++);
-  51   2          }
-  52   1      }
-  53          
-  54          // 命令处理函数
-C51 COMPILER V9.54   UART                                                                  05/25/2025 20:50:47 PAGE 2   
+  32   1          // 发送简化的初始提示信息
+  33   1          UART_SendString("\r\n浇花系统启动\r\n");
+  34   1          UART_SendString("TIME:HH:MM:SS\r\n");
+  35   1      }
+  36          
+  37          // 发送一个字节
+  38          void UART_SendByte(BYTE dat) {
+  39   1          SBUF = dat;             // 将数据写入发送缓冲区
+  40   1          while(!TI);             // 等待发送完成
+  41   1          TI = 0;                 // 清除发送中断标志
+  42   1      }
+  43          
+  44          // 发送字符串
+  45          void UART_SendString(char *s) {
+  46   1          while(*s) {             // 发送字符串，直到遇到null结束符
+  47   2              UART_SendByte(*s++);
+  48   2          }
+  49   1      }
+  50          
+  51          // 命令处理函数
+  52          static void UART_CommandHandler(void) {
+  53   1          // 命令格式: "TIME:HH:MM:SS"
+  54   1          if(strncmp(uart_buffer, "TIME:", 5) == 0) {
+C51 COMPILER V9.54   UART                                                                  05/26/2025 21:22:57 PAGE 2   
 
-  55          static void UART_CommandHandler(void) {
-  56   1          // 命令格式: "TIME:HH:MM:SS"
-  57   1          if(strncmp(uart_buffer, "TIME:", 5) == 0) {
-  58   2              BYTE hour = 0, min = 0, sec = 0;
-  59   2              
-  60   2              // 解析时间
-  61   2              if(strlen(uart_buffer) >= 13) { // 确保格式正确且长度足够
-  62   3                  hour = (uart_buffer[5] - '0') * 10 + (uart_buffer[6] - '0');
-  63   3                  min = (uart_buffer[8] - '0') * 10 + (uart_buffer[9] - '0');
-  64   3                  sec = (uart_buffer[11] - '0') * 10 + (uart_buffer[12] - '0');
-  65   3                  
-  66   3                  // 检查时间值是否有效
-  67   3                  if(hour < 24 && min < 60 && sec < 60) {
-  68   4                      // 直接修改SysPara1中的时间值
-  69   4                      PCA_SetTime(hour, min, sec);
-  70   4                      
-  71   4                      UART_SendString("\r\n时间设置成功: ");
-  72   4                      // 发送时间字符串
-  73   4                      uart_buffer[7] = ':';
-  74   4                      uart_buffer[10] = ':';
-  75   4                      uart_buffer[13] = 0;
-  76   4                      UART_SendString(uart_buffer + 5);
-  77   4                      UART_SendString("\r\n");
-  78   4                  }
-  79   3                  else {
-  80   4                      UART_SendString("\r\n错误: 无效的时间值\r\n");
-  81   4                      UART_SendString("时间格式: HH(0-23):MM(0-59):SS(0-59)\r\n");
-  82   4                  }
-  83   3              }
-  84   2              else {
-  85   3                  UART_SendString("\r\n错误: 时间格式错误\r\n");
-  86   3                  UART_SendString("正确格式: TIME:HH:MM:SS\r\n");
-  87   3                  UART_SendString("例如: TIME:14:30:00\r\n");
-  88   3              }
-  89   2          }
-  90   1          else {
-  91   2              UART_SendString("\r\n错误: 未知命令\r\n");
-  92   2              UART_SendString("支持的命令: TIME:HH:MM:SS\r\n");
-  93   2          }
-  94   1      }
-  95          
-  96          // 处理串口命令
-  97          void UART_ProcessCommand(void) {
-  98   1          if(uart_complete) {
-  99   2              UART_CommandHandler();
- 100   2              uart_complete = 0;
- 101   2              uart_count = 0;
- 102   2              memset(uart_buffer, 0, sizeof(uart_buffer));
- 103   2          }
- 104   1      }
- 105          
- 106          // 串口中断服务函数
- 107          void UART_ISR() interrupt 4 {
- 108   1          if(RI) {                // 接收中断
- 109   2              RI = 0;             // 清除接收中断标志
- 110   2              
- 111   2              if(!uart_complete) { // 如果前一条命令还没处理完，则忽略当前接收的字符
- 112   3                  char ch = SBUF;  // 获取接收到的字符
+  55   2              BYTE hour = 0, min = 0, sec = 0;
+  56   2              
+  57   2              // 解析时间
+  58   2              if(strlen(uart_buffer) >= 13) { // 确保格式正确且长度足够
+  59   3                  hour = (uart_buffer[5] - '0') * 10 + (uart_buffer[6] - '0');
+  60   3                  min = (uart_buffer[8] - '0') * 10 + (uart_buffer[9] - '0');
+  61   3                  sec = (uart_buffer[11] - '0') * 10 + (uart_buffer[12] - '0');
+  62   3                  
+  63   3                  // 检查时间值是否有效
+  64   3                  if(hour < 24 && min < 60 && sec < 60) {
+  65   4                      // 直接修改SysPara1中的时间值
+  66   4                      PCA_SetTime(hour, min, sec);
+  67   4                      
+  68   4                      UART_SendString("\r\n时间设置成功: ");
+  69   4                      // 发送时间字符串
+  70   4                      uart_buffer[7] = ':';
+  71   4                      uart_buffer[10] = ':';
+  72   4                      uart_buffer[13] = 0;
+  73   4                      UART_SendString(uart_buffer + 5);
+  74   4                      UART_SendString("\r\n");
+  75   4                  }
+  76   3                  else {
+  77   4                      UART_SendString("\r\n错误: 无效的时间值\r\n");
+  78   4                      UART_SendString("时间格式: HH(0-23):MM(0-59):SS(0-59)\r\n");
+  79   4                  }
+  80   3              }
+  81   2              else {
+  82   3                  UART_SendString("\r\n错误: 时间格式错误\r\n");
+  83   3                  UART_SendString("正确格式: TIME:HH:MM:SS\r\n");
+  84   3                  UART_SendString("例如: TIME:14:30:00\r\n");
+  85   3              }
+  86   2          }
+  87   1          else {
+  88   2              UART_SendString("\r\n错误: 未知命令\r\n");
+  89   2              UART_SendString("支持的命令: TIME:HH:MM:SS\r\n");
+  90   2          }
+  91   1      }
+  92          
+  93          // 处理串口命令
+  94          void UART_ProcessCommand(void) {
+  95   1          if(uart_complete) {
+  96   2              UART_CommandHandler();
+  97   2              uart_complete = 0;
+  98   2              uart_count = 0;
+  99   2              memset(uart_buffer, 0, sizeof(uart_buffer));
+ 100   2          }
+ 101   1      }
+ 102          
+ 103          // 串口中断服务函数
+ 104          void UART_ISR() interrupt 4 {
+ 105   1          if(RI) {                // 接收中断
+ 106   2              RI = 0;             // 清除接收中断标志
+ 107   2              
+ 108   2              if(!uart_complete) { // 如果前一条命令还没处理完，则忽略当前接收的字符
+ 109   3                  char ch = SBUF;  // 获取接收到的字符
+ 110   3                  
+ 111   3                  // 回显接收到的字符
+ 112   3                  UART_SendByte(ch);
  113   3                  
- 114   3                  // 回显接收到的字符
- 115   3                  UART_SendByte(ch);
- 116   3                  
-C51 COMPILER V9.54   UART                                                                  05/25/2025 20:50:47 PAGE 3   
+ 114   3                  if(ch == '\n' || ch == '\r') { // 接收到回车或换行
+ 115   4                      uart_buffer[uart_count] = '\0';  // 字符串结束符
+ 116   4                      if (uart_count > 0) {  // 非空命令才进行处理
+C51 COMPILER V9.54   UART                                                                  05/26/2025 21:22:57 PAGE 3   
 
- 117   3                  if(ch == '\n' || ch == '\r') { // 接收到回车或换行
- 118   4                      uart_buffer[uart_count] = '\0';  // 字符串结束符
- 119   4                      if (uart_count > 0) {  // 非空命令才进行处理
- 120   5                          uart_complete = 1;  // 设置接收完成标志
- 121   5                      }
+ 117   5                          uart_complete = 1;  // 设置接收完成标志
+ 118   5                      }
+ 119   4                  }
+ 120   3                  else if(uart_count < UART_BUF_SIZE - 1) { // 缓冲区未满
+ 121   4                      uart_buffer[uart_count++] = ch;  // 存储接收到的字符
  122   4                  }
- 123   3                  else if(uart_count < UART_BUF_SIZE - 1) { // 缓冲区未满
- 124   4                      uart_buffer[uart_count++] = ch;  // 存储接收到的字符
- 125   4                  }
- 126   3              }
- 127   2          }
- 128   1          
- 129   1          if(TI) {                // 发送中断
- 130   2              TI = 0;             // 清除发送中断标志
- 131   2          }
- 132   1      }
+ 123   3              }
+ 124   2          }
+ 125   1          
+ 126   1          if(TI) {                // 发送中断
+ 127   2              TI = 0;             // 清除发送中断标志
+ 128   2          }
+ 129   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    472    ----
-   CONSTANT SIZE    =    378    ----
+   CODE SIZE        =    445    ----
+   CONSTANT SIZE    =    288    ----
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----
-   DATA SIZE        =     33       7
+   DATA SIZE        =     17       7
    IDATA SIZE       =   ----    ----
    BIT SIZE         =      1    ----
 END OF MODULE INFORMATION.

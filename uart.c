@@ -1,11 +1,11 @@
 #include "uart.h"
-#include "flowmeter.h"  // 添加这行以引入FlowMeter_GetMode()和FLOW_MODE_OFF
+#include "flowmeter.h"
 #include <string.h>
 
-// 串口缓冲区及状态变量
-static char uart_buffer[UART_BUF_SIZE];  // 串口接收缓冲区
-static BYTE uart_count = 0;              // 当前缓冲区计数
-static bit uart_complete = 0;            // 接收完成标志
+// 串口缓冲区及状态变量 - 减少缓冲区大小
+static char uart_buffer[16];  // 减少缓冲区大小从32到16
+static BYTE uart_count = 0;
+static bit uart_complete = 0;
 
 // 初始化串口
 void UART_Init(void) {
@@ -29,12 +29,9 @@ void UART_Init(void) {
     uart_complete = 0;
     memset(uart_buffer, 0, sizeof(uart_buffer));
     
-    // 发送初始提示信息
-    UART_SendString("\r\n============================\r\n");
-    UART_SendString(" 浇花系统串口控制界面 \r\n");
-    UART_SendString("============================\r\n");
-    UART_SendString("命令格式: TIME:HH:MM:SS\r\n");
-    UART_SendString("例如: TIME:14:30:00\r\n");
+    // 发送简化的初始提示信息
+    UART_SendString("\r\n浇花系统启动\r\n");
+    UART_SendString("TIME:HH:MM:SS\r\n");
 }
 
 // 发送一个字节

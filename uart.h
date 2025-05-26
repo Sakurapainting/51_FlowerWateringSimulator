@@ -4,8 +4,8 @@
 #include "reg51.h"
 #include "pca.h"
 
-// 串口命令处理相关定义
-#define UART_BUF_SIZE 32    // 串口缓冲区大小
+// 串口命令处理相关定义 - 减少缓冲区大小
+#define UART_BUF_SIZE 16    // 从32减少到16
 #define CMD_SET_TIME 1      // 设置时间命令
 
 // 函数声明

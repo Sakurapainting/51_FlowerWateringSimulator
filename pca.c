@@ -2,6 +2,7 @@
 #include "intrins.h"
 #include "pca.h"     // 包含头文件
 #include "flowmeter.h" // 添加flowmeter.h以获取FLOW_MODE_OFF定义
+#include "keyboard_control.h" // 添加按键控制头文件
 
 #define FOSC    11059200L
 #define T100Hz  (FOSC / 12 / 100)
@@ -205,32 +206,32 @@ void PCA_SetTime(BYTE hour, BYTE min, BYTE sec) {
     }
 }
 
-// 修改PCA中断服务函数，加入闪烁处理逻辑
+// 修改PCA中断服务函数，简化显示逻辑
 void PCA_isr() interrupt 7
 {
     if(CCF1){
-        CCF1 = 0;                       // Clear interrupt flag
+        CCF1 = 0;
         CCAP1L = value1;
-        CCAP1H = value1 >> 8;           // Update compare value
+        CCAP1H = value1 >> 8;
         value1 += T1000Hz;
-        disp();                         // 刷新显示
+        disp();
     }
 
     if(CCF0){
-        CCF0 = 0;                       // Clear interrupt flag
+        CCF0 = 0;
         CCAP0L = value;
-        CCAP0H = value >> 8;            // Update compare value
+        CCAP0H = value >> 8;
         value += T100Hz;
         cnt++;
         
-        if(cnt >= 100) {                // Count 100 times
-            cnt = 0;                    // 1秒计时
-            PCA_LED = !PCA_LED;         // 闪烁LED指示灯
+        if(cnt >= 100) {
+            cnt = 0;
+            PCA_LED = !PCA_LED;
             
-            // 调用流量计计算函数（不更新显示），改为更频繁调用
-            FlowMeter_CalcFlow();
+            // 确保每1秒调用一次流量计算
+            FlowMeter_CalcFlow();  // 每秒调用一次，统计过去1秒的脉冲数
             
-            // 更新时钟，但不直接更新显示
+            // 更新时钟
             SysPara1.sec++;
             if(SysPara1.sec >= 60) {
                 SysPara1.sec = 0;
@@ -243,56 +244,58 @@ void PCA_isr() interrupt 7
                 }
             }
             
-            // 时间编辑模式闪烁控制 (每秒切换一次)
+            // 更新定时浇水状态 - 确保在时钟更新后立即调用
+            TimedWatering_Update();
+            
+            // 时间编辑模式闪烁控制
             if (timeEditMode > 0) {
                 blinkState = !blinkState;
                 FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
                 
-                // 根据编辑模式和闪烁状态，设置相应位为不显示
                 if (blinkState) {
                     switch (timeEditMode) {
-                        case HOUR_POS:  // 编辑小时
+                        case HOUR_POS:
                             dispbuff[4] = SEG_OFF;
                             dispbuff[5] = SEG_OFF;
                             break;
-                        case MIN_POS:  // 编辑分钟
+                        case MIN_POS:
                             dispbuff[2] = SEG_OFF;
                             dispbuff[3] = SEG_OFF;
                             break;
-                        case SEC_POS:  // 编辑秒
+                        case SEC_POS:
                             dispbuff[0] = SEG_OFF;
                             dispbuff[1] = SEG_OFF;
                             break;
                     }
                 }
             }
-            
-            // 只有在流量计模式为关闭且不在时间编辑模式时才更新时钟显示的缓冲区
+            // 根据显示模式更新显示缓冲区
             else if (FlowMeter_GetMode() == FLOW_MODE_OFF) {
-                FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
+                // 时钟显示模式：显示当前时间
+                if(auto_display_mode == DISPLAY_MODE_CLOCK) {
+                    FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
+                }
+                // 自动浇水参数显示模式：设置更新标志
+                else if(auto_display_mode == DISPLAY_MODE_AUTO) {
+                    display_update_flag = 1;  // 设置标志，在主循环中更新显示
+                }
             }
         }
-        else if(cnt % 20 == 0 && FlowMeter_GetMode() != FLOW_MODE_OFF) {
-            // 每0.2秒也调用一次流量计算，以减少刷新延迟
-            FlowMeter_CalcFlow();
-        }
         else if(cnt % 50 == 0 && timeEditMode > 0) {
-            // 在时间编辑模式下，每0.5秒切换一次闪烁状态
             blinkState = !blinkState;
             FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
             
-            // 根据编辑模式和闪烁状态，设置相应位为不显示
             if (blinkState) {
                 switch (timeEditMode) {
-                    case HOUR_POS:  // 编辑小时
+                    case HOUR_POS:
                         dispbuff[4] = SEG_OFF;
                         dispbuff[5] = SEG_OFF;
                         break;
-                    case MIN_POS:  // 编辑分钟
+                    case MIN_POS:
                         dispbuff[2] = SEG_OFF;
                         dispbuff[3] = SEG_OFF;
                         break;
-                    case SEC_POS:  // 编辑秒
+                    case SEC_POS:
                         dispbuff[0] = SEG_OFF;
                         dispbuff[1] = SEG_OFF;
                         break;

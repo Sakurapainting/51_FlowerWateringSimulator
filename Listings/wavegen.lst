@@ -1,4 +1,4 @@
-C51 COMPILER V9.54   WAVEGEN                                                               05/25/2025 20:50:47 PAGE 1   
+C51 COMPILER V9.54   WAVEGEN                                                               05/26/2025 21:22:57 PAGE 1   
 
 
 C51 COMPILER V9.54, COMPILATION OF MODULE WAVEGEN
@@ -14,80 +14,82 @@ line level    source
    4          // 方波输出引脚定义
    5          sbit WAVE_OUT = P1^0;  // 方波输出引脚 - 模拟流量计脉冲输出，通过继电器连接到INT0
    6          
-   7          // 标记方波发生器状态
-   8          static bit isRunning = 0;
+   7          // 最小化状态变量
+   8          static bit isRunning = 0;  // 只保留一个必要的状态位
    9          
-  10          // 计算T0初值
-  11          // 方波周期 = 1/5Hz = 200ms
-  12          // 半个周期 = 100ms, 这是高/低电平的持续时间
-  13          // 11.0592MHz晶振，12分频，每毫秒大约是921.6个机器周期
-  14          // 100ms需要92160个机器周期
-  15          // 65536 - 92160 = -26624 (需要转为16位无符号数)
-  16          // 所以初值设为65536 - 92160 = 39376 = 0x99C0
-  17          #define T0_INIT_VAL 0x99C0
-  18          
-  19          // 方波发生器初始化
-  20          void WaveGen_Init(void) {
-  21   1          TMOD &= 0xF0;          // 清除T0的设置位
-  22   1          TMOD |= 0x01;          // 设置T0为模式1（16位定时器）
-  23   1          TH0 = T0_INIT_VAL >> 8;  // 设置T0初值高字节
-  24   1          TL0 = T0_INIT_VAL & 0xFF; // 设置T0初值低字节
-  25   1          ET0 = 1;               // 允许T0中断
-  26   1          WAVE_OUT = 0;          // 初始输出低电平
-  27   1          isRunning = 0;         // 初始状态为停止
-  28   1          TR0 = 0;               // T0不开始计时
-  29   1      
-  30   1          /* 方波发生器引脚连接说明：
-  31   1           * - P1.0 (WAVE_OUT) 输出5Hz方波信号，模拟流量计脉冲
-  32   1           * - 该信号通过继电器的常开触点连接到INT0 (P3.2)
-  33   1           * - 当继电器闭合（浇水开始）时，脉冲信号传导到INT0，模拟水流产生的脉冲
-  34   1           * - 每个脉冲代表特定体积的水流过，根据配置可以计算流量
-  35   1           */
-  36   1      }
-  37          
-  38          // 启动方波发生器
-  39          void WaveGen_Start(void) {
-  40   1          if (!isRunning) {
-  41   2              TH0 = T0_INIT_VAL >> 8;
-  42   2              TL0 = T0_INIT_VAL & 0xFF;
-  43   2              TR0 = 1;           // 启动T0
-  44   2              isRunning = 1;
-  45   2          }
-  46   1      }
-  47          
-  48          // 停止方波发生器
-  49          void WaveGen_Stop(void) {
-  50   1          TR0 = 0;               // 停止T0
-  51   1          WAVE_OUT = 0;          // 输出低电平
-  52   1          isRunning = 0;
-  53   1      }
-  54          
-C51 COMPILER V9.54   WAVEGEN                                                               05/25/2025 20:50:47 PAGE 2   
+  10          #define T0_INIT_VAL 0x4C00  // 50ms半周期，10Hz基频，软件2分频得到5Hz
+  11          
+  12          // 方波发生器初始化
+  13          void WaveGen_Init(void) {
+  14   1          TMOD &= 0xF0;          // 清除T0的设置位
+  15   1          TMOD |= 0x01;          // 设置T0为模式1（16位定时器）
+  16   1          TH0 = T0_INIT_VAL >> 8;  // 设置T0初值高字节
+  17   1          TL0 = T0_INIT_VAL & 0xFF; // 设置T0初值低字节
+  18   1          ET0 = 1;               // 允许T0中断
+  19   1          WAVE_OUT = 0;          // 初始输出低电平
+  20   1          isRunning = 0;         // 初始状态为停止
+  21   1          TR0 = 0;               // T0不开始计时
+  22   1      
+  23   1          /* 方波发生器引脚连接说明：
+  24   1           * - P1.0 (WAVE_OUT) 输出精确5Hz方波信号，模拟流量计脉冲
+  25   1           * - 每个完整周期（高→低→高）为200ms，每个半周期100ms
+  26   1           * - INT0设置为边沿触发，每个上升沿或下降沿产生一次中断
+  27   1           * - 所以5Hz方波会产生10次中断/秒（每个周期2次中断）
+  28   1           * - 但流量计算应该按完整周期计算，即5个脉冲/秒
+  29   1           * - 该信号通过继电器的常开触点连接到INT0 (P3.2)
+  30   1           * - 当继电器闭合（浇水开始）时，脉冲信号传导到INT0，模拟水流产生的脉冲
+  31   1           * - 每个脉冲代表1毫升的水流过，5Hz频率意味着每秒5毫升的基础流量
+  32   1           */
+  33   1      }
+  34          
+  35          // 启动方波发生器
+  36          void WaveGen_Start(void) {
+  37   1          if (!isRunning) {
+  38   2              TH0 = T0_INIT_VAL >> 8;
+  39   2              TL0 = T0_INIT_VAL & 0xFF;
+  40   2              TR0 = 1;           // 启动T0
+  41   2              isRunning = 1;
+  42   2          }
+  43   1      }
+  44          
+  45          // 停止方波发生器
+  46          void WaveGen_Stop(void) {
+  47   1          TR0 = 0;               // 停止T0
+  48   1          WAVE_OUT = 0;          // 输出低电平
+  49   1          isRunning = 0;
+  50   1      }
+  51          
+  52          // 获取方波发生器状态
+  53          BYTE WaveGen_GetState(void) {
+  54   1          return isRunning;
+C51 COMPILER V9.54   WAVEGEN                                                               05/26/2025 21:22:57 PAGE 2   
 
-  55          // 获取方波发生器状态
-  56          BYTE WaveGen_GetState(void) {
-  57   1          return isRunning;
-  58   1      }
-  59          
-  60          // T0中断服务函数
-  61          void T0_ISR() interrupt 1 {
-  62   1          // 重新加载计数初值
-  63   1          TH0 = T0_INIT_VAL >> 8;
-  64   1          TL0 = T0_INIT_VAL & 0xFF;
-  65   1          
-  66   1          // 翻转输出电平
-  67   1          WAVE_OUT = !WAVE_OUT;
-  68   1      }
+  55   1      }
+  56          
+  57          // T0中断服务函数 - 最简化版本
+  58          void T0_ISR() interrupt 1 {
+  59   1          static bit divider = 0;
+  60   1          
+  61   1          // 重新加载计数初值
+  62   1          TH0 = T0_INIT_VAL >> 8;
+  63   1          TL0 = T0_INIT_VAL & 0xFF;
+  64   1          
+  65   1          // 软件2分频
+  66   1          divider = !divider;
+  67   1          if(!divider) {
+  68   2              WAVE_OUT = !WAVE_OUT;
+  69   2          }
+  70   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =     57    ----
+   CODE SIZE        =     62    ----
    CONSTANT SIZE    =   ----    ----
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----
    DATA SIZE        =   ----    ----
    IDATA SIZE       =   ----    ----
-   BIT SIZE         =      1    ----
+   BIT SIZE         =      2    ----
 END OF MODULE INFORMATION.
 
 
