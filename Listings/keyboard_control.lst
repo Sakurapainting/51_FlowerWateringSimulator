@@ -1,4 +1,4 @@
-C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/26/2025 21:19:27 PAGE 1   
+C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/26/2025 21:55:48 PAGE 1   
 
 
 C51 COMPILER V9.54, COMPILATION OF MODULE KEYBOARD_CONTROL
@@ -52,8 +52,8 @@ line level    source
   42   1          timed_watering.watering_volume_left = 0;
   43   1          timed_watering.triggered_today = 0;
   44   1          
-  45   1          // 尝试从24C02加载定时浇水参数（但不覆盖默认值）
-  46   1          // TimedWatering_LoadParams();
+  45   1          // 💡 关键修改：启动时自动从24C02加载定时浇水参数
+  46   1          TimedWatering_LoadParams();
   47   1          
   48   1          auto_display_mode = DISPLAY_MODE_CLOCK;
   49   1          param_mode = PARAM_MODE_HOUR;
@@ -62,7 +62,7 @@ line level    source
   52          /*
   53           * ========================================
   54           * 定时定量浇花功能详细使用说明
-C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/26/2025 21:19:27 PAGE 2   
+C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/26/2025 21:55:48 PAGE 2   
 
   55           * ========================================
   56           * 
@@ -126,7 +126,7 @@ line level    source
  114           * 
  115           * 3. 停止阶段：
  116           *    - 当累计流量达到设定毫升数时
-C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/26/2025 21:19:27 PAGE 3   
+C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/26/2025 21:55:48 PAGE 3   
 
  117           *    - 继电器自动断开，停止浇水
  118           *    - 标记今天已完成浇水，明天同一时间再次触发
@@ -171,314 +171,341 @@ line level    source
  157          void KeyboardControl_Scan(void) {
  158   1          BYTE current_keys = 0;
  159   1          BYTE key_pressed;
- 160   1          
- 161   1          // 读取当前按键状态（修复：按键检测逻辑错误）
- 162   1          if(KEY_AUTO == 0) current_keys |= 0x01;
- 163   1          if(KEY_TIME_UP == 0) current_keys |= 0x02;
- 164   1          if(KEY_TIME_DOWN == 0) current_keys |= 0x04;
- 165   1          if(KEY_VOL_UP == 0) current_keys |= 0x08;
- 166   1          if(KEY_VOL_DOWN == 0) current_keys |= 0x10;
- 167   1          if(KEY_MODE == 0) current_keys |= 0x20;
- 168   1          
- 169   1          // 检测按键按下（下降沿）- 修复逻辑
- 170   1          key_pressed = (~key_prev_state) & current_keys;
- 171   1          
- 172   1          if(key_pressed & 0x01) {  // KEY_AUTO按下
- 173   2              KeyDelay();
- 174   2              if(KEY_AUTO == 0) {
- 175   3                  if(timed_watering.enabled) {
- 176   4                      TimedWatering_Stop();
- 177   4                      auto_display_mode = DISPLAY_MODE_CLOCK;
- 178   4                      // 强制更新时钟显示
-C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/26/2025 21:19:27 PAGE 4   
+ 160   1          bit param_changed = 0;  // 参数修改标志
+ 161   1          
+ 162   1          // 读取当前按键状态
+ 163   1          if(KEY_AUTO == 0) current_keys |= 0x01;
+ 164   1          if(KEY_TIME_UP == 0) current_keys |= 0x02;
+ 165   1          if(KEY_TIME_DOWN == 0) current_keys |= 0x04;
+ 166   1          if(KEY_VOL_UP == 0) current_keys |= 0x08;
+ 167   1          if(KEY_VOL_DOWN == 0) current_keys |= 0x10;
+ 168   1          if(KEY_MODE == 0) current_keys |= 0x20;
+ 169   1          
+ 170   1          // 检测按键按下（下降沿）
+ 171   1          key_pressed = (~key_prev_state) & current_keys;
+ 172   1          
+ 173   1          if(key_pressed & 0x01) {  // KEY_AUTO按下
+ 174   2              KeyDelay();
+ 175   2              if(KEY_AUTO == 0) {
+ 176   3                  if(timed_watering.enabled) {
+ 177   4                      TimedWatering_Stop();
+ 178   4                      auto_display_mode = DISPLAY_MODE_CLOCK;
+C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/26/2025 21:55:48 PAGE 4   
 
  179   4                      FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
  180   4                      display_update_flag = 1;
  181   4                  } else {
  182   4                      TimedWatering_Start();
- 183   4                      // TimedWatering_Start()内部已经设置了DISPLAY_MODE_CLOCK
- 184   4                  }
- 185   3              }
- 186   2          }
- 187   1          
- 188   1          if(key_pressed & 0x20) {  // KEY_MODE按下
- 189   2              KeyDelay();
- 190   2              if(KEY_MODE == 0) {
- 191   3                  param_mode = (param_mode + 1) % 4;  // 4个参数模式
- 192   3                  auto_display_mode = DISPLAY_MODE_AUTO;
- 193   3                  display_update_flag = 1;  // 设置标志立即更新显示
- 194   3              }
- 195   2          }
- 196   1          
- 197   1          if(key_pressed & 0x02) {  // KEY_TIME_UP按下
- 198   2              KeyDelay();
- 199   2              if(KEY_TIME_UP == 0) {
- 200   3                  switch(param_mode) {
- 201   4                      case PARAM_MODE_HOUR:
- 202   4                          timed_watering.start_hour = (timed_watering.start_hour + 1) % 24;
+ 183   4                  }
+ 184   3              }
+ 185   2          }
+ 186   1          
+ 187   1          if(key_pressed & 0x20) {  // KEY_MODE按下
+ 188   2              KeyDelay();
+ 189   2              if(KEY_MODE == 0) {
+ 190   3                  param_mode = (param_mode + 1) % 4;  // 4个参数模式
+ 191   3                  auto_display_mode = DISPLAY_MODE_AUTO;
+ 192   3                  display_update_flag = 1;
+ 193   3              }
+ 194   2          }
+ 195   1          
+ 196   1          if(key_pressed & 0x02) {  // KEY_TIME_UP按下
+ 197   2              KeyDelay();
+ 198   2              if(KEY_TIME_UP == 0) {
+ 199   3                  switch(param_mode) {
+ 200   4                      case PARAM_MODE_HOUR:
+ 201   4                          timed_watering.start_hour = (timed_watering.start_hour + 1) % 24;
+ 202   4                          param_changed = 1;
  203   4                          break;
  204   4                      case PARAM_MODE_MIN:
  205   4                          timed_watering.start_min = (timed_watering.start_min + 1) % 60;
- 206   4                          break;
- 207   4                      case PARAM_MODE_SEC:
- 208   4                          timed_watering.start_sec = (timed_watering.start_sec + 1) % 60;
- 209   4                          break;
- 210   4                      case PARAM_MODE_VOLUME:
- 211   4                          if(timed_watering.water_volume_ml < 9950) {
- 212   5                              timed_watering.water_volume_ml += 50;
- 213   5                          }
- 214   4                          break;
- 215   4                  }
- 216   3                  auto_display_mode = DISPLAY_MODE_AUTO;
- 217   3                  display_update_flag = 1;
- 218   3              }
- 219   2          }
- 220   1          
- 221   1          if(key_pressed & 0x04) {  // KEY_TIME_DOWN按下
- 222   2              KeyDelay();
- 223   2              if(KEY_TIME_DOWN == 0) {
- 224   3                  switch(param_mode) {
- 225   4                      case PARAM_MODE_HOUR:
- 226   4                          timed_watering.start_hour = (timed_watering.start_hour == 0) ? 23 : (timed_watering.st
+ 206   4                          param_changed = 1;
+ 207   4                          break;
+ 208   4                      case PARAM_MODE_SEC:
+ 209   4                          timed_watering.start_sec = (timed_watering.start_sec + 1) % 60;
+ 210   4                          param_changed = 1;
+ 211   4                          break;
+ 212   4                      case PARAM_MODE_VOLUME:
+ 213   4                          if(timed_watering.water_volume_ml < 9950) {
+ 214   5                              timed_watering.water_volume_ml += 50;
+ 215   5                              param_changed = 1;
+ 216   5                          }
+ 217   4                          break;
+ 218   4                  }
+ 219   3                  auto_display_mode = DISPLAY_MODE_AUTO;
+ 220   3                  display_update_flag = 1;
+ 221   3              }
+ 222   2          }
+ 223   1          
+ 224   1          if(key_pressed & 0x04) {  // KEY_TIME_DOWN按下
+ 225   2              KeyDelay();
+ 226   2              if(KEY_TIME_DOWN == 0) {
+ 227   3                  switch(param_mode) {
+ 228   4                      case PARAM_MODE_HOUR:
+ 229   4                          timed_watering.start_hour = (timed_watering.start_hour == 0) ? 23 : (timed_watering.st
              -art_hour - 1);
- 227   4                          break;
- 228   4                      case PARAM_MODE_MIN:
- 229   4                          timed_watering.start_min = (timed_watering.start_min == 0) ? 59 : (timed_watering.star
+ 230   4                          param_changed = 1;
+ 231   4                          break;
+ 232   4                      case PARAM_MODE_MIN:
+ 233   4                          timed_watering.start_min = (timed_watering.start_min == 0) ? 59 : (timed_watering.star
              -t_min - 1);
- 230   4                          break;
- 231   4                      case PARAM_MODE_SEC:
- 232   4                          timed_watering.start_sec = (timed_watering.start_sec == 0) ? 59 : (timed_watering.star
+ 234   4                          param_changed = 1;
+ 235   4                          break;
+ 236   4                      case PARAM_MODE_SEC:
+ 237   4                          timed_watering.start_sec = (timed_watering.start_sec == 0) ? 59 : (timed_watering.star
              -t_sec - 1);
- 233   4                          break;
- 234   4                      case PARAM_MODE_VOLUME:
- 235   4                          if(timed_watering.water_volume_ml > 50) {
- 236   5                              timed_watering.water_volume_ml -= 50;
- 237   5                          }
-C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/26/2025 21:19:27 PAGE 5   
+C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/26/2025 21:55:48 PAGE 5   
 
- 238   4                          break;
- 239   4                  }
- 240   3                  auto_display_mode = DISPLAY_MODE_AUTO;
- 241   3                  display_update_flag = 1;
- 242   3              }
- 243   2          }
- 244   1          
- 245   1          key_prev_state = current_keys;
- 246   1      }
- 247          
- 248          // 启动定时浇水
- 249          void TimedWatering_Start(void) {
- 250   1          timed_watering.enabled = 1;
- 251   1          timed_watering.is_watering = 0;
- 252   1          timed_watering.triggered_today = 0;  // 重置触发标志
- 253   1          
- 254   1          // 保存参数到24C02
- 255   1          TimedWatering_SaveParams();
+ 238   4                          param_changed = 1;
+ 239   4                          break;
+ 240   4                      case PARAM_MODE_VOLUME:
+ 241   4                          if(timed_watering.water_volume_ml > 50) {
+ 242   5                              timed_watering.water_volume_ml -= 50;
+ 243   5                              param_changed = 1;
+ 244   5                          }
+ 245   4                          break;
+ 246   4                  }
+ 247   3                  auto_display_mode = DISPLAY_MODE_AUTO;
+ 248   3                  display_update_flag = 1;
+ 249   3              }
+ 250   2          }
+ 251   1          
+ 252   1          // 💡 关键新增：参数修改后立即保存
+ 253   1          if(param_changed) {
+ 254   2              TimedWatering_SaveParams();
+ 255   2          }
  256   1          
- 257   1          // 启动后立即返回时钟显示模式，而不是显示参数
- 258   1          auto_display_mode = DISPLAY_MODE_CLOCK;
- 259   1          display_update_flag = 1;  // 设置标志立即更新显示
- 260   1          
- 261   1          // 强制更新时钟显示
- 262   1          FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
- 263   1      }
- 264          
- 265          // 停止定时浇水
- 266          void TimedWatering_Stop(void) {
- 267   1          timed_watering.enabled = 0;
- 268   1          timed_watering.triggered_today = 0;
- 269   1          
- 270   1          // 如果正在浇水，立即停止
- 271   1          if(timed_watering.is_watering) {
- 272   2              timed_watering.is_watering = 0;
- 273   2              Relay_Off();
- 274   2              FlowMeter_Stop();
- 275   2              FlowMeter_SetMode(FLOW_MODE_OFF);
- 276   2          }
- 277   1          
- 278   1          // 保存参数到24C02
- 279   1          TimedWatering_SaveParams();
- 280   1      }
- 281          
- 282          // 更新定时浇水状态（每秒调用一次）
- 283          void TimedWatering_Update(void) {
- 284   1          unsigned long current_total_flow;
- 285   1          static unsigned long start_total_flow = 0;
- 286   1          unsigned long watered_volume;
- 287   1          
- 288   1          if(!timed_watering.enabled) return;
+ 257   1          key_prev_state = current_keys;
+ 258   1      }
+ 259          
+ 260          // 启动定时浇水
+ 261          void TimedWatering_Start(void) {
+ 262   1          timed_watering.enabled = 1;
+ 263   1          timed_watering.is_watering = 0;
+ 264   1          timed_watering.triggered_today = 0;  // 重置触发标志
+ 265   1          
+ 266   1          // 💡 立即保存参数到24C02
+ 267   1          TimedWatering_SaveParams();
+ 268   1          
+ 269   1          // 启动后立即返回时钟显示模式，而不是显示参数
+ 270   1          auto_display_mode = DISPLAY_MODE_CLOCK;
+ 271   1          display_update_flag = 1;  // 设置标志立即更新显示
+ 272   1          
+ 273   1          // 强制更新时钟显示
+ 274   1          FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
+ 275   1      }
+ 276          
+ 277          // 停止定时浇水
+ 278          void TimedWatering_Stop(void) {
+ 279   1          timed_watering.enabled = 0;
+ 280   1          timed_watering.triggered_today = 0;
+ 281   1          
+ 282   1          // 如果正在浇水，立即停止
+ 283   1          if(timed_watering.is_watering) {
+ 284   2              timed_watering.is_watering = 0;
+ 285   2              Relay_Off();
+ 286   2              FlowMeter_Stop();
+ 287   2              FlowMeter_SetMode(FLOW_MODE_OFF);
+ 288   2          }
  289   1          
- 290   1          if(timed_watering.is_watering) {
- 291   2              // 正在浇水，检查累计流量是否达到目标
- 292   2              current_total_flow = FlowMeter_GetTotalFlow();
- 293   2              watered_volume = current_total_flow - start_total_flow;
- 294   2              
- 295   2              if(watered_volume >= timed_watering.water_volume_ml) {
- 296   3                  // 达到目标毫升数，停止浇水
- 297   3                  timed_watering.is_watering = 0;
- 298   3                  timed_watering.triggered_today = 1;  // 标记今天已触发
- 299   3                  
-C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/26/2025 21:19:27 PAGE 6   
+ 290   1          // 💡 立即保存参数到24C02
+ 291   1          TimedWatering_SaveParams();
+ 292   1      }
+ 293          
+ 294          // 更新定时浇水状态（每秒调用一次）
+ 295          void TimedWatering_Update(void) {
+ 296   1          unsigned long current_total_flow;
+ 297   1          static unsigned long start_total_flow = 0;
+ 298   1          unsigned long watered_volume;
+ 299   1          
+C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/26/2025 21:55:48 PAGE 6   
 
- 300   3                  Relay_Off();
- 301   3                  FlowMeter_Stop();
- 302   3                  FlowMeter_SetMode(FLOW_MODE_OFF);
- 303   3                  
- 304   3                  // 保存累计流量到24C02
- 305   3                  AT24C02_WriteTotalFlow(current_total_flow);
- 306   3                  
- 307   3                  // 浇水完成后返回时钟显示
- 308   3                  auto_display_mode = DISPLAY_MODE_CLOCK;
- 309   3                  FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
- 310   3                  display_update_flag = 1;
- 311   3              } else {
- 312   3                  // 更新剩余毫升数显示
- 313   3                  timed_watering.watering_volume_left = timed_watering.water_volume_ml - watered_volume;
- 314   3                  // 确保在浇水期间显示剩余毫升数
- 315   3                  if(auto_display_mode != DISPLAY_MODE_AUTO) {
- 316   4                      auto_display_mode = DISPLAY_MODE_AUTO;
- 317   4                      display_update_flag = 1;
- 318   4                  }
- 319   3              }
- 320   2          } else {
- 321   2              // 检查是否到达设定时间点
- 322   2              if(!timed_watering.triggered_today &&
- 323   2                 SysPara1.hour == timed_watering.start_hour &&
- 324   2                 SysPara1.min == timed_watering.start_min &&
- 325   2                 SysPara1.sec == timed_watering.start_sec) {
- 326   3                  
- 327   3                  // 开始浇水
- 328   3                  timed_watering.is_watering = 1;
- 329   3                  timed_watering.watering_volume_left = timed_watering.water_volume_ml;
- 330   3                  start_total_flow = FlowMeter_GetTotalFlow();  // 记录开始时的累计流量
- 331   3                  
- 332   3                  Relay_On();
- 333   3                  FlowMeter_Start();
- 334   3                  FlowMeter_SetMode(FLOW_MODE_CURR);
- 335   3                  
- 336   3                  // 切换到自动浇水显示模式，显示剩余毫升数
- 337   3                  auto_display_mode = DISPLAY_MODE_AUTO;
- 338   3                  display_update_flag = 1;
- 339   3              }
- 340   2              
- 341   2              // 检查是否过了午夜，重置触发标志
- 342   2              if(timed_watering.triggered_today && 
- 343   2                 SysPara1.hour == 0 && SysPara1.min == 0 && SysPara1.sec == 0) {
- 344   3                  timed_watering.triggered_today = 0;
- 345   3              }
- 346   2          }
- 347   1      }
- 348          
- 349          // 显示自动浇水参数
- 350          void DisplayAutoWateringParams(void) {
- 351   1          BYTE val1, val2, val3, val4, val5, val6;
- 352   1          
- 353   1          if(timed_watering.is_watering) {
- 354   2              // 显示剩余毫升数
- 355   2              val1 = timed_watering.watering_volume_left % 10;
- 356   2              val2 = (timed_watering.watering_volume_left / 10) % 10;
- 357   2              val3 = (timed_watering.watering_volume_left / 100) % 10;
- 358   2              val4 = (timed_watering.watering_volume_left / 1000) % 10;
- 359   2              val5 = 0;  // 显示0
- 360   2              val6 = 5;  // 显示5（剩余毫升标识）
- 361   2          } else {
-C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/26/2025 21:19:27 PAGE 7   
+ 300   1          if(!timed_watering.enabled) return;
+ 301   1          
+ 302   1          if(timed_watering.is_watering) {
+ 303   2              // 正在浇水，检查累计流量是否达到目标
+ 304   2              current_total_flow = FlowMeter_GetTotalFlow();
+ 305   2              watered_volume = current_total_flow - start_total_flow;
+ 306   2              
+ 307   2              if(watered_volume >= timed_watering.water_volume_ml) {
+ 308   3                  // 达到目标毫升数，停止浇水
+ 309   3                  timed_watering.is_watering = 0;
+ 310   3                  timed_watering.triggered_today = 1;  // 标记今天已触发
+ 311   3                  
+ 312   3                  Relay_Off();
+ 313   3                  FlowMeter_Stop();
+ 314   3                  FlowMeter_SetMode(FLOW_MODE_OFF);
+ 315   3                  
+ 316   3                  // 保存累计流量到24C02
+ 317   3                  AT24C02_WriteTotalFlow(current_total_flow);
+ 318   3                  
+ 319   3                  // 浇水完成后返回时钟显示
+ 320   3                  auto_display_mode = DISPLAY_MODE_CLOCK;
+ 321   3                  FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
+ 322   3                  display_update_flag = 1;
+ 323   3              } else {
+ 324   3                  // 更新剩余毫升数显示
+ 325   3                  timed_watering.watering_volume_left = timed_watering.water_volume_ml - watered_volume;
+ 326   3                  if(auto_display_mode != DISPLAY_MODE_AUTO) {
+ 327   4                      auto_display_mode = DISPLAY_MODE_AUTO;
+ 328   4                      display_update_flag = 1;
+ 329   4                  }
+ 330   3              }
+ 331   2          } else {
+ 332   2              // 💡 核心逻辑：每天检查是否到达设定时间点
+ 333   2              if(!timed_watering.triggered_today &&
+ 334   2                 SysPara1.hour == timed_watering.start_hour &&
+ 335   2                 SysPara1.min == timed_watering.start_min &&
+ 336   2                 SysPara1.sec == timed_watering.start_sec) {
+ 337   3                  
+ 338   3                  // 开始浇水 - 每天在设定时间自动触发
+ 339   3                  timed_watering.is_watering = 1;
+ 340   3                  timed_watering.watering_volume_left = timed_watering.water_volume_ml;
+ 341   3                  start_total_flow = FlowMeter_GetTotalFlow();
+ 342   3                  
+ 343   3                  Relay_On();
+ 344   3                  FlowMeter_Start();
+ 345   3                  FlowMeter_SetMode(FLOW_MODE_CURR);
+ 346   3                  
+ 347   3                  auto_display_mode = DISPLAY_MODE_AUTO;
+ 348   3                  display_update_flag = 1;
+ 349   3              }
+ 350   2              
+ 351   2              // 💡 关键机制：午夜重置，确保每天都能触发
+ 352   2              // 当时钟走到00:00:00时，重置今日触发标志
+ 353   2              // 这样明天同一时间又可以触发浇水了
+ 354   2              if(timed_watering.triggered_today && 
+ 355   2                 SysPara1.hour == 0 && SysPara1.min == 0 && SysPara1.sec == 0) {
+ 356   3                  timed_watering.triggered_today = 0;  // 重置标志，准备明天的触发
+ 357   3              }
+ 358   2          }
+ 359   1      }
+ 360          
+ 361          // 显示自动浇水参数
+C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/26/2025 21:55:48 PAGE 7   
 
- 362   2              // 移除闪烁显示，直接显示当前参数
- 363   2              switch(param_mode) {
- 364   3                  case PARAM_MODE_HOUR:
- 365   3                      // 显示开始小时 "小时数03"
- 366   3                      val1 = timed_watering.start_hour % 10;
- 367   3                      val2 = (timed_watering.start_hour / 10) % 10;
- 368   3                      val3 = 0;
- 369   3                      val4 = 0;
- 370   3                      val5 = 0;
- 371   3                      val6 = 3;  // 显示3（小时标识）
- 372   3                      break;
- 373   3                      
- 374   3                  case PARAM_MODE_MIN:
- 375   3                      // 显示开始分钟 "分钟数02"
- 376   3                      val1 = timed_watering.start_min % 10;
- 377   3                      val2 = (timed_watering.start_min / 10) % 10;
- 378   3                      val3 = 0;
- 379   3                      val4 = 0;
- 380   3                      val5 = 0;
- 381   3                      val6 = 2;  // 显示2（分钟标识）
- 382   3                      break;
- 383   3                      
- 384   3                  case PARAM_MODE_SEC:
- 385   3                      // 显示开始秒 "秒数01"
- 386   3                      val1 = timed_watering.start_sec % 10;
- 387   3                      val2 = (timed_watering.start_sec / 10) % 10;
- 388   3                      val3 = 0;
- 389   3                      val4 = 0;
- 390   3                      val5 = 0;
- 391   3                      val6 = 1;  // 显示1（秒标识）
- 392   3                      break;
- 393   3                      
- 394   3                  case PARAM_MODE_VOLUME:
- 395   3                      // 显示浇水毫升数 "毫升数05"
- 396   3                      val1 = timed_watering.water_volume_ml % 10;
- 397   3                      val2 = (timed_watering.water_volume_ml / 10) % 10;
- 398   3                      val3 = (timed_watering.water_volume_ml / 100) % 10;
- 399   3                      val4 = (timed_watering.water_volume_ml / 1000) % 10;
- 400   3                      val5 = 0;
- 401   3                      val6 = 5;  // 显示5（毫升标识）
- 402   3                      break;
- 403   3                      
- 404   3                  default:
- 405   3                      val1 = val2 = val3 = val4 = val5 = val6 = 0;
- 406   3                      break;
- 407   3              }
- 408   2              
- 409   2              // 移除闪烁逻辑，始终显示参数值
- 410   2              // if(display_toggle >= 4) {
- 411   2              //     val1 = val2 = val3 = val4 = 0;  // 数值部分熄灭
- 412   2              // }
- 413   2          }
- 414   1          
- 415   1          FillCustomDispBuf(val1, val2, val3, val4, val5, val6);
- 416   1      }
- 417          
- 418          // 添加缺失的函数：检查并更新自动显示
- 419          void CheckAndUpdateAutoDisplay(void) {
- 420   1          if(display_update_flag) {
- 421   2              display_update_flag = 0;  // 清除标志
- 422   2              
- 423   2              if(auto_display_mode == DISPLAY_MODE_AUTO) {
-C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/26/2025 21:19:27 PAGE 8   
+ 362          void DisplayAutoWateringParams(void) {
+ 363   1          BYTE val1, val2, val3, val4, val5, val6;
+ 364   1          
+ 365   1          if(timed_watering.is_watering) {
+ 366   2              // 显示剩余毫升数
+ 367   2              val1 = timed_watering.watering_volume_left % 10;
+ 368   2              val2 = (timed_watering.watering_volume_left / 10) % 10;
+ 369   2              val3 = (timed_watering.watering_volume_left / 100) % 10;
+ 370   2              val4 = (timed_watering.watering_volume_left / 1000) % 10;
+ 371   2              val5 = 0;  // 显示0
+ 372   2              val6 = 5;  // 显示5（剩余毫升标识）
+ 373   2          } else {
+ 374   2              // 移除闪烁显示，直接显示当前参数
+ 375   2              switch(param_mode) {
+ 376   3                  case PARAM_MODE_HOUR:
+ 377   3                      // 显示开始小时 "小时数03"
+ 378   3                      val1 = timed_watering.start_hour % 10;
+ 379   3                      val2 = (timed_watering.start_hour / 10) % 10;
+ 380   3                      val3 = 0;
+ 381   3                      val4 = 0;
+ 382   3                      val5 = 0;
+ 383   3                      val6 = 3;  // 显示3（小时标识）
+ 384   3                      break;
+ 385   3                      
+ 386   3                  case PARAM_MODE_MIN:
+ 387   3                      // 显示开始分钟 "分钟数02"
+ 388   3                      val1 = timed_watering.start_min % 10;
+ 389   3                      val2 = (timed_watering.start_min / 10) % 10;
+ 390   3                      val3 = 0;
+ 391   3                      val4 = 0;
+ 392   3                      val5 = 0;
+ 393   3                      val6 = 2;  // 显示2（分钟标识）
+ 394   3                      break;
+ 395   3                      
+ 396   3                  case PARAM_MODE_SEC:
+ 397   3                      // 显示开始秒 "秒数01"
+ 398   3                      val1 = timed_watering.start_sec % 10;
+ 399   3                      val2 = (timed_watering.start_sec / 10) % 10;
+ 400   3                      val3 = 0;
+ 401   3                      val4 = 0;
+ 402   3                      val5 = 0;
+ 403   3                      val6 = 1;  // 显示1（秒标识）
+ 404   3                      break;
+ 405   3                      
+ 406   3                  case PARAM_MODE_VOLUME:
+ 407   3                      // 显示浇水毫升数 "毫升数05"
+ 408   3                      val1 = timed_watering.water_volume_ml % 10;
+ 409   3                      val2 = (timed_watering.water_volume_ml / 10) % 10;
+ 410   3                      val3 = (timed_watering.water_volume_ml / 100) % 10;
+ 411   3                      val4 = (timed_watering.water_volume_ml / 1000) % 10;
+ 412   3                      val5 = 0;
+ 413   3                      val6 = 5;  // 显示5（毫升标识）
+ 414   3                      break;
+ 415   3                      
+ 416   3                  default:
+ 417   3                      val1 = val2 = val3 = val4 = val5 = val6 = 0;
+ 418   3                      break;
+ 419   3              }
+ 420   2              
+ 421   2              // 移除闪烁逻辑，始终显示参数值
+ 422   2              // if(display_toggle >= 4) {
+ 423   2              //     val1 = val2 = val3 = val4 = 0;  // 数值部分熄灭
+C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/26/2025 21:55:48 PAGE 8   
 
- 424   3                  DisplayAutoWateringParams();
- 425   3              }
- 426   2          }
- 427   1      }
- 428          
- 429          // 保存定时浇水参数到24C02
- 430          void TimedWatering_SaveParams(void) {
- 431   1          AT24C02_WriteTimedWateringParams(&timed_watering);
- 432   1      }
- 433          
- 434          // 从24C02加载定时浇水参数
- 435          void TimedWatering_LoadParams(void) {
- 436   1          AT24C02_ReadTimedWateringParams(&timed_watering);
- 437   1          
- 438   1          // 如果加载的参数显示系统之前处于启用状态，但重启后应该禁用
- 439   1          if(timed_watering.enabled) {
- 440   2              timed_watering.enabled = 0;  // 重启后默认禁用，需要手动重新启动
- 441   2              timed_watering.is_watering = 0;
- 442   2              timed_watering.watering_volume_left = 0;
- 443   2          }
+ 424   2              // }
+ 425   2          }
+ 426   1          
+ 427   1          FillCustomDispBuf(val1, val2, val3, val4, val5, val6);
+ 428   1      }
+ 429          
+ 430          // 添加缺失的函数：检查并更新自动显示
+ 431          void CheckAndUpdateAutoDisplay(void) {
+ 432   1          if(display_update_flag) {
+ 433   2              display_update_flag = 0;  // 清除标志
+ 434   2              
+ 435   2              if(auto_display_mode == DISPLAY_MODE_AUTO) {
+ 436   3                  DisplayAutoWateringParams();
+ 437   3              }
+ 438   2          }
+ 439   1      }
+ 440          
+ 441          // 保存定时浇水参数到24C02
+ 442          void TimedWatering_SaveParams(void) {
+ 443   1          AT24C02_WriteTimedWateringParams(&timed_watering);
  444   1      }
+ 445          
+ 446          // 从24C02加载定时浇水参数
+ 447          void TimedWatering_LoadParams(void) {
+ 448   1          AT24C02_ReadTimedWateringParams(&timed_watering);
+ 449   1          
+ 450   1          // 💡 关键修改：保持加载的enabled状态，但重置运行时状态
+ 451   1          // 如果之前启用了定时浇水，加载后依然保持启用
+ 452   1          // timed_watering.enabled = timed_watering.enabled;  // 保持原值
+ 453   1          
+ 454   1          // 重置运行时状态
+ 455   1          timed_watering.is_watering = 0;
+ 456   1          timed_watering.watering_volume_left = 0;
+ 457   1          
+ 458   1          // 💡 重要：检查是否需要重置今日触发标志
+ 459   1          // 如果系统重启，应该允许今天再次触发（除非今天已经过了设定时间）
+ 460   1          if(timed_watering.enabled) {
+ 461   2              // 如果当前时间已经超过了设定时间，标记为今日已触发
+ 462   2              if(SysPara1.hour > timed_watering.start_hour || 
+ 463   2                 (SysPara1.hour == timed_watering.start_hour && SysPara1.min > timed_watering.start_min) ||
+ 464   2                 (SysPara1.hour == timed_watering.start_hour && SysPara1.min == timed_watering.start_min && SysP
+             -ara1.sec > timed_watering.start_sec)) {
+ 465   3                  timed_watering.triggered_today = 1;  // 今天的浇水时间已过
+ 466   3              } else {
+ 467   3                  timed_watering.triggered_today = 0;  // 今天的浇水时间还没到
+ 468   3              }
+ 469   2          }
+ 470   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    973    ----
+   CODE SIZE        =   1042    ----
    CONSTANT SIZE    =   ----    ----
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----
    DATA SIZE        =     17      16
    IDATA SIZE       =   ----    ----
-   BIT SIZE         =      1    ----
+   BIT SIZE         =      1       1
 END OF MODULE INFORMATION.
 
 

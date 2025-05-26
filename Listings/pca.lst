@@ -1,4 +1,4 @@
-C51 COMPILER V9.54   PCA                                                                   05/26/2025 21:19:26 PAGE 1   
+C51 COMPILER V9.54   PCA                                                                   05/26/2025 21:55:47 PAGE 1   
 
 
 C51 COMPILER V9.54, COMPILATION OF MODULE PCA
@@ -62,7 +62,7 @@ line level    source
   52          static code const unsigned char LED[] = {0x3F,0x06,0x5B,0x4F,0x66,0x6D,0x7D,0x07,0x7F,0x6F,CURRENTFLOW_MOD
              -E,TOTALFLOW_MODE};
   53          
-C51 COMPILER V9.54   PCA                                                                   05/26/2025 21:19:26 PAGE 2   
+C51 COMPILER V9.54   PCA                                                                   05/26/2025 21:55:47 PAGE 2   
 
   54          // 显示缓冲区
   55          unsigned char dispbuff[8] = {SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF};
@@ -126,7 +126,7 @@ line level    source
  113   1          dispbuff[3] = LED[val4];
  114   1          dispbuff[4] = LED[val5];
  115   1          dispbuff[5] = LED[val6];
-C51 COMPILER V9.54   PCA                                                                   05/26/2025 21:19:26 PAGE 3   
+C51 COMPILER V9.54   PCA                                                                   05/26/2025 21:55:47 PAGE 3   
 
  116   1      }
  117          
@@ -190,7 +190,7 @@ line level    source
  175   1          FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
  176   1      }
  177          
-C51 COMPILER V9.54   PCA                                                                   05/26/2025 21:19:26 PAGE 4   
+C51 COMPILER V9.54   PCA                                                                   05/26/2025 21:55:47 PAGE 4   
 
  178          // 增加时间值
  179          void PCA_IncreaseTimeValue(BYTE position) {
@@ -216,156 +216,174 @@ line level    source
  199   2              SysPara1.min = min;
  200   2              SysPara1.sec = sec;
  201   2              
- 202   2              // 如果当前是时钟显示模式，更新显示
- 203   2              if(FlowMeter_GetMode() == FLOW_MODE_OFF && timeEditMode == 0) {
- 204   3                  FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
- 205   3              }
- 206   2          }
- 207   1      }
- 208          
- 209          // 修改PCA中断服务函数，简化显示逻辑
- 210          void PCA_isr() interrupt 7
- 211          {
- 212   1          if(CCF1){
- 213   2              CCF1 = 0;
- 214   2              CCAP1L = value1;
- 215   2              CCAP1H = value1 >> 8;
- 216   2              value1 += T1000Hz;
- 217   2              disp();
- 218   2          }
- 219   1      
- 220   1          if(CCF0){
- 221   2              CCF0 = 0;
- 222   2              CCAP0L = value;
- 223   2              CCAP0H = value >> 8;
- 224   2              value += T100Hz;
- 225   2              cnt++;
- 226   2              
- 227   2              if(cnt >= 100) {
- 228   3                  cnt = 0;
- 229   3                  PCA_LED = !PCA_LED;
- 230   3                  
- 231   3                  // 确保每1秒调用一次流量计算
- 232   3                  FlowMeter_CalcFlow();  // 每秒调用一次，统计过去1秒的脉冲数
- 233   3                  
- 234   3                  // 更新时钟
- 235   3                  SysPara1.sec++;
- 236   3                  if(SysPara1.sec >= 60) {
- 237   4                      SysPara1.sec = 0;
- 238   4                      SysPara1.min++;
- 239   4                      if(SysPara1.min >= 60) {
-C51 COMPILER V9.54   PCA                                                                   05/26/2025 21:19:26 PAGE 5   
+ 202   2              // 💡 新增：时间修改后重新计算今日触发标志
+ 203   2              if(timed_watering.enabled) {
+ 204   3                  // 重新判断今天的浇水时间是否已过
+ 205   3                  if(SysPara1.hour > timed_watering.start_hour || 
+ 206   3                     (SysPara1.hour == timed_watering.start_hour && SysPara1.min > timed_watering.start_min) ||
+ 207   3                     (SysPara1.hour == timed_watering.start_hour && SysPara1.min == timed_watering.start_min && 
+             -SysPara1.sec > timed_watering.start_sec)) {
+ 208   4                      timed_watering.triggered_today = 1;  // 今天的浇水时间已过
+ 209   4                  } else {
+ 210   4                      timed_watering.triggered_today = 0;  // 今天的浇水时间还没到，可以触发
+ 211   4                  }
+ 212   3                  
+ 213   3                  // 保存更新后的状态
+ 214   3                  TimedWatering_SaveParams();
+ 215   3              }
+ 216   2              
+ 217   2              // 如果当前是时钟显示模式，更新显示
+ 218   2              if(FlowMeter_GetMode() == FLOW_MODE_OFF && timeEditMode == 0) {
+ 219   3                  FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
+ 220   3              }
+ 221   2          }
+ 222   1      }
+ 223          
+ 224          // 修改PCA中断服务函数，简化显示逻辑
+ 225          void PCA_isr() interrupt 7
+ 226          {
+ 227   1          if(CCF1){
+ 228   2              CCF1 = 0;
+ 229   2              CCAP1L = value1;
+ 230   2              CCAP1H = value1 >> 8;
+ 231   2              value1 += T1000Hz;
+ 232   2              disp();
+ 233   2          }
+ 234   1      
+ 235   1          if(CCF0){
+ 236   2              CCF0 = 0;
+ 237   2              CCAP0L = value;
+ 238   2              CCAP0H = value >> 8;
+C51 COMPILER V9.54   PCA                                                                   05/26/2025 21:55:47 PAGE 5   
 
- 240   5                          SysPara1.min = 0;
- 241   5                          SysPara1.hour++;
- 242   5                          if(SysPara1.hour >= 24)
- 243   5                              SysPara1.hour = 0;
- 244   5                      }
- 245   4                  }
- 246   3                  
- 247   3                  // 更新定时浇水状态 - 确保在时钟更新后立即调用
- 248   3                  TimedWatering_Update();
- 249   3                  
- 250   3                  // 时间编辑模式闪烁控制
- 251   3                  if (timeEditMode > 0) {
- 252   4                      blinkState = !blinkState;
- 253   4                      FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
- 254   4                      
- 255   4                      if (blinkState) {
- 256   5                          switch (timeEditMode) {
- 257   6                              case HOUR_POS:
- 258   6                                  dispbuff[4] = SEG_OFF;
- 259   6                                  dispbuff[5] = SEG_OFF;
- 260   6                                  break;
- 261   6                              case MIN_POS:
- 262   6                                  dispbuff[2] = SEG_OFF;
- 263   6                                  dispbuff[3] = SEG_OFF;
- 264   6                                  break;
- 265   6                              case SEC_POS:
- 266   6                                  dispbuff[0] = SEG_OFF;
- 267   6                                  dispbuff[1] = SEG_OFF;
- 268   6                                  break;
- 269   6                          }
- 270   5                      }
- 271   4                  }
- 272   3                  // 根据显示模式更新显示缓冲区
- 273   3                  else if (FlowMeter_GetMode() == FLOW_MODE_OFF) {
- 274   4                      // 时钟显示模式：显示当前时间
- 275   4                      if(auto_display_mode == DISPLAY_MODE_CLOCK) {
- 276   5                          FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
- 277   5                      }
- 278   4                      // 自动浇水参数显示模式：设置更新标志
- 279   4                      else if(auto_display_mode == DISPLAY_MODE_AUTO) {
- 280   5                          display_update_flag = 1;  // 设置标志，在主循环中更新显示
- 281   5                      }
- 282   4                  }
- 283   3              }
- 284   2              else if(cnt % 50 == 0 && timeEditMode > 0) {
- 285   3                  blinkState = !blinkState;
- 286   3                  FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
- 287   3                  
- 288   3                  if (blinkState) {
- 289   4                      switch (timeEditMode) {
- 290   5                          case HOUR_POS:
- 291   5                              dispbuff[4] = SEG_OFF;
- 292   5                              dispbuff[5] = SEG_OFF;
- 293   5                              break;
- 294   5                          case MIN_POS:
- 295   5                              dispbuff[2] = SEG_OFF;
- 296   5                              dispbuff[3] = SEG_OFF;
- 297   5                              break;
- 298   5                          case SEC_POS:
- 299   5                              dispbuff[0] = SEG_OFF;
- 300   5                              dispbuff[1] = SEG_OFF;
- 301   5                              break;
-C51 COMPILER V9.54   PCA                                                                   05/26/2025 21:19:26 PAGE 6   
+ 239   2              value += T100Hz;
+ 240   2              cnt++;
+ 241   2              
+ 242   2              if(cnt >= 100) {
+ 243   3                  cnt = 0;
+ 244   3                  PCA_LED = !PCA_LED;
+ 245   3                  
+ 246   3                  // 确保每1秒调用一次流量计算
+ 247   3                  FlowMeter_CalcFlow();  // 每秒调用一次，统计过去1秒的脉冲数
+ 248   3                  
+ 249   3                  // 更新时钟
+ 250   3                  SysPara1.sec++;
+ 251   3                  if(SysPara1.sec >= 60) {
+ 252   4                      SysPara1.sec = 0;
+ 253   4                      SysPara1.min++;
+ 254   4                      if(SysPara1.min >= 60) {
+ 255   5                          SysPara1.min = 0;
+ 256   5                          SysPara1.hour++;
+ 257   5                          if(SysPara1.hour >= 24)
+ 258   5                              SysPara1.hour = 0;
+ 259   5                      }
+ 260   4                  }
+ 261   3                  
+ 262   3                  // 更新定时浇水状态 - 确保在时钟更新后立即调用
+ 263   3                  TimedWatering_Update();
+ 264   3                  
+ 265   3                  // 时间编辑模式闪烁控制
+ 266   3                  if (timeEditMode > 0) {
+ 267   4                      blinkState = !blinkState;
+ 268   4                      FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
+ 269   4                      
+ 270   4                      if (blinkState) {
+ 271   5                          switch (timeEditMode) {
+ 272   6                              case HOUR_POS:
+ 273   6                                  dispbuff[4] = SEG_OFF;
+ 274   6                                  dispbuff[5] = SEG_OFF;
+ 275   6                                  break;
+ 276   6                              case MIN_POS:
+ 277   6                                  dispbuff[2] = SEG_OFF;
+ 278   6                                  dispbuff[3] = SEG_OFF;
+ 279   6                                  break;
+ 280   6                              case SEC_POS:
+ 281   6                                  dispbuff[0] = SEG_OFF;
+ 282   6                                  dispbuff[1] = SEG_OFF;
+ 283   6                                  break;
+ 284   6                          }
+ 285   5                      }
+ 286   4                  }
+ 287   3                  // 根据显示模式更新显示缓冲区
+ 288   3                  else if (FlowMeter_GetMode() == FLOW_MODE_OFF) {
+ 289   4                      // 时钟显示模式：显示当前时间
+ 290   4                      if(auto_display_mode == DISPLAY_MODE_CLOCK) {
+ 291   5                          FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
+ 292   5                      }
+ 293   4                      // 自动浇水参数显示模式：设置更新标志
+ 294   4                      else if(auto_display_mode == DISPLAY_MODE_AUTO) {
+ 295   5                          display_update_flag = 1;  // 设置标志，在主循环中更新显示
+ 296   5                      }
+ 297   4                  }
+ 298   3              }
+ 299   2              else if(cnt % 50 == 0 && timeEditMode > 0) {
+ 300   3                  blinkState = !blinkState;
+C51 COMPILER V9.54   PCA                                                                   05/26/2025 21:55:47 PAGE 6   
 
- 302   5                      }
- 303   4                  }
- 304   3              }
- 305   2          }
- 306   1      }
- 307          
- 308          void PCA_Init(void)
- 309          {
- 310   1          CCON = 0;                       // Initial PCA control register
- 311   1                                          // PCA timer stop running
- 312   1                                          // Clear CF flag
- 313   1                                          // Clear all module interrupt flag
- 314   1          CL = 0;                         // Reset PCA base timer
- 315   1          CH = 0;
- 316   1          CMOD = 0x00;                    // Set PCA timer clock source as Fosc/12
- 317   1                                          // Disable PCA timer overflow interrupt
- 318   1          
- 319   1          // 初始化PCA模块1 (1000Hz)
- 320   1          value1 = T1000Hz;
- 321   1          CCAP1L = value1;
- 322   1          CCAP1H = value1 >> 8;           // Initial PCA module-1
- 323   1          value1 += T1000Hz;
- 324   1          CCAPM1 = 0x49;                  // PCA module-1 work in 16-bit timer mode
- 325   1                                          // and enable PCA interrupt
- 326   1          
- 327   1          // 初始化PCA模块0 (100Hz)
- 328   1          value = T100Hz;
- 329   1          CCAP0L = value;
- 330   1          CCAP0H = value >> 8;            // Initial PCA module-0
- 331   1          value += T100Hz;
- 332   1          CCAPM0 = 0x49;                  // PCA module-0 work in 16-bit timer mode
- 333   1                                          // and enable PCA interrupt
- 334   1          
- 335   1          CR = 1;                         // PCA timer start run
- 336   1          EA = 1;                         // Enable global interrupt
- 337   1          cnt = 0;
- 338   1      
- 339   1          // 初始化时钟显示
- 340   1          FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
- 341   1      }
- 342          
+ 301   3                  FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
+ 302   3                  
+ 303   3                  if (blinkState) {
+ 304   4                      switch (timeEditMode) {
+ 305   5                          case HOUR_POS:
+ 306   5                              dispbuff[4] = SEG_OFF;
+ 307   5                              dispbuff[5] = SEG_OFF;
+ 308   5                              break;
+ 309   5                          case MIN_POS:
+ 310   5                              dispbuff[2] = SEG_OFF;
+ 311   5                              dispbuff[3] = SEG_OFF;
+ 312   5                              break;
+ 313   5                          case SEC_POS:
+ 314   5                              dispbuff[0] = SEG_OFF;
+ 315   5                              dispbuff[1] = SEG_OFF;
+ 316   5                              break;
+ 317   5                      }
+ 318   4                  }
+ 319   3              }
+ 320   2          }
+ 321   1      }
+ 322          
+ 323          void PCA_Init(void)
+ 324          {
+ 325   1          CCON = 0;                       // Initial PCA control register
+ 326   1                                          // PCA timer stop running
+ 327   1                                          // Clear CF flag
+ 328   1                                          // Clear all module interrupt flag
+ 329   1          CL = 0;                         // Reset PCA base timer
+ 330   1          CH = 0;
+ 331   1          CMOD = 0x00;                    // Set PCA timer clock source as Fosc/12
+ 332   1                                          // Disable PCA timer overflow interrupt
+ 333   1          
+ 334   1          // 初始化PCA模块1 (1000Hz)
+ 335   1          value1 = T1000Hz;
+ 336   1          CCAP1L = value1;
+ 337   1          CCAP1H = value1 >> 8;           // Initial PCA module-1
+ 338   1          value1 += T1000Hz;
+ 339   1          CCAPM1 = 0x49;                  // PCA module-1 work in 16-bit timer mode
+ 340   1                                          // and enable PCA interrupt
+ 341   1          
+ 342   1          // 初始化PCA模块0 (100Hz)
+ 343   1          value = T100Hz;
+ 344   1          CCAP0L = value;
+ 345   1          CCAP0H = value >> 8;            // Initial PCA module-0
+ 346   1          value += T100Hz;
+ 347   1          CCAPM0 = 0x49;                  // PCA module-0 work in 16-bit timer mode
+ 348   1                                          // and enable PCA interrupt
+ 349   1          
+ 350   1          CR = 1;                         // PCA timer start run
+ 351   1          EA = 1;                         // Enable global interrupt
+ 352   1          cnt = 0;
+ 353   1      
+ 354   1          // 初始化时钟显示
+ 355   1          FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
+ 356   1      }
+ 357          
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    757    ----
+   CODE SIZE        =    807    ----
    CONSTANT SIZE    =     12    ----
+C51 COMPILER V9.54   PCA                                                                   05/26/2025 21:55:47 PAGE 7   
+
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----
    DATA SIZE        =     20       6

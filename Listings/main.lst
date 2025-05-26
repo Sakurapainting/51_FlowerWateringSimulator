@@ -1,4 +1,4 @@
-C51 COMPILER V9.54   MAIN                                                                  05/26/2025 21:22:56 PAGE 1   
+C51 COMPILER V9.54   MAIN                                                                  05/26/2025 21:55:47 PAGE 1   
 
 
 C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
@@ -62,7 +62,7 @@ line level    source
   52   5                              Relay_On();
   53   5                              FlowMeter_Reset();
   54   5                              FlowMeter_Start();
-C51 COMPILER V9.54   MAIN                                                                  05/26/2025 21:22:56 PAGE 2   
+C51 COMPILER V9.54   MAIN                                                                  05/26/2025 21:55:47 PAGE 2   
 
   55   5                              FlowMeter_SetMode(FLOW_MODE_CURR);
   56   5                              FlowMeter_UpdateDisplay();
@@ -126,7 +126,7 @@ line level    source
  114   1           * ✓ 精确时间控制：可设定每天固定时间自动浇水
  115   1           * ✓ 定量浇水：按毫升数精确控制浇水量
  116   1           * ✓ 数据保存：累计流量掉电不丢失
-C51 COMPILER V9.54   MAIN                                                                  05/26/2025 21:22:56 PAGE 3   
+C51 COMPILER V9.54   MAIN                                                                  05/26/2025 21:55:47 PAGE 3   
 
  117   1           * ✓ 智能防重：每天只执行一次，避免重复浇水
  118   1           * ✓ 手动控制：支持手动立即浇水
@@ -190,7 +190,7 @@ line level    source
  170   1           * 
  171   1           * 参数设置模式：
  172   1           * ┌──────────┬─────────────┬───────
-C51 COMPILER V9.54   MAIN                                                                  05/26/2025 21:22:56 PAGE 4   
+C51 COMPILER V9.54   MAIN                                                                  05/26/2025 21:55:47 PAGE 4   
 
              -────────┐
  173   1           * │ 显示格式  │    含义     │    示例      │
@@ -254,7 +254,7 @@ line level    source
  229   1          KeyboardControl_Init();  // 初始化按键控制
  230   1          
  231   1          // 发送启动信息到串口
-C51 COMPILER V9.54   MAIN                                                                  05/26/2025 21:22:56 PAGE 5   
+C51 COMPILER V9.54   MAIN                                                                  05/26/2025 21:55:47 PAGE 5   
 
  232   1          UART_SendString("\r\n浇花系统已启动\r\n");
  233   1          UART_SendString("当前时间设置功能可用\r\n");

@@ -199,6 +199,21 @@ void PCA_SetTime(BYTE hour, BYTE min, BYTE sec) {
         SysPara1.min = min;
         SysPara1.sec = sec;
         
+        // 💡 新增：时间修改后重新计算今日触发标志
+        if(timed_watering.enabled) {
+            // 重新判断今天的浇水时间是否已过
+            if(SysPara1.hour > timed_watering.start_hour || 
+               (SysPara1.hour == timed_watering.start_hour && SysPara1.min > timed_watering.start_min) ||
+               (SysPara1.hour == timed_watering.start_hour && SysPara1.min == timed_watering.start_min && SysPara1.sec > timed_watering.start_sec)) {
+                timed_watering.triggered_today = 1;  // 今天的浇水时间已过
+            } else {
+                timed_watering.triggered_today = 0;  // 今天的浇水时间还没到，可以触发
+            }
+            
+            // 保存更新后的状态
+            TimedWatering_SaveParams();
+        }
+        
         // 如果当前是时钟显示模式，更新显示
         if(FlowMeter_GetMode() == FLOW_MODE_OFF && timeEditMode == 0) {
             FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);

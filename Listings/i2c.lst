@@ -1,4 +1,4 @@
-C51 COMPILER V9.54   I2C                                                                   05/26/2025 21:25:36 PAGE 1   
+C51 COMPILER V9.54   I2C                                                                   05/26/2025 21:55:48 PAGE 1   
 
 
 C51 COMPILER V9.54, COMPILATION OF MODULE I2C
@@ -62,7 +62,7 @@ line level    source
   52   2          }
   53   1          
   54   1          SCL = 0;
-C51 COMPILER V9.54   I2C                                                                   05/26/2025 21:25:36 PAGE 2   
+C51 COMPILER V9.54   I2C                                                                   05/26/2025 21:55:48 PAGE 2   
 
   55   1          I2C_Delay();
   56   1          SDA = 1;
@@ -126,7 +126,7 @@ line level    source
  114   1          
  115   1          return dat;
  116   1      }
-C51 COMPILER V9.54   I2C                                                                   05/26/2025 21:25:36 PAGE 3   
+C51 COMPILER V9.54   I2C                                                                   05/26/2025 21:55:48 PAGE 3   
 
  117          
  118          // 写累计流量到24C02（4字节）
@@ -190,7 +190,7 @@ MODULE INFORMATION:   STATIC OVERLAYABLE
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----
    DATA SIZE        =   ----      14
-C51 COMPILER V9.54   I2C                                                                   05/26/2025 21:25:36 PAGE 4   
+C51 COMPILER V9.54   I2C                                                                   05/26/2025 21:55:48 PAGE 4   
 
    IDATA SIZE       =   ----    ----
    BIT SIZE         =   ----       1
