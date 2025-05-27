@@ -4,7 +4,7 @@
 #include "i2c.h"  // 添加I2C头文件
 
 // 定时浇水配置 - 默认值：6:00:01开始，浇100毫升
-TimedWatering timed_watering = {0, 6, 0, 1, 100, 0, 0, 0};
+TimedWatering xdata timed_watering = {0, 6, 0, 1, 100, 0, 0, 0};
 
 // 显示模式：0=时钟，1=自动浇水参数
 BYTE auto_display_mode = DISPLAY_MODE_CLOCK;

@@ -30,7 +30,7 @@ typedef struct {
 
 // 外部变量声明
 extern SYS_PARAMS SysPara1;
-extern unsigned char dispbuff[8];
+extern unsigned char xdata dispbuff[8];  // 更新为xdata声明
 
 // 函数声明
 void PCA_Init(void);                      // PCA初始化函数

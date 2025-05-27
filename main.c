@@ -224,8 +224,9 @@ void main(void) {
     Relay_Init();
     WaveGen_Init();
     WaveGen_Start();
-    FlowMeter_Init();
     UART_Init();
+    I2C_Init();  
+    FlowMeter_Init();
     KeyboardControl_Init();  // 初始化按键控制
     
     // 发送英文启动信息到串口

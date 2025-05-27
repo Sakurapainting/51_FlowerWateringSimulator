@@ -1,6 +1,7 @@
 #include "flowmeter.h"
 #include "intrins.h"
-#include "i2c.h"  // 添加I2C头文件
+#include "i2c.h"  
+#include "uart.h"
 
 /*
  * ========================================
@@ -160,7 +161,8 @@
 static BYTE flowMode = FLOW_MODE_OFF;     // 流量显示模式
 static WORD pulseCount = 0;               // 当前流量脉冲计数
 static WORD currentFlow = 0;              // 当前流量值（毫升/秒）
-static unsigned long totalFlow = 0;       // 累计流量值（毫升）
+// 移除本地totalFlow声明，使用i2c.c中的全局变量
+extern unsigned long totalFlow;          // 累计流量值（毫升）- 使用i2c.c中的全局变量
 static bit isRunning = 0;                 // 流量计运行状态
 static bit needUpdateDisplay = 0;         // 显示更新标志
 static BYTE initialDisplayDelay = 0;      // 初始显示延迟计数器
@@ -168,7 +170,7 @@ static BYTE initialDisplayDelay = 0;      // 初始显示延迟计数器
 // 24C02存储控制变量
 static BYTE saveCounter = 0;              // 定期保存计数器
 static bit totalFlowChanged = 0;          // 累计流量变化标志
-static unsigned long lastSavedFlow = 0;   // 上次保存的累计流量
+static unsigned long lastSavedFlow = 0;   // 上次保存的累计流量 - 移到xdata
 
 // 流量计参数定义
 #define PULSE_FACTOR 1                   // 每个脉冲代表1毫升
@@ -186,14 +188,55 @@ void FlowMeter_Init(void) {
      * - P2.0/P2.1: I2C接口，连接24C02存储芯片
      */
     
+
+    char flowStr[12];
+    char temp[12];
+    BYTE i = 0, j = 0;
+    unsigned long tempFlow;
+
     IT0 = 1;                           // 设置INT0为边沿触发（下降沿触发）
     EX0 = 1;                           // 使能INT0中断
     pulseCount = 0;                    // 初始化脉冲计数
     currentFlow = 0;                   // 初始化当前流量
     
+
+    
     // 从24C02读取累计流量数据
     totalFlow = AT24C02_ReadTotalFlow();
-    lastSavedFlow = totalFlow;         // 记录初始读取值
+
+    lastSavedFlow = totalFlow;         // 立即保存原始值
+    
+    // 发送累计流量到串口进行调试
+    UART_SendString("Total Flow: ");
+    
+    if(totalFlow == 0) {
+        UART_SendString("0");
+    } else {
+        tempFlow = totalFlow;
+        i = 0;  // 重置索引
+        
+        // 从低位到高位提取数字
+        while(tempFlow > 0 && i < 10) {  // 添加边界检查
+            temp[i++] = '0' + (tempFlow % 10);
+            tempFlow /= 10;
+        }
+        
+        // 确保至少有一个数字
+        if(i == 0) {
+            temp[i++] = '0';
+        }
+        
+        // 反转字符串
+        j = 0;
+        while(i > 0 && j < 10) {  // 添加边界检查
+            flowStr[j++] = temp[--i];
+        }
+        flowStr[j] = '\0';
+        
+        UART_SendString(flowStr);
+    }
+    
+    UART_SendString(" ml\r\n");
     
     isRunning = 0;                     // 初始不运行
     flowMode = FLOW_MODE_OFF;          // 默认显示模式为关闭

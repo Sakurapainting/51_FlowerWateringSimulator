@@ -1,4 +1,4 @@
-C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/27/2025 12:57:11 PAGE 1   
+C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/27/2025 19:56:24 PAGE 1   
 
 
 C51 COMPILER V9.54, COMPILATION OF MODULE KEYBOARD_CONTROL
@@ -14,7 +14,7 @@ line level    source
    4          #include "i2c.h"  // 添加I2C头文件
    5          
    6          // 定时浇水配置 - 默认值：6:00:01开始，浇100毫升
-   7          TimedWatering timed_watering = {0, 6, 0, 1, 100, 0, 0, 0};
+   7          TimedWatering xdata timed_watering = {0, 6, 0, 1, 100, 0, 0, 0};
    8          
    9          // 显示模式：0=时钟，1=自动浇水参数
   10          BYTE auto_display_mode = DISPLAY_MODE_CLOCK;
@@ -62,7 +62,7 @@ line level    source
   52           * ========================================
   53           * 
   54           * 功能概述：
-C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/27/2025 12:57:11 PAGE 2   
+C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/27/2025 19:56:24 PAGE 2   
 
   55           * 本系统可以设置在指定时间点自动开始浇水，并按设定的毫升数定量浇水。
   56           * 累计流量数据保存在24C02中，掉电不丢失。
@@ -126,7 +126,7 @@ line level    source
  114           *    - 继电器自动断开，停止浇水
  115           *    - 标记今天已完成浇水，明天同一时间再次触发
  116           * 
-C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/27/2025 12:57:11 PAGE 3   
+C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/27/2025 19:56:24 PAGE 3   
 
  117           * 【第四步：数据保存】
  118           * ==================
@@ -190,7 +190,7 @@ line level    source
  176   4                      display_update_flag = 1;
  177   4                  } else {
  178   4                      TimedWatering_Start();
-C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/27/2025 12:57:11 PAGE 4   
+C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/27/2025 19:56:24 PAGE 4   
 
  179   4                  }
  180   3              }
@@ -254,7 +254,7 @@ line level    source
  235   3                  auto_display_mode = DISPLAY_MODE_AUTO;
  236   3                  display_update_flag = 1;
  237   3              }
-C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/27/2025 12:57:11 PAGE 5   
+C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/27/2025 19:56:24 PAGE 5   
 
  238   2          }
  239   1          
@@ -318,7 +318,7 @@ line level    source
  297   3                  auto_display_mode = DISPLAY_MODE_CLOCK;
  298   3                  FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
  299   3                  display_update_flag = 1;
-C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/27/2025 12:57:11 PAGE 6   
+C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/27/2025 19:56:24 PAGE 6   
 
  300   3              } else {
  301   3                  // 更新剩余毫升数显示
@@ -382,7 +382,7 @@ line level    source
  359   3                      val5 = 0;
  360   3                      val6 = 3;  // 显示3（小时标识）
  361   3                      break;
-C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/27/2025 12:57:11 PAGE 7   
+C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/27/2025 19:56:24 PAGE 7   
 
  362   3                      
  363   3                  case PARAM_MODE_MIN:
@@ -442,13 +442,13 @@ line level    source
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    935    ----
+   CODE SIZE        =   1017    ----
    CONSTANT SIZE    =   ----    ----
-   XDATA SIZE       =   ----    ----
+   XDATA SIZE       =     10    ----
    PDATA SIZE       =   ----    ----
-C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/27/2025 12:57:11 PAGE 8   
+C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/27/2025 19:56:24 PAGE 8   
 
-   DATA SIZE        =     17      16
+   DATA SIZE        =      7      16
    IDATA SIZE       =   ----    ----
    BIT SIZE         =      1    ----
 END OF MODULE INFORMATION.

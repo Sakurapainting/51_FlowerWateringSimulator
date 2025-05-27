@@ -195,7 +195,7 @@ typedef struct TimedWatering {
 #define DISPLAY_MODE_AUTO     1    // 自动浇水参数显示模式
 
 // 全局变量声明
-extern TimedWatering timed_watering;
+extern TimedWatering xdata timed_watering;  // 更新为xdata声明
 extern unsigned char auto_display_mode;
 extern unsigned char param_mode;
 extern bit display_update_flag;  // 添加显示更新标志

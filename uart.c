@@ -4,7 +4,7 @@
 #include <string.h>
 
 // 串口缓冲区及状态变量 - 减少缓冲区大小
-static char uart_buffer[16];  // 减少缓冲区大小从32到16
+static char xdata uart_buffer[16];  // 移到xdata以节省内部RAM
 static BYTE uart_count = 0;
 static bit uart_complete = 0;
 

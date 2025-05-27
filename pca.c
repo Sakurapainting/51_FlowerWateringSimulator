@@ -52,7 +52,7 @@ sbit OE   = DISP_PORT^3;  // 输出使能(低有效)
 static code const unsigned char LED[] = {0x3F,0x06,0x5B,0x4F,0x66,0x6D,0x7D,0x07,0x7F,0x6F,CURRENTFLOW_MODE,TOTALFLOW_MODE};
 
 // 显示缓冲区
-unsigned char dispbuff[8] = {SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF};
+unsigned char xdata dispbuff[8] = {SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF};
 
 // 实现显示相关函数
 void delay_ms(unsigned int ms) {

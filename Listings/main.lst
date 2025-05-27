@@ -1,4 +1,4 @@
-C51 COMPILER V9.54   MAIN                                                                  05/27/2025 13:05:35 PAGE 1   
+C51 COMPILER V9.54   MAIN                                                                  05/27/2025 19:56:24 PAGE 1   
 
 
 C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
@@ -62,7 +62,7 @@ line level    source
   52   5                              Relay_On();
   53   5                              FlowMeter_Reset();
   54   5                              FlowMeter_Start();
-C51 COMPILER V9.54   MAIN                                                                  05/27/2025 13:05:35 PAGE 2   
+C51 COMPILER V9.54   MAIN                                                                  05/27/2025 19:56:24 PAGE 2   
 
   55   5                              FlowMeter_SetMode(FLOW_MODE_CURR);
   56   5                              FlowMeter_UpdateDisplay();
@@ -126,7 +126,7 @@ line level    source
  114   1           * ✓ 精确时间控制：可设定每天固定时间自动浇水
  115   1           * ✓ 定量浇水：按毫升数精确控制浇水量
  116   1           * ✓ 数据保存：累计流量掉电不丢失
-C51 COMPILER V9.54   MAIN                                                                  05/27/2025 13:05:35 PAGE 3   
+C51 COMPILER V9.54   MAIN                                                                  05/27/2025 19:56:24 PAGE 3   
 
  117   1           * ✓ 智能防重：每天只执行一次，避免重复浇水
  118   1           * ✓ 手动控制：支持手动立即浇水
@@ -190,7 +190,7 @@ line level    source
  170   1           * 
  171   1           * 参数设置模式：
  172   1           * ┌──────────┬─────────────┬───────
-C51 COMPILER V9.54   MAIN                                                                  05/27/2025 13:05:35 PAGE 4   
+C51 COMPILER V9.54   MAIN                                                                  05/27/2025 19:56:24 PAGE 4   
 
              -────────┐
  173   1           * │ 显示格式  │    含义     │    示例      │
@@ -249,31 +249,32 @@ line level    source
  224   1          Relay_Init();
  225   1          WaveGen_Init();
  226   1          WaveGen_Start();
- 227   1          FlowMeter_Init();
- 228   1          UART_Init();
- 229   1          KeyboardControl_Init();  // 初始化按键控制
- 230   1          
- 231   1          // 发送英文启动信息到串口
-C51 COMPILER V9.54   MAIN                                                                  05/27/2025 13:05:35 PAGE 5   
+ 227   1          UART_Init();
+ 228   1          I2C_Init();  
+ 229   1          FlowMeter_Init();
+ 230   1          KeyboardControl_Init();  // 初始化按键控制
+ 231   1          
+C51 COMPILER V9.54   MAIN                                                                  05/27/2025 19:56:24 PAGE 5   
 
- 232   1          UART_SendString("\r\nWatering System Started\r\n");
- 233   1          UART_SendString("Time setting available\r\n");
- 234   1          UART_SendString("Auto watering initialized\r\n");
- 235   1          
- 236   1          while (1) {
- 237   2              processKey();
- 238   2              KeyboardControl_Scan();
- 239   2              CheckAndUpdateAutoDisplay();
- 240   2              FlowMeter_UpdateDisplay();
- 241   2              UART_ProcessCommand();
- 242   2              
- 243   2              delay_ms(10);
- 244   2          }
- 245   1      }
+ 232   1          // 发送英文启动信息到串口
+ 233   1          UART_SendString("\r\nWatering System Started\r\n");
+ 234   1          UART_SendString("Time setting available\r\n");
+ 235   1          UART_SendString("Auto watering initialized\r\n");
+ 236   1          
+ 237   1          while (1) {
+ 238   2              processKey();
+ 239   2              KeyboardControl_Scan();
+ 240   2              CheckAndUpdateAutoDisplay();
+ 241   2              FlowMeter_UpdateDisplay();
+ 242   2              UART_ProcessCommand();
+ 243   2              
+ 244   2              delay_ms(10);
+ 245   2          }
+ 246   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    308    ----
+   CODE SIZE        =    313    ----
    CONSTANT SIZE    =     81    ----
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----
