@@ -1,10 +1,10 @@
 #include "uart.h"
 #include "flowmeter.h"
-#include "keyboard_control.h"  // 添加此头文件以使用定时浇水功能
+#include "keyboard_control.h"
 #include <string.h>
 
-// 串口缓冲区及状态变量 - 减少缓冲区大小
-static char xdata uart_buffer[16];  // 移到xdata以节省内部RAM
+// 串口缓冲区及状态变量
+static char xdata uart_buffer[32];  // 增加缓冲区大小以支持日期时间命令
 static BYTE uart_count = 0;
 static bit uart_complete = 0;
 
@@ -30,10 +30,15 @@ void UART_Init(void) {
     uart_complete = 0;
     memset(uart_buffer, 0, sizeof(uart_buffer));
     
-    // 发送英文启动信息
-    UART_SendString("\r\nSystem Ready\r\n");
+    // 发送启动信息
+    UART_SendString("\r\nWatering System Ready v2.0\r\n");
+    UART_SendString("Commands Available:\r\n");
     UART_SendString("TIME:HH:MM:SS\r\n");
+    UART_SendString("DATE:YYYY:MM:DD\r\n");
+    UART_SendString("DATETIME:YYYY:MM:DD:HH:MM:SS\r\n");
     UART_SendString("A:HH:MM:SS:MMMM\r\n");
+    UART_SendString("DISPTIME/DISPDATE\r\n");
+    UART_SendString("STOP\r\n");
 }
 
 // 发送一个字节
@@ -50,10 +55,96 @@ void UART_SendString(char *s) {
     }
 }
 
+// 数字转换辅助函数
+static WORD ParseNumber(char *str, BYTE len) {
+    WORD result = 0;
+    BYTE i;
+    for(i = 0; i < len; i++) {
+        if(str[i] >= '0' && str[i] <= '9') {
+            result = result * 10 + (str[i] - '0');
+        } else {
+            return 0xFFFF;  // 错误标志
+        }
+    }
+    return result;
+}
+
 // 命令处理函数
 static void UART_CommandHandler(void) {
+    // 设置完整日期时间命令: "DATETIME:YYYY:MM:DD:HH:MM:SS"
+    if(strncmp(uart_buffer, "DATETIME:", 9) == 0) {
+        WORD year;
+        BYTE month, day, hour, min, sec;
+        
+        if(strlen(uart_buffer) >= 28) { // DATETIME:2025:05:27:14:30:00 = 28字符
+            year = ParseNumber(uart_buffer + 9, 4);
+            month = (BYTE)ParseNumber(uart_buffer + 14, 2);
+            day = (BYTE)ParseNumber(uart_buffer + 17, 2);
+            hour = (BYTE)ParseNumber(uart_buffer + 20, 2);
+            min = (BYTE)ParseNumber(uart_buffer + 23, 2);
+            sec = (BYTE)ParseNumber(uart_buffer + 26, 2);
+            
+            // 验证参数有效性
+            if(year >= 2000 && year <= 2099 && month >= 1 && month <= 12 && 
+               day >= 1 && day <= PCA_GetDaysInMonth(year, month) &&
+               hour < 24 && min < 60 && sec < 60) {
+                
+                PCA_SetDateTime(year, month, day, hour, min, sec);
+                
+                UART_SendString("\r\nDateTime Set: ");
+                UART_SendString(uart_buffer + 9);
+                uart_buffer[13] = '-';
+                uart_buffer[16] = '-';
+                uart_buffer[19] = ' ';
+                uart_buffer[22] = ':';
+                uart_buffer[25] = ':';
+                uart_buffer[28] = 0;
+                UART_SendString(uart_buffer + 9);
+                UART_SendString("\r\n");
+            } else {
+                UART_SendString("\r\nError: Invalid datetime\r\n");
+                UART_SendString("Format: YYYY(2000-2099):MM(1-12):DD(1-31):HH(0-23):MM(0-59):SS(0-59)\r\n");
+            }
+        } else {
+            UART_SendString("\r\nError: Wrong format\r\n");
+            UART_SendString("Format: DATETIME:YYYY:MM:DD:HH:MM:SS\r\n");
+            UART_SendString("Example: DATETIME:2025:05:27:14:30:00\r\n");
+        }
+    }
+    // 设置日期命令: "DATE:YYYY:MM:DD"
+    else if(strncmp(uart_buffer, "DATE:", 5) == 0) {
+        WORD year;
+        BYTE month, day;
+        
+        if(strlen(uart_buffer) >= 15) { // DATE:2025:05:27 = 15字符
+            year = ParseNumber(uart_buffer + 5, 4);
+            month = (BYTE)ParseNumber(uart_buffer + 10, 2);
+            day = (BYTE)ParseNumber(uart_buffer + 13, 2);
+            
+            // 验证参数有效性
+            if(year >= 2000 && year <= 2099 && month >= 1 && month <= 12 && 
+               day >= 1 && day <= PCA_GetDaysInMonth(year, month)) {
+                
+                PCA_SetDate(year, month, day);
+                
+                UART_SendString("\r\nDate Set: ");
+                uart_buffer[9] = '-';
+                uart_buffer[12] = '-';
+                uart_buffer[15] = 0;
+                UART_SendString(uart_buffer + 5);
+                UART_SendString("\r\n");
+            } else {
+                UART_SendString("\r\nError: Invalid date\r\n");
+                UART_SendString("Format: YYYY(2000-2099):MM(1-12):DD(1-31)\r\n");
+            }
+        } else {
+            UART_SendString("\r\nError: Wrong format\r\n");
+            UART_SendString("Format: DATE:YYYY:MM:DD\r\n");
+            UART_SendString("Example: DATE:2025:05:27\r\n");
+        }
+    }
     // 时间设置命令格式: "TIME:HH:MM:SS"
-    if(strncmp(uart_buffer, "TIME:", 5) == 0) {
+    else if(strncmp(uart_buffer, "TIME:", 5) == 0) {
         BYTE hour = 0, min = 0, sec = 0;
         
         // 解析时间
@@ -85,6 +176,15 @@ static void UART_CommandHandler(void) {
             UART_SendString("Format: TIME:HH:MM:SS\r\n");
             UART_SendString("Example: TIME:14:30:00\r\n");
         }
+    }
+    // 显示模式切换命令: "DISPTIME" 或 "DISPDATE"
+    else if(strncmp(uart_buffer, "DISPTIME", 8) == 0) {
+        PCA_SetDisplayMode(DISPLAY_TIME_MODE);
+        UART_SendString("\r\nDisplay Mode: Time\r\n");
+    }
+    else if(strncmp(uart_buffer, "DISPDATE", 8) == 0) {
+        PCA_SetDisplayMode(DISPLAY_DATE_MODE);
+        UART_SendString("\r\nDisplay Mode: Date\r\n");
     }
     // 定时浇水设置命令格式: "A:HH:MM:SS:MMMM"
     else if(strncmp(uart_buffer, "A:", 2) == 0) {
@@ -146,8 +246,11 @@ static void UART_CommandHandler(void) {
         UART_SendString("\r\nError: Unknown cmd\r\n");
         UART_SendString("Commands:\r\n");
         UART_SendString("TIME:HH:MM:SS - Set time\r\n");
-        UART_SendString("A:HH:MM:SS:MMMM - Set auto\r\n");
-        UART_SendString("STOP - Stop auto\r\n");
+        UART_SendString("DATE:YYYY:MM:DD - Set date\r\n");
+        UART_SendString("DATETIME:YYYY:MM:DD:HH:MM:SS - Set both\r\n");
+        UART_SendString("A:HH:MM:SS:MMMM - Set auto watering\r\n");
+        UART_SendString("DISPTIME/DISPDATE - Display mode\r\n");
+        UART_SendString("STOP - Stop auto watering\r\n");
     }
 }
 

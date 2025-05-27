@@ -1,4 +1,4 @@
-C51 COMPILER V9.54   MAIN                                                                  05/27/2025 19:56:24 PAGE 1   
+C51 COMPILER V9.54   MAIN                                                                  05/27/2025 20:54:42 PAGE 1   
 
 
 C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
@@ -20,262 +20,284 @@ line level    source
   10          
   11          #define multiplier 1.085
   12          
-  13          // 系统状态定义
+  13          // 系统状态定义 - 扩展支持年月日设置
   14          #define SYS_STATE_OFF      0  // 系统关闭
   15          #define SYS_STATE_WATERING 1  // 系统浇水中
-  16          #define SYS_STATE_SET_HOUR 2  // 设置小时
-  17          #define SYS_STATE_SET_MIN  3  // 设置分钟
-  18          #define SYS_STATE_SET_SEC  4  // 设置秒
-  19          
-  20          // 当前系统状态
-  21          BYTE sysState = SYS_STATE_OFF;
+  16          #define SYS_STATE_SET_YEAR 2  // 设置年份
+  17          #define SYS_STATE_SET_MONTH 3 // 设置月份
+  18          #define SYS_STATE_SET_DAY  4  // 设置日期
+  19          #define SYS_STATE_SET_HOUR 5  // 设置小时
+  20          #define SYS_STATE_SET_MIN  6  // 设置分钟
+  21          #define SYS_STATE_SET_SEC  7  // 设置秒
   22          
-  23          // 按键和浇水控制相关变量
-  24          sbit KEY = P3^3;            // 按键连接到P3.3
-  25          bit keyPressed = 0;         // 按键按下标志
-  26          bit justEnteredSetMode = 0; // 标志是否刚刚进入设置模式
-  27          unsigned int keyPressTime = 0; // 按键按下持续时间（以10ms为单位）
-  28          #define LONG_PRESS_TIME 500   // 长按时间阈值（约1秒）
-  29          
-  30          // 按键处理函数
-  31          void processKey() {
-  32   1          if (KEY == 0 && !keyPressed) {
-  33   2              keyPressed = 1;
-  34   2              keyPressTime = 0;
-  35   2          } 
-  36   1          else if (KEY == 0 && keyPressed) {
-  37   2              keyPressTime++;
-  38   2              
-  39   2              if (keyPressTime == LONG_PRESS_TIME && sysState == SYS_STATE_OFF) {
-  40   3                  sysState = SYS_STATE_SET_HOUR;
-  41   3                  PCA_SetTimeEditMode(sysState - SYS_STATE_SET_HOUR + 1);
-  42   3                  justEnteredSetMode = 1;
-  43   3              }
-  44   2          }
-  45   1          else if (KEY == 1 && keyPressed) {
-  46   2              if (keyPressTime < LONG_PRESS_TIME) {
-  47   3                  switch (sysState) {
-  48   4                      case SYS_STATE_OFF:
-  49   4                          // 检查是否定时浇水正在运行
-  50   4                          if(!timed_watering.enabled) {
-  51   5                              sysState = SYS_STATE_WATERING;
-  52   5                              Relay_On();
-  53   5                              FlowMeter_Reset();
-  54   5                              FlowMeter_Start();
-C51 COMPILER V9.54   MAIN                                                                  05/27/2025 19:56:24 PAGE 2   
+  23          // 当前系统状态
+  24          BYTE sysState = SYS_STATE_OFF;
+  25          
+  26          // 按键和浇水控制相关变量
+  27          sbit KEY = P3^3;            // 按键连接到P3.3
+  28          bit keyPressed = 0;         // 按键按下标志
+  29          bit justEnteredSetMode = 0; // 标志是否刚刚进入设置模式
+  30          unsigned int keyPressTime = 0; // 按键按下持续时间（以10ms为单位）
+  31          #define LONG_PRESS_TIME 100   // 长按时间阈值（约1秒，调整为合理值）
+  32          
+  33          // 按键处理函数
+  34          void processKey() {
+  35   1          if (KEY == 0 && !keyPressed) {
+  36   2              keyPressed = 1;
+  37   2              keyPressTime = 0;
+  38   2          } 
+  39   1          else if (KEY == 0 && keyPressed) {
+  40   2              keyPressTime++;
+  41   2              
+  42   2              // 长按进入设置模式，从年份开始设置
+  43   2              if (keyPressTime == LONG_PRESS_TIME && sysState == SYS_STATE_OFF) {
+  44   3                  sysState = SYS_STATE_SET_YEAR;
+  45   3                  PCA_SetTimeEditMode(YEAR_POS);
+  46   3                  PCA_SetDisplayMode(DISPLAY_DATE_MODE);  // 切换到日期显示模式
+  47   3                  PCA_ResetAutoToggle();  // 重置自动轮换计数器
+  48   3                  justEnteredSetMode = 1;
+  49   3              }
+  50   2          }
+  51   1          else if (KEY == 1 && keyPressed) {
+  52   2              if (keyPressTime < LONG_PRESS_TIME) {
+  53   3                  // 短按：根据当前状态增加对应的数值
+  54   3                  switch (sysState) {
+C51 COMPILER V9.54   MAIN                                                                  05/27/2025 20:54:42 PAGE 2   
 
-  55   5                              FlowMeter_SetMode(FLOW_MODE_CURR);
-  56   5                              FlowMeter_UpdateDisplay();
-  57   5                              auto_display_mode = DISPLAY_MODE_CLOCK; // 手动浇水时显示时钟
-  58   5                          }
-  59   4                          break;
-  60   4                          
-  61   4                      case SYS_STATE_WATERING:
-  62   4                          sysState = SYS_STATE_OFF;
-  63   4                          Relay_Off();
-  64   4                          FlowMeter_Stop();
-  65   4                          FlowMeter_SetMode(FLOW_MODE_OFF);
+  55   4                      case SYS_STATE_OFF:
+  56   4                          // 检查是否定时浇水正在运行
+  57   4                          if(!timed_watering.enabled) {
+  58   5                              sysState = SYS_STATE_WATERING;
+  59   5                              Relay_On();
+  60   5                              FlowMeter_Reset();
+  61   5                              FlowMeter_Start();
+  62   5                              FlowMeter_SetMode(FLOW_MODE_CURR);
+  63   5                              FlowMeter_UpdateDisplay();
+  64   5                              auto_display_mode = DISPLAY_MODE_CLOCK; // 手动浇水时显示时钟
+  65   5                          }
   66   4                          break;
   67   4                          
-  68   4                      case SYS_STATE_SET_HOUR:
-  69   4                          PCA_IncreaseTimeValue(HOUR_POS);
-  70   4                          break;
-  71   4                          
-  72   4                      case SYS_STATE_SET_MIN:
-  73   4                          PCA_IncreaseTimeValue(MIN_POS);
-  74   4                          break;
-  75   4                          
-  76   4                      case SYS_STATE_SET_SEC:
-  77   4                          PCA_IncreaseTimeValue(SEC_POS);
-  78   4                          break;
-  79   4                  }
-  80   3              } 
-  81   2              else if (keyPressTime >= LONG_PRESS_TIME) {
-  82   3                  if (justEnteredSetMode) {
-  83   4                      justEnteredSetMode = 0;
-  84   4                  }
-  85   3                  else if (sysState >= SYS_STATE_SET_HOUR && sysState <= SYS_STATE_SET_SEC) {
-  86   4                      sysState++;
-  87   4                      
-  88   4                      if (sysState > SYS_STATE_SET_SEC) {
-  89   5                          sysState = SYS_STATE_OFF;
-  90   5                          PCA_ExitTimeEditMode();
-  91   5                      } else {
-  92   5                          PCA_SetTimeEditMode(sysState - SYS_STATE_SET_HOUR + 1);
-  93   5                      }
-  94   4                  }
-  95   3              }
-  96   2              
-  97   2              keyPressed = 0;
-  98   2              keyPressTime = 0;
-  99   2              delay_ms(20);
- 100   2          }
- 101   1      }
- 102          
- 103          void main(void) {
- 104   1          EA = 1;
- 105   1          P0 = 0xFF;
- 106   1          
- 107   1          /* 
- 108   1           * ========================================
- 109   1           * 智能浇花系统 - 定时定量浇水功能
- 110   1           * ========================================
- 111   1           * 
- 112   1           * 【系统特点】
- 113   1           * ============
- 114   1           * ✓ 精确时间控制：可设定每天固定时间自动浇水
- 115   1           * ✓ 定量浇水：按毫升数精确控制浇水量
- 116   1           * ✓ 数据保存：累计流量掉电不丢失
-C51 COMPILER V9.54   MAIN                                                                  05/27/2025 19:56:24 PAGE 3   
+  68   4                      case SYS_STATE_WATERING:
+  69   4                          sysState = SYS_STATE_OFF;
+  70   4                          Relay_Off();
+  71   4                          FlowMeter_Stop();
+  72   4                          FlowMeter_SetMode(FLOW_MODE_OFF);
+  73   4                          break;
+  74   4                          
+  75   4                      case SYS_STATE_SET_YEAR:
+  76   4                          PCA_IncreaseTimeValue(YEAR_POS);
+  77   4                          break;
+  78   4                          
+  79   4                      case SYS_STATE_SET_MONTH:
+  80   4                          PCA_IncreaseTimeValue(MONTH_POS);
+  81   4                          break;
+  82   4                          
+  83   4                      case SYS_STATE_SET_DAY:
+  84   4                          PCA_IncreaseTimeValue(DAY_POS);
+  85   4                          break;
+  86   4                          
+  87   4                      case SYS_STATE_SET_HOUR:
+  88   4                          PCA_IncreaseTimeValue(HOUR_POS);
+  89   4                          break;
+  90   4                          
+  91   4                      case SYS_STATE_SET_MIN:
+  92   4                          PCA_IncreaseTimeValue(MIN_POS);
+  93   4                          break;
+  94   4                          
+  95   4                      case SYS_STATE_SET_SEC:
+  96   4                          PCA_IncreaseTimeValue(SEC_POS);
+  97   4                          break;
+  98   4                  }
+  99   3              } 
+ 100   2              else if (keyPressTime >= LONG_PRESS_TIME) {
+ 101   3                  // 长按：切换到下一项设置
+ 102   3                  if (justEnteredSetMode) {
+ 103   4                      justEnteredSetMode = 0;
+ 104   4                  }
+ 105   3                  else if (sysState >= SYS_STATE_SET_YEAR && sysState <= SYS_STATE_SET_SEC) {
+ 106   4                      sysState++;
+ 107   4                      
+ 108   4                      // 设置完所有参数后退出设置模式
+ 109   4                      if (sysState > SYS_STATE_SET_SEC) {
+ 110   5                          sysState = SYS_STATE_OFF;
+ 111   5                          PCA_ExitTimeEditMode();
+ 112   5                          // 恢复到时间显示模式并重置自动轮换
+ 113   5                          PCA_SetDisplayMode(DISPLAY_TIME_MODE);
+ 114   5                          PCA_ResetAutoToggle();
+ 115   5                      } else {
+ 116   5                          // 根据当前设置状态切换显示模式和编辑位置
+C51 COMPILER V9.54   MAIN                                                                  05/27/2025 20:54:42 PAGE 3   
 
- 117   1           * ✓ 智能防重：每天只执行一次，避免重复浇水
- 118   1           * ✓ 手动控制：支持手动立即浇水
- 119   1           * ✓ 串口设置：支持通过串口设置系统时间
- 120   1           * 
- 121   1           * 【硬件连接】
- 122   1           * ============
- 123   1           * 控制部分：
- 124   1           * - P1.1: 继电器控制 (低电平触发)
- 125   1           * - P1.0: 方波发生器输出 (5Hz脉冲信号)
- 126   1           * - P3.2: INT0中断输入 (流量计脉冲计数)
- 127   1           * 
- 128   1           * 按键输入：
- 129   1           * - P1.2: 启动/停止定时浇水
- 130   1           * - P1.3: 增加参数值
- 131   1           * - P1.4: 减少参数值  
- 132   1           * - P1.7: 切换设置模式
- 133   1           * - P3.3: 手动浇水/时间设置
- 134   1           * 
- 135   1           * 存储设备：
- 136   1           * - P2.0: I2C数据线SDA (连接24C02)
- 137   1           * - P2.1: I2C时钟线SCL (连接24C02)
- 138   1           * 
- 139   1           * 【快速使用指南】
- 140   1           * ================
- 141   1           * 
- 142   1           * 🕐 第一步：设置浇水时间
- 143   1           *    ┌───────────────────────────────
-             -──────┐
- 144   1           *    │ 1. 按P1.7 → 数码管显示"HH0002"      │
- 145   1           *    │    用P1.3/P1.4设置小时(0-23)       │
- 146   1           *    │ 2. 按P1.7 → 数码管显示"MM0003"      │
- 147   1           *    │    用P1.3/P1.4设置分钟(0-59)       │
- 148   1           *    │ 3. 按P1.7 → 数码管显示"SS0001"      │
- 149   1           *    │    用P1.3/P1.4设置秒(0-59)         │
- 150   1           *    └───────────────────────────────
-             -──────┘
- 151   1           * 
- 152   1           * 💧 第二步：设置浇水量
- 153   1           *    ┌───────────────────────────────
-             -──────┐
- 154   1           *    │ 4. 按P1.7 → 数码管显示"MMMM05"      │
- 155   1           *    │    用P1.3/P1.4设置毫升数            │
- 156   1           *    │    (50-9999ml，步长50ml)            │
- 157   1           *    └───────────────────────────────
-             -──────┘
- 158   1           * 
- 159   1           * ▶️ 第三步：启动定时浇水
- 160   1           *    ┌───────────────────────────────
-             -──────┐
- 161   1           *    │ 5. 按P1.2启动定时浇水功能           │
- 162   1           *    │    系统进入自动模式，等待设定时间    │
- 163   1           *    └───────────────────────────────
-             -──────┘
+ 117   5                          switch(sysState) {
+ 118   6                              case SYS_STATE_SET_YEAR:
+ 119   6                                  PCA_SetTimeEditMode(YEAR_POS);
+ 120   6                                  PCA_SetDisplayMode(DISPLAY_DATE_MODE);
+ 121   6                                  break;
+ 122   6                              case SYS_STATE_SET_MONTH:
+ 123   6                                  PCA_SetTimeEditMode(MONTH_POS);
+ 124   6                                  PCA_SetDisplayMode(DISPLAY_DATE_MODE);
+ 125   6                                  break;
+ 126   6                              case SYS_STATE_SET_DAY:
+ 127   6                                  PCA_SetTimeEditMode(DAY_POS);
+ 128   6                                  PCA_SetDisplayMode(DISPLAY_DATE_MODE);
+ 129   6                                  break;
+ 130   6                              case SYS_STATE_SET_HOUR:
+ 131   6                                  PCA_SetTimeEditMode(HOUR_POS);
+ 132   6                                  PCA_SetDisplayMode(DISPLAY_TIME_MODE);  // 切换到时间显示模式
+ 133   6                                  break;
+ 134   6                              case SYS_STATE_SET_MIN:
+ 135   6                                  PCA_SetTimeEditMode(MIN_POS);
+ 136   6                                  PCA_SetDisplayMode(DISPLAY_TIME_MODE);
+ 137   6                                  break;
+ 138   6                              case SYS_STATE_SET_SEC:
+ 139   6                                  PCA_SetTimeEditMode(SEC_POS);
+ 140   6                                  PCA_SetDisplayMode(DISPLAY_TIME_MODE);
+ 141   6                                  break;
+ 142   6                          }
+ 143   5                      }
+ 144   4                  }
+ 145   3              }
+ 146   2              
+ 147   2              keyPressed = 0;
+ 148   2              keyPressTime = 0;
+ 149   2              delay_ms(20);
+ 150   2          }
+ 151   1      }
+ 152          
+ 153          void main(void) {
+ 154   1          EA = 1;
+ 155   1          P0 = 0xFF;
+ 156   1          
+ 157   1          /* 
+ 158   1           * ========================================
+ 159   1           * 智能浇花系统 - P3.3按键时间设置功能
+ 160   1           * ========================================
+ 161   1           * 
+ 162   1           * 【P3.3按键操作说明】
+ 163   1           * ==================
  164   1           * 
- 165   1           * 【数码管显示说明】
- 166   1           * ==================
- 167   1           * 
- 168   1           * 时钟模式：显示当前时间 "HHMMSS"
- 169   1           * 例如：145023 = 14:50:23
- 170   1           * 
- 171   1           * 参数设置模式：
- 172   1           * ┌──────────┬─────────────┬───────
-C51 COMPILER V9.54   MAIN                                                                  05/27/2025 19:56:24 PAGE 4   
+ 165   1           * 🔘 短按功能：
+ 166   1           *    - 正常模式：启动/停止手动浇水
+ 167   1           *    - 设置模式：增加当前设置项的数值
+ 168   1           * 
+ 169   1           * 🔘 长按功能（约1秒）：
+ 170   1           *    - 正常模式：进入时间设置模式
+ 171   1           *    - 设置模式：切换到下一个设置项
+ 172   1           * 
+ 173   1           * 【时间设置流程】
+ 174   1           * ================
+ 175   1           * 
+ 176   1           * 1️⃣ 长按P3.3 → 进入年份设置
+ 177   1           *    显示：日期模式 (YYMMDD)，年份位闪烁
+ 178   1           *    操作：短按P3.3增加年份 (2000-2099)
+C51 COMPILER V9.54   MAIN                                                                  05/27/2025 20:54:42 PAGE 4   
 
-             -────────┐
- 173   1           * │ 显示格式  │    含义     │    示例      │
- 174   1           * ├──────────┼─────────────┼───────
-             -────────┤
- 175   1           * │ HH0003   │  设置小时   │ 060003=6点   │
- 176   1           * │ MM0002   │  设置分钟   │ 300002=30分  │
- 177   1           * │ SS0001   │  设置秒     │ 450001=45秒  │
- 178   1           * │ MMMM05   │  设置毫升   │ 150005=150ml │
- 179   1           * └──────────┴─────────────┴───────
-             -────────┘
- 180   1           * 
- 181   1           * 浇水状态：
- 182   1           * - 等待浇水：参数闪烁显示
- 183   1           * - 正在浇水：显示剩余毫升数 "XXXX05"
- 184   1           * - 浇水完成：返回时钟显示
- 185   1           * 
- 186   1           * 【实际使用例子】
- 187   1           * ================
- 188   1           * 
- 189   1           * 🌱 场景1：每天早上7点浇150毫升水
- 190   1           * 步骤：
- 191   1           * 1. P1.7 → 设置"070003" (7点)
- 192   1           * 2. P1.7 → 设置"000002" (0分) 
- 193   1           * 3. P1.7 → 设置"000001" (0秒)
- 194   1           * 4. P1.7 → 设置"150005" (150毫升)
- 195   1           * 5. P1.2 → 启动定时浇水
- 196   1           * 结果：每天7:00:00自动浇水150毫升
- 197   1           * 
- 198   1           * 🌱 场景2：傍晚6点半浇100毫升水  
- 199   1           * 步骤：
- 200   1           * 1. P1.7 → 设置"180003" (18点)
- 201   1           * 2. P1.7 → 设置"300002" (30分)
- 202   1           * 3. P1.7 → 设置"000001" (0秒) 
- 203   1           * 4. P1.7 → 设置"100005" (100毫升)
- 204   1           * 5. P1.2 → 启动定时浇水
- 205   1           * 结果：每天18:30:00自动浇水100毫升
- 206   1           * 
- 207   1           * 【故障处理】
- 208   1           * ============
- 209   1           * 
- 210   1           * Q: 设置时间后不浇水？
- 211   1           * A: 检查是否按P1.2启动定时功能
+ 179   1           * 
+ 180   1           * 2️⃣ 长按P3.3 → 切换到月份设置
+ 181   1           *    显示：日期模式 (YYMMDD)，月份位闪烁
+ 182   1           *    操作：短按P3.3增加月份 (1-12)
+ 183   1           * 
+ 184   1           * 3️⃣ 长按P3.3 → 切换到日期设置
+ 185   1           *    显示：日期模式 (YYMMDD)，日期位闪烁
+ 186   1           *    操作：短按P3.3增加日期 (1-31，自动适应月份)
+ 187   1           * 
+ 188   1           * 4️⃣ 长按P3.3 → 切换到小时设置
+ 189   1           *    显示：时间模式 (HHMMSS)，小时位闪烁
+ 190   1           *    操作：短按P3.3增加小时 (0-23)
+ 191   1           * 
+ 192   1           * 5️⃣ 长按P3.3 → 切换到分钟设置
+ 193   1           *    显示：时间模式 (HHMMSS)，分钟位闪烁
+ 194   1           *    操作：短按P3.3增加分钟 (0-59)
+ 195   1           * 
+ 196   1           * 6️⃣ 长按P3.3 → 切换到秒设置
+ 197   1           *    显示：时间模式 (HHMMSS)，秒位闪烁
+ 198   1           *    操作：短按P3.3增加秒 (0-59)
+ 199   1           * 
+ 200   1           * 7️⃣ 长按P3.3 → 完成设置，退出设置模式
+ 201   1           *    显示：返回正常时间显示模式
+ 202   1           * 
+ 203   1           * 【显示模式说明】
+ 204   1           * ================
+ 205   1           * 
+ 206   1           * 日期设置时 (步骤1-3)：
+ 207   1           * ┌────────────────────────────────
+             -─────┐
+ 208   1           * │ 数码管格式：YYMMDD                  │
+ 209   1           * │ 示例："250527" = 2025年5月27日      │
+ 210   1           * │ 闪烁部分：当前正在设置的位          │
+ 211   1           * └────────────────────────────────
+             -─────┘
  212   1           * 
- 213   1           * Q: 浇水量不准确？
- 214   1           * A: 检查流量计连接和方波发生器频率
- 215   1           * 
- 216   1           * Q: 断电后累计流量丢失？
- 217   1           * A: 检查24C02连接和I2C通信
- 218   1           * 
- 219   1           * Q: 每天浇水多次？
- 220   1           * A: 系统设计为每天只浇一次，如出现请检查时钟
- 221   1           */
- 222   1          
- 223   1          PCA_Init();
- 224   1          Relay_Init();
- 225   1          WaveGen_Init();
- 226   1          WaveGen_Start();
- 227   1          UART_Init();
- 228   1          I2C_Init();  
- 229   1          FlowMeter_Init();
- 230   1          KeyboardControl_Init();  // 初始化按键控制
- 231   1          
-C51 COMPILER V9.54   MAIN                                                                  05/27/2025 19:56:24 PAGE 5   
+ 213   1           * 时间设置时 (步骤4-6)：
+ 214   1           * ┌────────────────────────────────
+             -─────┐
+ 215   1           * │ 数码管格式：HHMMSS                  │
+ 216   1           * │ 示例："143025" = 14:30:25           │
+ 217   1           * │ 闪烁部分：当前正在设置的位          │
+ 218   1           * └────────────────────────────────
+             -─────┘
+ 219   1           * 
+ 220   1           * 【使用示例】
+ 221   1           * ============
+ 222   1           * 
+ 223   1           * 设置时间为 2025年12月25日 09:30:00：
+ 224   1           * 
+ 225   1           * 1. 长按P3.3进入设置 → 显示当前日期，年份闪烁
+ 226   1           * 2. 短按P3.3将年份调到25 (2025年)
+ 227   1           * 3. 长按P3.3切换到月份 → 月份闪烁
+ 228   1           * 4. 短按P3.3将月份调到12
+ 229   1           * 5. 长按P3.3切换到日期 → 日期闪烁
+ 230   1           * 6. 短按P3.3将日期调到25
+ 231   1           * 7. 长按P3.3切换到小时 → 显示切换为时间，小时闪烁
+ 232   1           * 8. 短按P3.3将小时调到09
+ 233   1           * 9. 长按P3.3切换到分钟 → 分钟闪烁
+ 234   1           * 10. 短按P3.3将分钟调到30
+ 235   1           * 11. 长按P3.3切换到秒 → 秒闪烁
+ 236   1           * 12. 保持秒为00
+C51 COMPILER V9.54   MAIN                                                                  05/27/2025 20:54:42 PAGE 5   
 
- 232   1          // 发送英文启动信息到串口
- 233   1          UART_SendString("\r\nWatering System Started\r\n");
- 234   1          UART_SendString("Time setting available\r\n");
- 235   1          UART_SendString("Auto watering initialized\r\n");
- 236   1          
- 237   1          while (1) {
- 238   2              processKey();
- 239   2              KeyboardControl_Scan();
- 240   2              CheckAndUpdateAutoDisplay();
- 241   2              FlowMeter_UpdateDisplay();
- 242   2              UART_ProcessCommand();
- 243   2              
- 244   2              delay_ms(10);
- 245   2          }
- 246   1      }
+ 237   1           * 13. 长按P3.3完成设置 → 退出设置模式
+ 238   1           * 
+ 239   1           * 【注意事项】
+ 240   1           * ============
+ 241   1           * 
+ 242   1           * ✓ 年份范围：2000-2099，超出范围会循环
+ 243   1           * ✓ 闰年自动处理：2月份会自动适应28/29天
+ 244   1           * ✓ 日期自动调整：切换月份时会自动调整日期上限
+ 245   1           * ✓ 设置过程中可随时查看：闪烁显示当前设置项
+ 246   1           * ✓ 意外退出：重新长按P3.3可重新进入设置
+ 247   1           */
+ 248   1          
+ 249   1          PCA_Init();
+ 250   1          Relay_Init();
+ 251   1          WaveGen_Init();
+ 252   1          WaveGen_Start();
+ 253   1          UART_Init();
+ 254   1          I2C_Init();  
+ 255   1          FlowMeter_Init();
+ 256   1          KeyboardControl_Init();  // 初始化按键控制
+ 257   1          
+ 258   1          // 发送启动信息到串口
+ 259   1          UART_SendString("\r\nWatering System Started v3.1\r\n");
+ 260   1          UART_SendString("Auto Display: Time<->Date every 5 seconds\r\n");
+ 261   1          UART_SendString("P3.3 Key: Long press to set date/time\r\n");
+ 262   1          UART_SendString("Setting order: Year->Month->Day->Hour->Min->Sec\r\n");
+ 263   1          
+ 264   1          while (1) {
+ 265   2              processKey();
+ 266   2              KeyboardControl_Scan();
+ 267   2              CheckAndUpdateAutoDisplay();
+ 268   2              FlowMeter_UpdateDisplay();
+ 269   2              UART_ProcessCommand();
+ 270   2              
+ 271   2              delay_ms(10);
+ 272   2          }
+ 273   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    313    ----
-   CONSTANT SIZE    =     81    ----
+   CODE SIZE        =    432    ----
+   CONSTANT SIZE    =    167    ----
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----
    DATA SIZE        =      3    ----

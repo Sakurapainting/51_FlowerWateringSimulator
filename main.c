@@ -10,12 +10,15 @@
 
 #define multiplier 1.085
 
-// 系统状态定义
+// 系统状态定义 - 扩展支持年月日设置
 #define SYS_STATE_OFF      0  // 系统关闭
 #define SYS_STATE_WATERING 1  // 系统浇水中
-#define SYS_STATE_SET_HOUR 2  // 设置小时
-#define SYS_STATE_SET_MIN  3  // 设置分钟
-#define SYS_STATE_SET_SEC  4  // 设置秒
+#define SYS_STATE_SET_YEAR 2  // 设置年份
+#define SYS_STATE_SET_MONTH 3 // 设置月份
+#define SYS_STATE_SET_DAY  4  // 设置日期
+#define SYS_STATE_SET_HOUR 5  // 设置小时
+#define SYS_STATE_SET_MIN  6  // 设置分钟
+#define SYS_STATE_SET_SEC  7  // 设置秒
 
 // 当前系统状态
 BYTE sysState = SYS_STATE_OFF;
@@ -25,7 +28,7 @@ sbit KEY = P3^3;            // 按键连接到P3.3
 bit keyPressed = 0;         // 按键按下标志
 bit justEnteredSetMode = 0; // 标志是否刚刚进入设置模式
 unsigned int keyPressTime = 0; // 按键按下持续时间（以10ms为单位）
-#define LONG_PRESS_TIME 500   // 长按时间阈值（约1秒）
+#define LONG_PRESS_TIME 100   // 长按时间阈值（约1秒，调整为合理值）
 
 // 按键处理函数
 void processKey() {
@@ -36,14 +39,18 @@ void processKey() {
     else if (KEY == 0 && keyPressed) {
         keyPressTime++;
         
+        // 长按进入设置模式，从年份开始设置
         if (keyPressTime == LONG_PRESS_TIME && sysState == SYS_STATE_OFF) {
-            sysState = SYS_STATE_SET_HOUR;
-            PCA_SetTimeEditMode(sysState - SYS_STATE_SET_HOUR + 1);
+            sysState = SYS_STATE_SET_YEAR;
+            PCA_SetTimeEditMode(YEAR_POS);
+            PCA_SetDisplayMode(DISPLAY_DATE_MODE);  // 切换到日期显示模式
+            PCA_ResetAutoToggle();  // 重置自动轮换计数器
             justEnteredSetMode = 1;
         }
     }
     else if (KEY == 1 && keyPressed) {
         if (keyPressTime < LONG_PRESS_TIME) {
+            // 短按：根据当前状态增加对应的数值
             switch (sysState) {
                 case SYS_STATE_OFF:
                     // 检查是否定时浇水正在运行
@@ -65,6 +72,18 @@ void processKey() {
                     FlowMeter_SetMode(FLOW_MODE_OFF);
                     break;
                     
+                case SYS_STATE_SET_YEAR:
+                    PCA_IncreaseTimeValue(YEAR_POS);
+                    break;
+                    
+                case SYS_STATE_SET_MONTH:
+                    PCA_IncreaseTimeValue(MONTH_POS);
+                    break;
+                    
+                case SYS_STATE_SET_DAY:
+                    PCA_IncreaseTimeValue(DAY_POS);
+                    break;
+                    
                 case SYS_STATE_SET_HOUR:
                     PCA_IncreaseTimeValue(HOUR_POS);
                     break;
@@ -79,17 +98,48 @@ void processKey() {
             }
         } 
         else if (keyPressTime >= LONG_PRESS_TIME) {
+            // 长按：切换到下一项设置
             if (justEnteredSetMode) {
                 justEnteredSetMode = 0;
             }
-            else if (sysState >= SYS_STATE_SET_HOUR && sysState <= SYS_STATE_SET_SEC) {
+            else if (sysState >= SYS_STATE_SET_YEAR && sysState <= SYS_STATE_SET_SEC) {
                 sysState++;
                 
+                // 设置完所有参数后退出设置模式
                 if (sysState > SYS_STATE_SET_SEC) {
                     sysState = SYS_STATE_OFF;
                     PCA_ExitTimeEditMode();
+                    // 恢复到时间显示模式并重置自动轮换
+                    PCA_SetDisplayMode(DISPLAY_TIME_MODE);
+                    PCA_ResetAutoToggle();
                 } else {
-                    PCA_SetTimeEditMode(sysState - SYS_STATE_SET_HOUR + 1);
+                    // 根据当前设置状态切换显示模式和编辑位置
+                    switch(sysState) {
+                        case SYS_STATE_SET_YEAR:
+                            PCA_SetTimeEditMode(YEAR_POS);
+                            PCA_SetDisplayMode(DISPLAY_DATE_MODE);
+                            break;
+                        case SYS_STATE_SET_MONTH:
+                            PCA_SetTimeEditMode(MONTH_POS);
+                            PCA_SetDisplayMode(DISPLAY_DATE_MODE);
+                            break;
+                        case SYS_STATE_SET_DAY:
+                            PCA_SetTimeEditMode(DAY_POS);
+                            PCA_SetDisplayMode(DISPLAY_DATE_MODE);
+                            break;
+                        case SYS_STATE_SET_HOUR:
+                            PCA_SetTimeEditMode(HOUR_POS);
+                            PCA_SetDisplayMode(DISPLAY_TIME_MODE);  // 切换到时间显示模式
+                            break;
+                        case SYS_STATE_SET_MIN:
+                            PCA_SetTimeEditMode(MIN_POS);
+                            PCA_SetDisplayMode(DISPLAY_TIME_MODE);
+                            break;
+                        case SYS_STATE_SET_SEC:
+                            PCA_SetTimeEditMode(SEC_POS);
+                            PCA_SetDisplayMode(DISPLAY_TIME_MODE);
+                            break;
+                    }
                 }
             }
         }
@@ -106,118 +156,94 @@ void main(void) {
     
     /* 
      * ========================================
-     * 智能浇花系统 - 定时定量浇水功能
+     * 智能浇花系统 - P3.3按键时间设置功能
      * ========================================
      * 
-     * 【系统特点】
-     * ============
-     * ✓ 精确时间控制：可设定每天固定时间自动浇水
-     * ✓ 定量浇水：按毫升数精确控制浇水量
-     * ✓ 数据保存：累计流量掉电不丢失
-     * ✓ 智能防重：每天只执行一次，避免重复浇水
-     * ✓ 手动控制：支持手动立即浇水
-     * ✓ 串口设置：支持通过串口设置系统时间
-     * 
-     * 【硬件连接】
-     * ============
-     * 控制部分：
-     * - P1.1: 继电器控制 (低电平触发)
-     * - P1.0: 方波发生器输出 (5Hz脉冲信号)
-     * - P3.2: INT0中断输入 (流量计脉冲计数)
-     * 
-     * 按键输入：
-     * - P1.2: 启动/停止定时浇水
-     * - P1.3: 增加参数值
-     * - P1.4: 减少参数值  
-     * - P1.7: 切换设置模式
-     * - P3.3: 手动浇水/时间设置
-     * 
-     * 存储设备：
-     * - P2.0: I2C数据线SDA (连接24C02)
-     * - P2.1: I2C时钟线SCL (连接24C02)
-     * 
-     * 【快速使用指南】
-     * ================
-     * 
-     * 🕐 第一步：设置浇水时间
-     *    ┌─────────────────────────────────────┐
-     *    │ 1. 按P1.7 → 数码管显示"HH0002"      │
-     *    │    用P1.3/P1.4设置小时(0-23)       │
-     *    │ 2. 按P1.7 → 数码管显示"MM0003"      │
-     *    │    用P1.3/P1.4设置分钟(0-59)       │
-     *    │ 3. 按P1.7 → 数码管显示"SS0001"      │
-     *    │    用P1.3/P1.4设置秒(0-59)         │
-     *    └─────────────────────────────────────┘
-     * 
-     * 💧 第二步：设置浇水量
-     *    ┌─────────────────────────────────────┐
-     *    │ 4. 按P1.7 → 数码管显示"MMMM05"      │
-     *    │    用P1.3/P1.4设置毫升数            │
-     *    │    (50-9999ml，步长50ml)            │
-     *    └─────────────────────────────────────┘
-     * 
-     * ▶️ 第三步：启动定时浇水
-     *    ┌─────────────────────────────────────┐
-     *    │ 5. 按P1.2启动定时浇水功能           │
-     *    │    系统进入自动模式，等待设定时间    │
-     *    └─────────────────────────────────────┘
-     * 
-     * 【数码管显示说明】
+     * 【P3.3按键操作说明】
      * ==================
      * 
-     * 时钟模式：显示当前时间 "HHMMSS"
-     * 例如：145023 = 14:50:23
+     * 🔘 短按功能：
+     *    - 正常模式：启动/停止手动浇水
+     *    - 设置模式：增加当前设置项的数值
      * 
-     * 参数设置模式：
-     * ┌──────────┬─────────────┬───────────────┐
-     * │ 显示格式  │    含义     │    示例      │
-     * ├──────────┼─────────────┼───────────────┤
-     * │ HH0003   │  设置小时   │ 060003=6点   │
-     * │ MM0002   │  设置分钟   │ 300002=30分  │
-     * │ SS0001   │  设置秒     │ 450001=45秒  │
-     * │ MMMM05   │  设置毫升   │ 150005=150ml │
-     * └──────────┴─────────────┴───────────────┘
+     * 🔘 长按功能（约1秒）：
+     *    - 正常模式：进入时间设置模式
+     *    - 设置模式：切换到下一个设置项
      * 
-     * 浇水状态：
-     * - 等待浇水：参数闪烁显示
-     * - 正在浇水：显示剩余毫升数 "XXXX05"
-     * - 浇水完成：返回时钟显示
-     * 
-     * 【实际使用例子】
+     * 【时间设置流程】
      * ================
      * 
-     * 🌱 场景1：每天早上7点浇150毫升水
-     * 步骤：
-     * 1. P1.7 → 设置"070003" (7点)
-     * 2. P1.7 → 设置"000002" (0分) 
-     * 3. P1.7 → 设置"000001" (0秒)
-     * 4. P1.7 → 设置"150005" (150毫升)
-     * 5. P1.2 → 启动定时浇水
-     * 结果：每天7:00:00自动浇水150毫升
+     * 1️⃣ 长按P3.3 → 进入年份设置
+     *    显示：日期模式 (YYMMDD)，年份位闪烁
+     *    操作：短按P3.3增加年份 (2000-2099)
      * 
-     * 🌱 场景2：傍晚6点半浇100毫升水  
-     * 步骤：
-     * 1. P1.7 → 设置"180003" (18点)
-     * 2. P1.7 → 设置"300002" (30分)
-     * 3. P1.7 → 设置"000001" (0秒) 
-     * 4. P1.7 → 设置"100005" (100毫升)
-     * 5. P1.2 → 启动定时浇水
-     * 结果：每天18:30:00自动浇水100毫升
+     * 2️⃣ 长按P3.3 → 切换到月份设置
+     *    显示：日期模式 (YYMMDD)，月份位闪烁
+     *    操作：短按P3.3增加月份 (1-12)
      * 
-     * 【故障处理】
+     * 3️⃣ 长按P3.3 → 切换到日期设置
+     *    显示：日期模式 (YYMMDD)，日期位闪烁
+     *    操作：短按P3.3增加日期 (1-31，自动适应月份)
+     * 
+     * 4️⃣ 长按P3.3 → 切换到小时设置
+     *    显示：时间模式 (HHMMSS)，小时位闪烁
+     *    操作：短按P3.3增加小时 (0-23)
+     * 
+     * 5️⃣ 长按P3.3 → 切换到分钟设置
+     *    显示：时间模式 (HHMMSS)，分钟位闪烁
+     *    操作：短按P3.3增加分钟 (0-59)
+     * 
+     * 6️⃣ 长按P3.3 → 切换到秒设置
+     *    显示：时间模式 (HHMMSS)，秒位闪烁
+     *    操作：短按P3.3增加秒 (0-59)
+     * 
+     * 7️⃣ 长按P3.3 → 完成设置，退出设置模式
+     *    显示：返回正常时间显示模式
+     * 
+     * 【显示模式说明】
+     * ================
+     * 
+     * 日期设置时 (步骤1-3)：
+     * ┌─────────────────────────────────────┐
+     * │ 数码管格式：YYMMDD                  │
+     * │ 示例："250527" = 2025年5月27日      │
+     * │ 闪烁部分：当前正在设置的位          │
+     * └─────────────────────────────────────┘
+     * 
+     * 时间设置时 (步骤4-6)：
+     * ┌─────────────────────────────────────┐
+     * │ 数码管格式：HHMMSS                  │
+     * │ 示例："143025" = 14:30:25           │
+     * │ 闪烁部分：当前正在设置的位          │
+     * └─────────────────────────────────────┘
+     * 
+     * 【使用示例】
      * ============
      * 
-     * Q: 设置时间后不浇水？
-     * A: 检查是否按P1.2启动定时功能
+     * 设置时间为 2025年12月25日 09:30:00：
      * 
-     * Q: 浇水量不准确？
-     * A: 检查流量计连接和方波发生器频率
+     * 1. 长按P3.3进入设置 → 显示当前日期，年份闪烁
+     * 2. 短按P3.3将年份调到25 (2025年)
+     * 3. 长按P3.3切换到月份 → 月份闪烁
+     * 4. 短按P3.3将月份调到12
+     * 5. 长按P3.3切换到日期 → 日期闪烁
+     * 6. 短按P3.3将日期调到25
+     * 7. 长按P3.3切换到小时 → 显示切换为时间，小时闪烁
+     * 8. 短按P3.3将小时调到09
+     * 9. 长按P3.3切换到分钟 → 分钟闪烁
+     * 10. 短按P3.3将分钟调到30
+     * 11. 长按P3.3切换到秒 → 秒闪烁
+     * 12. 保持秒为00
+     * 13. 长按P3.3完成设置 → 退出设置模式
      * 
-     * Q: 断电后累计流量丢失？
-     * A: 检查24C02连接和I2C通信
+     * 【注意事项】
+     * ============
      * 
-     * Q: 每天浇水多次？
-     * A: 系统设计为每天只浇一次，如出现请检查时钟
+     * ✓ 年份范围：2000-2099，超出范围会循环
+     * ✓ 闰年自动处理：2月份会自动适应28/29天
+     * ✓ 日期自动调整：切换月份时会自动调整日期上限
+     * ✓ 设置过程中可随时查看：闪烁显示当前设置项
+     * ✓ 意外退出：重新长按P3.3可重新进入设置
      */
     
     PCA_Init();
@@ -229,10 +255,11 @@ void main(void) {
     FlowMeter_Init();
     KeyboardControl_Init();  // 初始化按键控制
     
-    // 发送英文启动信息到串口
-    UART_SendString("\r\nWatering System Started\r\n");
-    UART_SendString("Time setting available\r\n");
-    UART_SendString("Auto watering initialized\r\n");
+    // 发送启动信息到串口
+    UART_SendString("\r\nWatering System Started v3.1\r\n");
+    UART_SendString("Auto Display: Time<->Date every 5 seconds\r\n");
+    UART_SendString("P3.3 Key: Long press to set date/time\r\n");
+    UART_SendString("Setting order: Year->Month->Day->Hour->Min->Sec\r\n");
     
     while (1) {
         processKey();

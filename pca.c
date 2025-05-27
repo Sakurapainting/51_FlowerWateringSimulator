@@ -35,9 +35,8 @@ BYTE cnt;
 WORD value;
 WORD value1;
 
-
-
-SYS_PARAMS SysPara1 = {0, 0, 0};    // 初始化系统参数
+// 支持年月日的系统参数 - 初始化为2025年1月1日 00:00:00
+SYS_PARAMS SysPara1 = {2025, 1, 1, 0, 0, 0};
 
 // 显示相关引脚定义
 sbit DATA = DISP_PORT^0;  // 串行数据输入
@@ -54,33 +53,15 @@ static code const unsigned char LED[] = {0x3F,0x06,0x5B,0x4F,0x66,0x6D,0x7D,0x07
 // 显示缓冲区
 unsigned char xdata dispbuff[8] = {SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF};
 
+// 日期时间显示模式
+BYTE datetime_display_mode = DISPLAY_TIME_MODE;  // 默认显示时间
+
 // 实现显示相关函数
 void delay_ms(unsigned int ms) {
     unsigned int i, j;
     for (i = 0; i < ms; i++)
         for (j = 0; j < 120; j++);
 }
-
-// void SendTo595(unsigned char data_seg, unsigned char data_bit) {
-//     unsigned char i;
-//     OE = 1;
-    
-//     for(i = 0; i < 8; i++) {
-//         DATA = (data_bit & 0x80) ? 1 : 0;
-//         SCK = 0; SCK = 1;
-//         data_bit <<= 1;
-//     }
-    
-//     for(i = 0; i < 8; i++) {
-//         DATA = (data_seg & 0x80) ? 1 : 0;
-//         SCK = 0; SCK = 1;
-//         data_seg <<= 1;
-//     }
-    
-//     RCK = 0; RCK = 1;
-//     OE = 0;
-//     delay_ms(1);
-// }
 
 void Resetdispbuff() {
     unsigned char i;
@@ -100,6 +81,24 @@ void FillDispBuf(BYTE hour, BYTE min, BYTE sec) {
     // 小时部分（右起4-5位）
     dispbuff[4] = LED[hour % 10];
     dispbuff[5] = LED[hour / 10];
+}
+
+// 新增：填充日期显示缓冲区 (YYMMDD格式)
+void FillDateBuf(WORD year, BYTE month, BYTE day) {
+    BYTE year_2digit = year % 100;  // 只显示年份后两位
+    
+    Resetdispbuff();
+    // 日期部分（右起0-1位）
+    dispbuff[0] = LED[day % 10];   // 日个位
+    dispbuff[1] = LED[day / 10];   // 日十位
+    
+    // 月份部分（右起2-3位）
+    dispbuff[2] = LED[month % 10]; // 月个位
+    dispbuff[3] = LED[month / 10]; // 月十位
+    
+    // 年份部分（右起4-5位，只显示后两位）
+    dispbuff[4] = LED[year_2digit % 10];  // 年个位
+    dispbuff[5] = LED[year_2digit / 10];  // 年十位
 }
 
 // 自定义显示缓冲区填充函数
@@ -160,8 +159,12 @@ void disp(void) {
 }
 
 // 时间编辑相关变量
-static BYTE timeEditMode = 0;  // 0: 正常显示, 1: 编辑小时, 2: 编辑分钟, 3: 编辑秒
+static BYTE timeEditMode = 0;  // 0: 正常显示, 1-6: 编辑年月日时分秒
 static BYTE blinkState = 0;    // 闪烁状态: 0 显示, 1 不显示
+
+// 新增：自动轮换显示相关变量
+static BYTE autoToggleCounter = 0;  // 自动切换计数器
+#define AUTO_TOGGLE_INTERVAL 5       // 每5秒切换一次显示模式
 
 // 设置时间编辑模式
 void PCA_SetTimeEditMode(BYTE position) {
@@ -172,12 +175,35 @@ void PCA_SetTimeEditMode(BYTE position) {
 // 退出时间编辑模式
 void PCA_ExitTimeEditMode(void) {
     timeEditMode = 0;
-    FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
+    // 根据当前显示模式更新显示
+    if(datetime_display_mode == DISPLAY_TIME_MODE) {
+        FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
+    } else {
+        FillDateBuf(SysPara1.year, SysPara1.month, SysPara1.day);
+    }
 }
 
 // 增加时间值
 void PCA_IncreaseTimeValue(BYTE position) {
     switch (position) {
+        case YEAR_POS:
+            SysPara1.year++;
+            if(SysPara1.year > 2099) SysPara1.year = 2000;  // 年份范围2000-2099
+            break;
+        case MONTH_POS:
+            SysPara1.month++;
+            if(SysPara1.month > 12) SysPara1.month = 1;
+            // 检查日期是否超出当月最大天数
+            if(SysPara1.day > PCA_GetDaysInMonth(SysPara1.year, SysPara1.month)) {
+                SysPara1.day = PCA_GetDaysInMonth(SysPara1.year, SysPara1.month);
+            }
+            break;
+        case DAY_POS:
+            SysPara1.day++;
+            if(SysPara1.day > PCA_GetDaysInMonth(SysPara1.year, SysPara1.month)) {
+                SysPara1.day = 1;
+            }
+            break;
         case HOUR_POS:
             SysPara1.hour = (SysPara1.hour + 1) % 24;
             break;
@@ -188,10 +214,16 @@ void PCA_IncreaseTimeValue(BYTE position) {
             SysPara1.sec = (SysPara1.sec + 1) % 60;
             break;
     }
-    FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
+    
+    // 更新显示
+    if(datetime_display_mode == DISPLAY_TIME_MODE) {
+        FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
+    } else {
+        FillDateBuf(SysPara1.year, SysPara1.month, SysPara1.day);
+    }
 }
 
-// 直接设置时间函数
+// 设置时分秒
 void PCA_SetTime(BYTE hour, BYTE min, BYTE sec) {
     // 验证输入时间是否有效
     if(hour < 24 && min < 60 && sec < 60) {
@@ -199,7 +231,7 @@ void PCA_SetTime(BYTE hour, BYTE min, BYTE sec) {
         SysPara1.min = min;
         SysPara1.sec = sec;
         
-        // 时间修改后重新计算今日触发标志（不保存到24C02）
+        // 时间修改后重新计算今日触发标志
         if(timed_watering.enabled) {
             // 重新判断今天的浇水时间是否已过
             if(SysPara1.hour > timed_watering.start_hour || 
@@ -209,19 +241,124 @@ void PCA_SetTime(BYTE hour, BYTE min, BYTE sec) {
             } else {
                 timed_watering.triggered_today = 0;  // 今天的浇水时间还没到，可以触发
             }
-            
-            // 移除保存调用
-            // TimedWatering_SaveParams();
         }
         
         // 如果当前是时钟显示模式，更新显示
         if(FlowMeter_GetMode() == FLOW_MODE_OFF && timeEditMode == 0) {
-            FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
+            if(datetime_display_mode == DISPLAY_TIME_MODE) {
+                FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
+            }
         }
     }
 }
 
-// 修改PCA中断服务函数，简化显示逻辑
+// 新增：设置年月日
+void PCA_SetDate(WORD year, BYTE month, BYTE day) {
+    // 验证输入日期是否有效
+    if(year >= 2000 && year <= 2099 && month >= 1 && month <= 12 && 
+       day >= 1 && day <= PCA_GetDaysInMonth(year, month)) {
+        SysPara1.year = year;
+        SysPara1.month = month;
+        SysPara1.day = day;
+        
+        // 如果当前是日期显示模式，更新显示
+        if(FlowMeter_GetMode() == FLOW_MODE_OFF && timeEditMode == 0) {
+            if(datetime_display_mode == DISPLAY_DATE_MODE) {
+                FillDateBuf(SysPara1.year, SysPara1.month, SysPara1.day);
+            }
+        }
+    }
+}
+
+// 新增：设置完整日期时间
+void PCA_SetDateTime(WORD year, BYTE month, BYTE day, BYTE hour, BYTE min, BYTE sec) {
+    PCA_SetDate(year, month, day);
+    PCA_SetTime(hour, min, sec);
+}
+
+// 新增：获取时间相关函数
+WORD PCA_GetYear(void) { return SysPara1.year; }
+BYTE PCA_GetMonth(void) { return SysPara1.month; }
+BYTE PCA_GetDay(void) { return SysPara1.day; }
+BYTE PCA_GetHour(void) { return SysPara1.hour; }
+BYTE PCA_GetMin(void) { return SysPara1.min; }
+BYTE PCA_GetSec(void) { return SysPara1.sec; }
+
+// 新增：显示模式控制函数
+void PCA_SetDisplayMode(BYTE mode) {
+    datetime_display_mode = mode;
+    if(timeEditMode == 0) {  // 非编辑模式下立即更新显示
+        if(mode == DISPLAY_TIME_MODE) {
+            FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
+        } else {
+            FillDateBuf(SysPara1.year, SysPara1.month, SysPara1.day);
+        }
+    }
+}
+
+BYTE PCA_GetDisplayMode(void) {
+    return datetime_display_mode;
+}
+
+void PCA_ToggleDisplayMode(void) {
+    datetime_display_mode = (datetime_display_mode == DISPLAY_TIME_MODE) ? DISPLAY_DATE_MODE : DISPLAY_TIME_MODE;
+    PCA_SetDisplayMode(datetime_display_mode);
+}
+
+// 新增：日期计算辅助函数
+bit PCA_IsLeapYear(WORD year) {
+    return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+}
+
+BYTE PCA_GetDaysInMonth(WORD year, BYTE month) {
+    static code BYTE daysInMonth[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+    
+    if(month == 2 && PCA_IsLeapYear(year)) {
+        return 29;  // 闰年2月有29天
+    }
+    return daysInMonth[month - 1];
+}
+
+// 新增：更新日期时间（处理日期跨越）
+void PCA_UpdateDateTime(void) {
+    // 秒进位
+    SysPara1.sec++;
+    if(SysPara1.sec >= 60) {
+        SysPara1.sec = 0;
+        
+        // 分钟进位
+        SysPara1.min++;
+        if(SysPara1.min >= 60) {
+            SysPara1.min = 0;
+            
+            // 小时进位
+            SysPara1.hour++;
+            if(SysPara1.hour >= 24) {
+                SysPara1.hour = 0;
+                
+                // 日期进位
+                SysPara1.day++;
+                if(SysPara1.day > PCA_GetDaysInMonth(SysPara1.year, SysPara1.month)) {
+                    SysPara1.day = 1;
+                    
+                    // 月份进位
+                    SysPara1.month++;
+                    if(SysPara1.month > 12) {
+                        SysPara1.month = 1;
+                        
+                        // 年份进位
+                        SysPara1.year++;
+                        if(SysPara1.year > 2099) {
+                            SysPara1.year = 2000;  // 循环到2000年
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// 修改PCA中断服务函数，添加自动轮换显示逻辑
 void PCA_isr() interrupt 7
 {
     if(CCF1){
@@ -246,18 +383,8 @@ void PCA_isr() interrupt 7
             // 确保每1秒调用一次流量计算
             FlowMeter_CalcFlow();  // 每秒调用一次，统计过去1秒的脉冲数
             
-            // 更新时钟
-            SysPara1.sec++;
-            if(SysPara1.sec >= 60) {
-                SysPara1.sec = 0;
-                SysPara1.min++;
-                if(SysPara1.min >= 60) {
-                    SysPara1.min = 0;
-                    SysPara1.hour++;
-                    if(SysPara1.hour >= 24)
-                        SysPara1.hour = 0;
-                }
-            }
+            // 使用新的日期时间更新函数
+            PCA_UpdateDateTime();
             
             // 更新定时浇水状态 - 确保在时钟更新后立即调用
             TimedWatering_Update();
@@ -265,30 +392,69 @@ void PCA_isr() interrupt 7
             // 时间编辑模式闪烁控制
             if (timeEditMode > 0) {
                 blinkState = !blinkState;
-                FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
                 
-                if (blinkState) {
-                    switch (timeEditMode) {
-                        case HOUR_POS:
-                            dispbuff[4] = SEG_OFF;
-                            dispbuff[5] = SEG_OFF;
-                            break;
-                        case MIN_POS:
-                            dispbuff[2] = SEG_OFF;
-                            dispbuff[3] = SEG_OFF;
-                            break;
-                        case SEC_POS:
-                            dispbuff[0] = SEG_OFF;
-                            dispbuff[1] = SEG_OFF;
-                            break;
+                // 根据编辑的是日期还是时间来更新显示
+                if(timeEditMode <= DAY_POS) {
+                    // 编辑日期 (年月日)
+                    FillDateBuf(SysPara1.year, SysPara1.month, SysPara1.day);
+                    if (blinkState) {
+                        switch (timeEditMode) {
+                            case YEAR_POS:
+                                dispbuff[4] = SEG_OFF;  // 年份十位
+                                dispbuff[5] = SEG_OFF;  // 年份个位
+                                break;
+                            case MONTH_POS:
+                                dispbuff[2] = SEG_OFF;  // 月份十位
+                                dispbuff[3] = SEG_OFF;  // 月份个位
+                                break;
+                            case DAY_POS:
+                                dispbuff[0] = SEG_OFF;  // 日期十位
+                                dispbuff[1] = SEG_OFF;  // 日期个位
+                                break;
+                        }
+                    }
+                } else {
+                    // 编辑时间 (时分秒)
+                    FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
+                    if (blinkState) {
+                        switch (timeEditMode) {
+                            case HOUR_POS:
+                                dispbuff[4] = SEG_OFF;  // 小时十位
+                                dispbuff[5] = SEG_OFF;  // 小时个位
+                                break;
+                            case MIN_POS:
+                                dispbuff[2] = SEG_OFF;  // 分钟十位
+                                dispbuff[3] = SEG_OFF;  // 分钟个位
+                                break;
+                            case SEC_POS:
+                                dispbuff[0] = SEG_OFF;  // 秒十位
+                                dispbuff[1] = SEG_OFF;  // 秒个位
+                                break;
+                        }
                     }
                 }
             }
-            // 根据显示模式更新显示缓冲区
+            // 正常显示模式的逻辑
             else if (FlowMeter_GetMode() == FLOW_MODE_OFF) {
-                // 时钟显示模式：显示当前时间
+                // 时钟显示模式：实现自动轮换显示
                 if(auto_display_mode == DISPLAY_MODE_CLOCK) {
-                    FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
+                    // 自动轮换计数器递增
+                    autoToggleCounter++;
+                    
+                    // 每AUTO_TOGGLE_INTERVAL秒切换一次显示模式
+                    if(autoToggleCounter >= AUTO_TOGGLE_INTERVAL) {
+                        autoToggleCounter = 0;
+                        // 自动切换显示模式
+                        datetime_display_mode = (datetime_display_mode == DISPLAY_TIME_MODE) ? 
+                                              DISPLAY_DATE_MODE : DISPLAY_TIME_MODE;
+                    }
+                    
+                    // 根据当前显示模式更新显示
+                    if(datetime_display_mode == DISPLAY_TIME_MODE) {
+                        FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
+                    } else {
+                        FillDateBuf(SysPara1.year, SysPara1.month, SysPara1.day);
+                    }
                 }
                 // 自动浇水参数显示模式：设置更新标志
                 else if(auto_display_mode == DISPLAY_MODE_AUTO) {
@@ -297,23 +463,47 @@ void PCA_isr() interrupt 7
             }
         }
         else if(cnt % 50 == 0 && timeEditMode > 0) {
+            // 0.5秒闪烁一次
             blinkState = !blinkState;
-            FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
             
-            if (blinkState) {
-                switch (timeEditMode) {
-                    case HOUR_POS:
-                        dispbuff[4] = SEG_OFF;
-                        dispbuff[5] = SEG_OFF;
-                        break;
-                    case MIN_POS:
-                        dispbuff[2] = SEG_OFF;
-                        dispbuff[3] = SEG_OFF;
-                        break;
-                    case SEC_POS:
-                        dispbuff[0] = SEG_OFF;
-                        dispbuff[1] = SEG_OFF;
-                        break;
+            // 根据编辑的是日期还是时间来更新显示
+            if(timeEditMode <= DAY_POS) {
+                // 编辑日期 (年月日)
+                FillDateBuf(SysPara1.year, SysPara1.month, SysPara1.day);
+                if (blinkState) {
+                    switch (timeEditMode) {
+                        case YEAR_POS:
+                            dispbuff[4] = SEG_OFF;  // 年份十位
+                            dispbuff[5] = SEG_OFF;  // 年份个位
+                            break;
+                        case MONTH_POS:
+                            dispbuff[2] = SEG_OFF;  // 月份十位
+                            dispbuff[3] = SEG_OFF;  // 月份个位
+                            break;
+                        case DAY_POS:
+                            dispbuff[0] = SEG_OFF;  // 日期十位
+                            dispbuff[1] = SEG_OFF;  // 日期个位
+                            break;
+                    }
+                }
+            } else {
+                // 编辑时间 (时分秒)
+                FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
+                if (blinkState) {
+                    switch (timeEditMode) {
+                        case HOUR_POS:
+                            dispbuff[4] = SEG_OFF;  // 小时十位
+                            dispbuff[5] = SEG_OFF;  // 小时个位
+                            break;
+                        case MIN_POS:
+                            dispbuff[2] = SEG_OFF;  // 分钟十位
+                            dispbuff[3] = SEG_OFF;  // 分钟个位
+                            break;
+                        case SEC_POS:
+                            dispbuff[0] = SEG_OFF;  // 秒十位
+                            dispbuff[1] = SEG_OFF;  // 秒个位
+                            break;
+                    }
                 }
             }
         }
@@ -351,7 +541,33 @@ void PCA_Init(void)
     EA = 1;                         // Enable global interrupt
     cnt = 0;
 
-    // 初始化时钟显示
-    FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
+    // 初始化显示 - 根据默认显示模式
+    datetime_display_mode = DISPLAY_TIME_MODE;  // 默认显示时间
+    autoToggleCounter = 0;          // 初始化自动轮换计数器
+    
+    if(datetime_display_mode == DISPLAY_TIME_MODE) {
+        FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
+    } else {
+        FillDateBuf(SysPara1.year, SysPara1.month, SysPara1.day);
+    }
+}
+
+// 新增：重置自动轮换计数器（在进入设置模式时调用）
+void PCA_ResetAutoToggle(void) {
+    autoToggleCounter = 0;
+}
+
+// 新增：手动切换显示模式（同时重置自动轮换）
+void PCA_ManualToggleDisplay(void) {
+    datetime_display_mode = (datetime_display_mode == DISPLAY_TIME_MODE) ? 
+                           DISPLAY_DATE_MODE : DISPLAY_TIME_MODE;
+    autoToggleCounter = 0;  // 重置计数器
+    
+    // 立即更新显示
+    if(datetime_display_mode == DISPLAY_TIME_MODE) {
+        FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
+    } else {
+        FillDateBuf(SysPara1.year, SysPara1.month, SysPara1.day);
+    }
 }
 

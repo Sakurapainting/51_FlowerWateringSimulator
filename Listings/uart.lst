@@ -1,4 +1,4 @@
-C51 COMPILER V9.54   UART                                                                  05/27/2025 19:12:09 PAGE 1   
+C51 COMPILER V9.54   UART                                                                  05/27/2025 20:54:43 PAGE 1   
 
 
 C51 COMPILER V9.54, COMPILATION OF MODULE UART
@@ -10,11 +10,11 @@ line level    source
 
    1          #include "uart.h"
    2          #include "flowmeter.h"
-   3          #include "keyboard_control.h"  // 添加此头文件以使用定时浇水功能
+   3          #include "keyboard_control.h"
    4          #include <string.h>
    5          
-   6          // 串口缓冲区及状态变量 - 减少缓冲区大小
-   7          static char xdata uart_buffer[16];  // 移到xdata以节省内部RAM
+   6          // 串口缓冲区及状态变量
+   7          static char xdata uart_buffer[32];  // 增加缓冲区大小以支持日期时间命令
    8          static BYTE uart_count = 0;
    9          static bit uart_complete = 0;
   10          
@@ -40,178 +40,286 @@ line level    source
   30   1          uart_complete = 0;
   31   1          memset(uart_buffer, 0, sizeof(uart_buffer));
   32   1          
-  33   1          // 发送英文启动信息
-  34   1          UART_SendString("\r\nSystem Ready\r\n");
-  35   1          UART_SendString("TIME:HH:MM:SS\r\n");
-  36   1          UART_SendString("A:HH:MM:SS:MMMM\r\n");
-  37   1      }
-  38          
-  39          // 发送一个字节
-  40          void UART_SendByte(BYTE dat) {
-  41   1          SBUF = dat;             // 将数据写入发送缓冲区
-  42   1          while(!TI);             // 等待发送完成
-  43   1          TI = 0;                 // 清除发送中断标志
-  44   1      }
-  45          
-  46          // 发送字符串
-  47          void UART_SendString(char *s) {
-  48   1          while(*s) {             // 发送字符串，直到遇到null结束符
-  49   2              UART_SendByte(*s++);
-  50   2          }
-  51   1      }
-  52          
-  53          // 命令处理函数
-  54          static void UART_CommandHandler(void) {
-C51 COMPILER V9.54   UART                                                                  05/27/2025 19:12:09 PAGE 2   
+  33   1          // 发送启动信息
+  34   1          UART_SendString("\r\nWatering System Ready v2.0\r\n");
+  35   1          UART_SendString("Commands Available:\r\n");
+  36   1          UART_SendString("TIME:HH:MM:SS\r\n");
+  37   1          UART_SendString("DATE:YYYY:MM:DD\r\n");
+  38   1          UART_SendString("DATETIME:YYYY:MM:DD:HH:MM:SS\r\n");
+  39   1          UART_SendString("A:HH:MM:SS:MMMM\r\n");
+  40   1          UART_SendString("DISPTIME/DISPDATE\r\n");
+  41   1          UART_SendString("STOP\r\n");
+  42   1      }
+  43          
+  44          // 发送一个字节
+  45          void UART_SendByte(BYTE dat) {
+  46   1          SBUF = dat;             // 将数据写入发送缓冲区
+  47   1          while(!TI);             // 等待发送完成
+  48   1          TI = 0;                 // 清除发送中断标志
+  49   1      }
+  50          
+  51          // 发送字符串
+  52          void UART_SendString(char *s) {
+  53   1          while(*s) {             // 发送字符串，直到遇到null结束符
+  54   2              UART_SendByte(*s++);
+C51 COMPILER V9.54   UART                                                                  05/27/2025 20:54:43 PAGE 2   
 
-  55   1          // 时间设置命令格式: "TIME:HH:MM:SS"
-  56   1          if(strncmp(uart_buffer, "TIME:", 5) == 0) {
-  57   2              BYTE hour = 0, min = 0, sec = 0;
-  58   2              
-  59   2              // 解析时间
-  60   2              if(strlen(uart_buffer) >= 13) { // 确保格式正确且长度足够
-  61   3                  hour = (uart_buffer[5] - '0') * 10 + (uart_buffer[6] - '0');
-  62   3                  min = (uart_buffer[8] - '0') * 10 + (uart_buffer[9] - '0');
-  63   3                  sec = (uart_buffer[11] - '0') * 10 + (uart_buffer[12] - '0');
-  64   3                  
-  65   3                  // 检查时间值是否有效
-  66   3                  if(hour < 24 && min < 60 && sec < 60) {
-  67   4                      // 直接修改SysPara1中的时间值
-  68   4                      PCA_SetTime(hour, min, sec);
-  69   4                      
-  70   4                      UART_SendString("\r\nTime Set: ");
-  71   4                      // 发送时间字符串
-  72   4                      uart_buffer[7] = ':';
-  73   4                      uart_buffer[10] = ':';
-  74   4                      uart_buffer[13] = 0;
-  75   4                      UART_SendString(uart_buffer + 5);
-  76   4                      UART_SendString("\r\n");
-  77   4                  }
-  78   3                  else {
-  79   4                      UART_SendString("\r\nError: Invalid time\r\n");
-  80   4                      UART_SendString("Format: HH(0-23):MM(0-59):SS(0-59)\r\n");
-  81   4                  }
-  82   3              }
-  83   2              else {
-  84   3                  UART_SendString("\r\nError: Wrong format\r\n");
-  85   3                  UART_SendString("Format: TIME:HH:MM:SS\r\n");
-  86   3                  UART_SendString("Example: TIME:14:30:00\r\n");
-  87   3              }
-  88   2          }
-  89   1          // 定时浇水设置命令格式: "A:HH:MM:SS:MMMM"
-  90   1          else if(strncmp(uart_buffer, "A:", 2) == 0) {
-  91   2              BYTE hour, min, sec;
-  92   2              unsigned int volume;
-  93   2              
-  94   2              // 解析定时浇水参数 A:HH:MM:SS:MMMM
-  95   2              if(strlen(uart_buffer) >= 15) { // 确保格式正确且长度足够
-  96   3                  hour = (uart_buffer[2] - '0') * 10 + (uart_buffer[3] - '0');
-  97   3                  min = (uart_buffer[5] - '0') * 10 + (uart_buffer[6] - '0');
-  98   3                  sec = (uart_buffer[8] - '0') * 10 + (uart_buffer[9] - '0');
-  99   3                  
- 100   3                  // 解析毫升数(最多4位)
- 101   3                  volume = 0;
- 102   3                  volume += (uart_buffer[11] - '0') * 1000;
- 103   3                  volume += (uart_buffer[12] - '0') * 100;
- 104   3                  volume += (uart_buffer[13] - '0') * 10;
- 105   3                  volume += (uart_buffer[14] - '0');
- 106   3                  
- 107   3                  // 检查参数有效性
- 108   3                  if(hour < 24 && min < 60 && sec < 60 && volume >= 50 && volume <= 9999) {
- 109   4                      // 设置定时浇水参数
- 110   4                      timed_watering.start_hour = hour;
- 111   4                      timed_watering.start_min = min;
- 112   4                      timed_watering.start_sec = sec;
- 113   4                      timed_watering.water_volume_ml = volume;
- 114   4                      timed_watering.enabled = 1;
- 115   4                      timed_watering.triggered_today = 0;
- 116   4                      
-C51 COMPILER V9.54   UART                                                                  05/27/2025 19:12:09 PAGE 3   
+  55   2          }
+  56   1      }
+  57          
+  58          // 数字转换辅助函数
+  59          static WORD ParseNumber(char *str, BYTE len) {
+  60   1          WORD result = 0;
+  61   1          BYTE i;
+  62   1          for(i = 0; i < len; i++) {
+  63   2              if(str[i] >= '0' && str[i] <= '9') {
+  64   3                  result = result * 10 + (str[i] - '0');
+  65   3              } else {
+  66   3                  return 0xFFFF;  // 错误标志
+  67   3              }
+  68   2          }
+  69   1          return result;
+  70   1      }
+  71          
+  72          // 命令处理函数
+  73          static void UART_CommandHandler(void) {
+  74   1          // 设置完整日期时间命令: "DATETIME:YYYY:MM:DD:HH:MM:SS"
+  75   1          if(strncmp(uart_buffer, "DATETIME:", 9) == 0) {
+  76   2              WORD year;
+  77   2              BYTE month, day, hour, min, sec;
+  78   2              
+  79   2              if(strlen(uart_buffer) >= 28) { // DATETIME:2025:05:27:14:30:00 = 28字符
+  80   3                  year = ParseNumber(uart_buffer + 9, 4);
+  81   3                  month = (BYTE)ParseNumber(uart_buffer + 14, 2);
+  82   3                  day = (BYTE)ParseNumber(uart_buffer + 17, 2);
+  83   3                  hour = (BYTE)ParseNumber(uart_buffer + 20, 2);
+  84   3                  min = (BYTE)ParseNumber(uart_buffer + 23, 2);
+  85   3                  sec = (BYTE)ParseNumber(uart_buffer + 26, 2);
+  86   3                  
+  87   3                  // 验证参数有效性
+  88   3                  if(year >= 2000 && year <= 2099 && month >= 1 && month <= 12 && 
+  89   3                     day >= 1 && day <= PCA_GetDaysInMonth(year, month) &&
+  90   3                     hour < 24 && min < 60 && sec < 60) {
+  91   4                      
+  92   4                      PCA_SetDateTime(year, month, day, hour, min, sec);
+  93   4                      
+  94   4                      UART_SendString("\r\nDateTime Set: ");
+  95   4                      UART_SendString(uart_buffer + 9);
+  96   4                      uart_buffer[13] = '-';
+  97   4                      uart_buffer[16] = '-';
+  98   4                      uart_buffer[19] = ' ';
+  99   4                      uart_buffer[22] = ':';
+ 100   4                      uart_buffer[25] = ':';
+ 101   4                      uart_buffer[28] = 0;
+ 102   4                      UART_SendString(uart_buffer + 9);
+ 103   4                      UART_SendString("\r\n");
+ 104   4                  } else {
+ 105   4                      UART_SendString("\r\nError: Invalid datetime\r\n");
+ 106   4                      UART_SendString("Format: YYYY(2000-2099):MM(1-12):DD(1-31):HH(0-23):MM(0-59):SS(0-59)\r\n"
+             -);
+ 107   4                  }
+ 108   3              } else {
+ 109   3                  UART_SendString("\r\nError: Wrong format\r\n");
+ 110   3                  UART_SendString("Format: DATETIME:YYYY:MM:DD:HH:MM:SS\r\n");
+ 111   3                  UART_SendString("Example: DATETIME:2025:05:27:14:30:00\r\n");
+ 112   3              }
+ 113   2          }
+ 114   1          // 设置日期命令: "DATE:YYYY:MM:DD"
+ 115   1          else if(strncmp(uart_buffer, "DATE:", 5) == 0) {
+C51 COMPILER V9.54   UART                                                                  05/27/2025 20:54:43 PAGE 3   
 
- 117   4                      UART_SendString("\r\nAuto Set OK\r\n");
- 118   4                      UART_SendString("Time: ");
- 119   4                      uart_buffer[4] = ':';
- 120   4                      uart_buffer[7] = ':';
- 121   4                      uart_buffer[10] = 0;
- 122   4                      UART_SendString(uart_buffer + 2);
- 123   4                      UART_SendString("\r\nVolume: ");
- 124   4                      uart_buffer[15] = 0;
- 125   4                      UART_SendString(uart_buffer + 11);
- 126   4                      UART_SendString("ml\r\n");
- 127   4                  }
- 128   3                  else {
- 129   4                      UART_SendString("\r\nError: Invalid params\r\n");
- 130   4                      UART_SendString("Time: HH(0-23):MM(0-59):SS(0-59)\r\n");
- 131   4                      UART_SendString("Volume: 50-9999ml\r\n");
- 132   4                  }
- 133   3              }
- 134   2              else {
- 135   3                  UART_SendString("\r\nError: Wrong format\r\n");
- 136   3                  UART_SendString("Format: A:HH:MM:SS:MMMM\r\n");
- 137   3                  UART_SendString("Example: A:06:00:01:0100\r\n");
- 138   3              }
- 139   2          }
- 140   1          // 停止定时浇水命令: "STOP"
- 141   1          else if(strncmp(uart_buffer, "STOP", 4) == 0) {
- 142   2              TimedWatering_Stop();
- 143   2              UART_SendString("\r\nAuto Stopped\r\n");
- 144   2          }
- 145   1          else {
- 146   2              UART_SendString("\r\nError: Unknown cmd\r\n");
- 147   2              UART_SendString("Commands:\r\n");
- 148   2              UART_SendString("TIME:HH:MM:SS - Set time\r\n");
- 149   2              UART_SendString("A:HH:MM:SS:MMMM - Set auto\r\n");
- 150   2              UART_SendString("STOP - Stop auto\r\n");
- 151   2          }
- 152   1      }
- 153          
- 154          // 处理串口命令
- 155          void UART_ProcessCommand(void) {
- 156   1          if(uart_complete) {
- 157   2              UART_CommandHandler();
- 158   2              uart_complete = 0;
- 159   2              uart_count = 0;
- 160   2              memset(uart_buffer, 0, sizeof(uart_buffer));
- 161   2          }
- 162   1      }
- 163          
- 164          // 串口中断服务函数
- 165          void UART_ISR() interrupt 4 {
- 166   1          if(RI) {                // 接收中断
- 167   2              RI = 0;             // 清除接收中断标志
- 168   2              
- 169   2              if(!uart_complete) { // 如果前一条命令还没处理完，则忽略当前接收的字符
- 170   3                  char ch = SBUF;  // 获取接收到的字符
- 171   3                  
- 172   3                  // 回显接收到的字符
- 173   3                  UART_SendByte(ch);
- 174   3                  
- 175   3                  if(ch == '\n' || ch == '\r') { // 接收到回车或换行
- 176   4                      uart_buffer[uart_count] = '\0';  // 字符串结束符
- 177   4                      if (uart_count > 0) {  // 非空命令才进行处理
- 178   5                          uart_complete = 1;  // 设置接收完成标志
-C51 COMPILER V9.54   UART                                                                  05/27/2025 19:12:09 PAGE 4   
+ 116   2              WORD year;
+ 117   2              BYTE month, day;
+ 118   2              
+ 119   2              if(strlen(uart_buffer) >= 15) { // DATE:2025:05:27 = 15字符
+ 120   3                  year = ParseNumber(uart_buffer + 5, 4);
+ 121   3                  month = (BYTE)ParseNumber(uart_buffer + 10, 2);
+ 122   3                  day = (BYTE)ParseNumber(uart_buffer + 13, 2);
+ 123   3                  
+ 124   3                  // 验证参数有效性
+ 125   3                  if(year >= 2000 && year <= 2099 && month >= 1 && month <= 12 && 
+ 126   3                     day >= 1 && day <= PCA_GetDaysInMonth(year, month)) {
+ 127   4                      
+ 128   4                      PCA_SetDate(year, month, day);
+ 129   4                      
+ 130   4                      UART_SendString("\r\nDate Set: ");
+ 131   4                      uart_buffer[9] = '-';
+ 132   4                      uart_buffer[12] = '-';
+ 133   4                      uart_buffer[15] = 0;
+ 134   4                      UART_SendString(uart_buffer + 5);
+ 135   4                      UART_SendString("\r\n");
+ 136   4                  } else {
+ 137   4                      UART_SendString("\r\nError: Invalid date\r\n");
+ 138   4                      UART_SendString("Format: YYYY(2000-2099):MM(1-12):DD(1-31)\r\n");
+ 139   4                  }
+ 140   3              } else {
+ 141   3                  UART_SendString("\r\nError: Wrong format\r\n");
+ 142   3                  UART_SendString("Format: DATE:YYYY:MM:DD\r\n");
+ 143   3                  UART_SendString("Example: DATE:2025:05:27\r\n");
+ 144   3              }
+ 145   2          }
+ 146   1          // 时间设置命令格式: "TIME:HH:MM:SS"
+ 147   1          else if(strncmp(uart_buffer, "TIME:", 5) == 0) {
+ 148   2              BYTE hour = 0, min = 0, sec = 0;
+ 149   2              
+ 150   2              // 解析时间
+ 151   2              if(strlen(uart_buffer) >= 13) { // 确保格式正确且长度足够
+ 152   3                  hour = (uart_buffer[5] - '0') * 10 + (uart_buffer[6] - '0');
+ 153   3                  min = (uart_buffer[8] - '0') * 10 + (uart_buffer[9] - '0');
+ 154   3                  sec = (uart_buffer[11] - '0') * 10 + (uart_buffer[12] - '0');
+ 155   3                  
+ 156   3                  // 检查时间值是否有效
+ 157   3                  if(hour < 24 && min < 60 && sec < 60) {
+ 158   4                      // 直接修改SysPara1中的时间值
+ 159   4                      PCA_SetTime(hour, min, sec);
+ 160   4                      
+ 161   4                      UART_SendString("\r\nTime Set: ");
+ 162   4                      // 发送时间字符串
+ 163   4                      uart_buffer[7] = ':';
+ 164   4                      uart_buffer[10] = ':';
+ 165   4                      uart_buffer[13] = 0;
+ 166   4                      UART_SendString(uart_buffer + 5);
+ 167   4                      UART_SendString("\r\n");
+ 168   4                  }
+ 169   3                  else {
+ 170   4                      UART_SendString("\r\nError: Invalid time\r\n");
+ 171   4                      UART_SendString("Format: HH(0-23):MM(0-59):SS(0-59)\r\n");
+ 172   4                  }
+ 173   3              }
+ 174   2              else {
+ 175   3                  UART_SendString("\r\nError: Wrong format\r\n");
+ 176   3                  UART_SendString("Format: TIME:HH:MM:SS\r\n");
+ 177   3                  UART_SendString("Example: TIME:14:30:00\r\n");
+C51 COMPILER V9.54   UART                                                                  05/27/2025 20:54:43 PAGE 4   
 
- 179   5                      }
- 180   4                  }
- 181   3                  else if(uart_count < UART_BUF_SIZE - 1) { // 缓冲区未满
- 182   4                      uart_buffer[uart_count++] = ch;  // 存储接收到的字符
- 183   4                  }
- 184   3              }
- 185   2          }
- 186   1          
- 187   1          if(TI) {                // 发送中断
- 188   2              TI = 0;             // 清除发送中断标志
- 189   2          }
- 190   1      }
+ 178   3              }
+ 179   2          }
+ 180   1          // 显示模式切换命令: "DISPTIME" 或 "DISPDATE"
+ 181   1          else if(strncmp(uart_buffer, "DISPTIME", 8) == 0) {
+ 182   2              PCA_SetDisplayMode(DISPLAY_TIME_MODE);
+ 183   2              UART_SendString("\r\nDisplay Mode: Time\r\n");
+ 184   2          }
+ 185   1          else if(strncmp(uart_buffer, "DISPDATE", 8) == 0) {
+ 186   2              PCA_SetDisplayMode(DISPLAY_DATE_MODE);
+ 187   2              UART_SendString("\r\nDisplay Mode: Date\r\n");
+ 188   2          }
+ 189   1          // 定时浇水设置命令格式: "A:HH:MM:SS:MMMM"
+ 190   1          else if(strncmp(uart_buffer, "A:", 2) == 0) {
+ 191   2              BYTE hour, min, sec;
+ 192   2              unsigned int volume;
+ 193   2              
+ 194   2              // 解析定时浇水参数 A:HH:MM:SS:MMMM
+ 195   2              if(strlen(uart_buffer) >= 15) { // 确保格式正确且长度足够
+ 196   3                  hour = (uart_buffer[2] - '0') * 10 + (uart_buffer[3] - '0');
+ 197   3                  min = (uart_buffer[5] - '0') * 10 + (uart_buffer[6] - '0');
+ 198   3                  sec = (uart_buffer[8] - '0') * 10 + (uart_buffer[9] - '0');
+ 199   3                  
+ 200   3                  // 解析毫升数(最多4位)
+ 201   3                  volume = 0;
+ 202   3                  volume += (uart_buffer[11] - '0') * 1000;
+ 203   3                  volume += (uart_buffer[12] - '0') * 100;
+ 204   3                  volume += (uart_buffer[13] - '0') * 10;
+ 205   3                  volume += (uart_buffer[14] - '0');
+ 206   3                  
+ 207   3                  // 检查参数有效性
+ 208   3                  if(hour < 24 && min < 60 && sec < 60 && volume >= 50 && volume <= 9999) {
+ 209   4                      // 设置定时浇水参数
+ 210   4                      timed_watering.start_hour = hour;
+ 211   4                      timed_watering.start_min = min;
+ 212   4                      timed_watering.start_sec = sec;
+ 213   4                      timed_watering.water_volume_ml = volume;
+ 214   4                      timed_watering.enabled = 1;
+ 215   4                      timed_watering.triggered_today = 0;
+ 216   4                      
+ 217   4                      UART_SendString("\r\nAuto Set OK\r\n");
+ 218   4                      UART_SendString("Time: ");
+ 219   4                      uart_buffer[4] = ':';
+ 220   4                      uart_buffer[7] = ':';
+ 221   4                      uart_buffer[10] = 0;
+ 222   4                      UART_SendString(uart_buffer + 2);
+ 223   4                      UART_SendString("\r\nVolume: ");
+ 224   4                      uart_buffer[15] = 0;
+ 225   4                      UART_SendString(uart_buffer + 11);
+ 226   4                      UART_SendString("ml\r\n");
+ 227   4                  }
+ 228   3                  else {
+ 229   4                      UART_SendString("\r\nError: Invalid params\r\n");
+ 230   4                      UART_SendString("Time: HH(0-23):MM(0-59):SS(0-59)\r\n");
+ 231   4                      UART_SendString("Volume: 50-9999ml\r\n");
+ 232   4                  }
+ 233   3              }
+ 234   2              else {
+ 235   3                  UART_SendString("\r\nError: Wrong format\r\n");
+ 236   3                  UART_SendString("Format: A:HH:MM:SS:MMMM\r\n");
+ 237   3                  UART_SendString("Example: A:06:00:01:0100\r\n");
+ 238   3              }
+ 239   2          }
+C51 COMPILER V9.54   UART                                                                  05/27/2025 20:54:43 PAGE 5   
+
+ 240   1          // 停止定时浇水命令: "STOP"
+ 241   1          else if(strncmp(uart_buffer, "STOP", 4) == 0) {
+ 242   2              TimedWatering_Stop();
+ 243   2              UART_SendString("\r\nAuto Stopped\r\n");
+ 244   2          }
+ 245   1          else {
+ 246   2              UART_SendString("\r\nError: Unknown cmd\r\n");
+ 247   2              UART_SendString("Commands:\r\n");
+ 248   2              UART_SendString("TIME:HH:MM:SS - Set time\r\n");
+ 249   2              UART_SendString("DATE:YYYY:MM:DD - Set date\r\n");
+ 250   2              UART_SendString("DATETIME:YYYY:MM:DD:HH:MM:SS - Set both\r\n");
+ 251   2              UART_SendString("A:HH:MM:SS:MMMM - Set auto watering\r\n");
+ 252   2              UART_SendString("DISPTIME/DISPDATE - Display mode\r\n");
+ 253   2              UART_SendString("STOP - Stop auto watering\r\n");
+ 254   2          }
+ 255   1      }
+ 256          
+ 257          // 处理串口命令
+ 258          void UART_ProcessCommand(void) {
+ 259   1          if(uart_complete) {
+ 260   2              UART_CommandHandler();
+ 261   2              uart_complete = 0;
+ 262   2              uart_count = 0;
+ 263   2              memset(uart_buffer, 0, sizeof(uart_buffer));
+ 264   2          }
+ 265   1      }
+ 266          
+ 267          // 串口中断服务函数
+ 268          void UART_ISR() interrupt 4 {
+ 269   1          if(RI) {                // 接收中断
+ 270   2              RI = 0;             // 清除接收中断标志
+ 271   2              
+ 272   2              if(!uart_complete) { // 如果前一条命令还没处理完，则忽略当前接收的字符
+ 273   3                  char ch = SBUF;  // 获取接收到的字符
+ 274   3                  
+ 275   3                  // 回显接收到的字符
+ 276   3                  UART_SendByte(ch);
+ 277   3                  
+ 278   3                  if(ch == '\n' || ch == '\r') { // 接收到回车或换行
+ 279   4                      uart_buffer[uart_count] = '\0';  // 字符串结束符
+ 280   4                      if (uart_count > 0) {  // 非空命令才进行处理
+ 281   5                          uart_complete = 1;  // 设置接收完成标志
+ 282   5                      }
+ 283   4                  }
+ 284   3                  else if(uart_count < UART_BUF_SIZE - 1) { // 缓冲区未满
+ 285   4                      uart_buffer[uart_count++] = ch;  // 存储接收到的字符
+ 286   4                  }
+ 287   3              }
+ 288   2          }
+ 289   1          
+ 290   1          if(TI) {                // 发送中断
+ 291   2              TI = 0;             // 清除发送中断标志
+ 292   2          }
+ 293   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    991    ----
-   CONSTANT SIZE    =    515    ----
-   XDATA SIZE       =     16    ----
+   CODE SIZE        =   1820    ----
+   CONSTANT SIZE    =   1160    ----
+   XDATA SIZE       =     32    ----
    PDATA SIZE       =   ----    ----
-   DATA SIZE        =      1       9
+   DATA SIZE        =      1      18
+C51 COMPILER V9.54   UART                                                                  05/27/2025 20:54:43 PAGE 6   
+
    IDATA SIZE       =   ----    ----
    BIT SIZE         =      1    ----
 END OF MODULE INFORMATION.
