@@ -32,8 +32,8 @@ sfr PCAPWM1     =   0xf3;
 sbit PCA_LED    =   P1^0;           //PCA test LED
 
 BYTE cnt;
-WORD value;
-WORD value1;
+WORD xdata value;
+WORD xdata value1;
 
 // 支持年月日的系统参数 - 初始化为2025年1月1日 00:00:00
 SYS_PARAMS SysPara1 = {2025, 1, 1, 0, 0, 0};
@@ -81,13 +81,16 @@ void FillDispBuf(BYTE hour, BYTE min, BYTE sec) {
     // 小时部分（右起4-5位）
     dispbuff[4] = LED[hour % 10];
     dispbuff[5] = LED[hour / 10];
+    
+    // 时间显示时，左边两位不显示
+    dispbuff[6] = SEG_OFF;
+    dispbuff[7] = SEG_OFF;
 }
 
-// 新增：填充日期显示缓冲区 (YYMMDD格式)
+// 修改：填充日期显示缓冲区 (YYYYMMDD格式，使用全部8位数码管)
 void FillDateBuf(WORD year, BYTE month, BYTE day) {
-    BYTE year_2digit = year % 100;  // 只显示年份后两位
-    
     Resetdispbuff();
+    
     // 日期部分（右起0-1位）
     dispbuff[0] = LED[day % 10];   // 日个位
     dispbuff[1] = LED[day / 10];   // 日十位
@@ -96,22 +99,43 @@ void FillDateBuf(WORD year, BYTE month, BYTE day) {
     dispbuff[2] = LED[month % 10]; // 月个位
     dispbuff[3] = LED[month / 10]; // 月十位
     
-    // 年份部分（右起4-5位，只显示后两位）
-    dispbuff[4] = LED[year_2digit % 10];  // 年个位
-    dispbuff[5] = LED[year_2digit / 10];  // 年十位
+    // 年份部分（右起4-7位，显示完整4位年份）
+    dispbuff[4] = LED[year % 10];           // 年个位
+    dispbuff[5] = LED[(year / 10) % 10];    // 年十位
+    dispbuff[6] = LED[(year / 100) % 10];   // 年百位
+    dispbuff[7] = LED[(year / 1000) % 10];  // 年千位
 }
 
 // 自定义显示缓冲区填充函数
 void FillCustomDispBuf(BYTE val1, BYTE val2, BYTE val3, BYTE val4, BYTE val5, BYTE val6) {
     Resetdispbuff();
     
-    // 填充6个数字位
+    // 填充6个数字位（右侧6位）
     dispbuff[0] = LED[val1];
     dispbuff[1] = LED[val2];
     dispbuff[2] = LED[val3];
     dispbuff[3] = LED[val4];
     dispbuff[4] = LED[val5];
     dispbuff[5] = LED[val6];
+    
+    // 左侧2位关闭
+    dispbuff[6] = SEG_OFF;
+    dispbuff[7] = SEG_OFF;
+}
+
+// 新增：8位自定义显示缓冲区填充函数
+void FillCustomDispBuf8(BYTE val1, BYTE val2, BYTE val3, BYTE val4, BYTE val5, BYTE val6, BYTE val7, BYTE val8) {
+    Resetdispbuff();
+    
+    // 填充8个数字位
+    dispbuff[0] = LED[val1];  // 最右位
+    dispbuff[1] = LED[val2];
+    dispbuff[2] = LED[val3];
+    dispbuff[3] = LED[val4];
+    dispbuff[4] = LED[val5];
+    dispbuff[5] = LED[val6];
+    dispbuff[6] = LED[val7];
+    dispbuff[7] = LED[val8];  // 最左位
 }
 
 void disp(void) {
@@ -163,7 +187,7 @@ static BYTE timeEditMode = 0;  // 0: 正常显示, 1-6: 编辑年月日时分秒
 static BYTE blinkState = 0;    // 闪烁状态: 0 显示, 1 不显示
 
 // 新增：自动轮换显示相关变量
-static BYTE autoToggleCounter = 0;  // 自动切换计数器
+static BYTE xdata autoToggleCounter = 0;  // 自动切换计数器
 #define AUTO_TOGGLE_INTERVAL 5       // 每5秒切换一次显示模式
 
 // 设置时间编辑模式
@@ -349,7 +373,7 @@ void PCA_UpdateDateTime(void) {
                         // 年份进位
                         SysPara1.year++;
                         if(SysPara1.year > 2099) {
-                            SysPara1.year = 2000;  // 循环到2000年
+                            SysPara1.year = 2000; // 年份超限后回到2000年
                         }
                     }
                 }
@@ -395,40 +419,48 @@ void PCA_isr() interrupt 7
                 
                 // 根据编辑的是日期还是时间来更新显示
                 if(timeEditMode <= DAY_POS) {
-                    // 编辑日期 (年月日)
+                    // 编辑日期 (年月日) - 使用完整8位显示
                     FillDateBuf(SysPara1.year, SysPara1.month, SysPara1.day);
                     if (blinkState) {
                         switch (timeEditMode) {
                             case YEAR_POS:
-                                dispbuff[4] = SEG_OFF;  // 年份十位
-                                dispbuff[5] = SEG_OFF;  // 年份个位
+                                // 年份闪烁 - 4位全部闪烁
+                                dispbuff[4] = SEG_OFF;  // 年个位
+                                dispbuff[5] = SEG_OFF;  // 年十位
+                                dispbuff[6] = SEG_OFF;  // 年百位
+                                dispbuff[7] = SEG_OFF;  // 年千位
                                 break;
                             case MONTH_POS:
-                                dispbuff[2] = SEG_OFF;  // 月份十位
-                                dispbuff[3] = SEG_OFF;  // 月份个位
+                                // 月份闪烁
+                                dispbuff[2] = SEG_OFF;  // 月个位
+                                dispbuff[3] = SEG_OFF;  // 月十位
                                 break;
                             case DAY_POS:
-                                dispbuff[0] = SEG_OFF;  // 日期十位
-                                dispbuff[1] = SEG_OFF;  // 日期个位
+                                // 日期闪烁
+                                dispbuff[0] = SEG_OFF;  // 日个位
+                                dispbuff[1] = SEG_OFF;  // 日十位
                                 break;
                         }
                     }
                 } else {
-                    // 编辑时间 (时分秒)
+                    // 编辑时间 (时分秒) - 保持原来的6位显示
                     FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
                     if (blinkState) {
                         switch (timeEditMode) {
                             case HOUR_POS:
-                                dispbuff[4] = SEG_OFF;  // 小时十位
-                                dispbuff[5] = SEG_OFF;  // 小时个位
+                                // 小时闪烁
+                                dispbuff[4] = SEG_OFF;  // 小时个位
+                                dispbuff[5] = SEG_OFF;  // 小时十位
                                 break;
                             case MIN_POS:
-                                dispbuff[2] = SEG_OFF;  // 分钟十位
-                                dispbuff[3] = SEG_OFF;  // 分钟个位
+                                // 分钟闪烁
+                                dispbuff[2] = SEG_OFF;  // 分钟个位
+                                dispbuff[3] = SEG_OFF;  // 分钟十位
                                 break;
                             case SEC_POS:
-                                dispbuff[0] = SEG_OFF;  // 秒十位
-                                dispbuff[1] = SEG_OFF;  // 秒个位
+                                // 秒闪烁
+                                dispbuff[0] = SEG_OFF;  // 秒个位
+                                dispbuff[1] = SEG_OFF;  // 秒十位
                                 break;
                         }
                     }
@@ -444,9 +476,7 @@ void PCA_isr() interrupt 7
                     // 每AUTO_TOGGLE_INTERVAL秒切换一次显示模式
                     if(autoToggleCounter >= AUTO_TOGGLE_INTERVAL) {
                         autoToggleCounter = 0;
-                        // 自动切换显示模式
-                        datetime_display_mode = (datetime_display_mode == DISPLAY_TIME_MODE) ? 
-                                              DISPLAY_DATE_MODE : DISPLAY_TIME_MODE;
+                        PCA_ToggleDisplayMode();
                     }
                     
                     // 根据当前显示模式更新显示
@@ -468,40 +498,48 @@ void PCA_isr() interrupt 7
             
             // 根据编辑的是日期还是时间来更新显示
             if(timeEditMode <= DAY_POS) {
-                // 编辑日期 (年月日)
+                // 编辑日期 (年月日) - 使用完整8位显示
                 FillDateBuf(SysPara1.year, SysPara1.month, SysPara1.day);
                 if (blinkState) {
                     switch (timeEditMode) {
                         case YEAR_POS:
-                            dispbuff[4] = SEG_OFF;  // 年份十位
-                            dispbuff[5] = SEG_OFF;  // 年份个位
+                            // 年份闪烁 - 4位全部闪烁
+                            dispbuff[4] = SEG_OFF;  // 年个位
+                            dispbuff[5] = SEG_OFF;  // 年十位
+                            dispbuff[6] = SEG_OFF;  // 年百位
+                            dispbuff[7] = SEG_OFF;  // 年千位
                             break;
                         case MONTH_POS:
-                            dispbuff[2] = SEG_OFF;  // 月份十位
-                            dispbuff[3] = SEG_OFF;  // 月份个位
+                            // 月份闪烁
+                            dispbuff[2] = SEG_OFF;  // 月个位
+                            dispbuff[3] = SEG_OFF;  // 月十位
                             break;
                         case DAY_POS:
-                            dispbuff[0] = SEG_OFF;  // 日期十位
-                            dispbuff[1] = SEG_OFF;  // 日期个位
+                            // 日期闪烁
+                            dispbuff[0] = SEG_OFF;  // 日个位
+                            dispbuff[1] = SEG_OFF;  // 日十位
                             break;
                     }
                 }
             } else {
-                // 编辑时间 (时分秒)
+                // 编辑时间 (时分秒) - 保持原来的6位显示
                 FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
                 if (blinkState) {
                     switch (timeEditMode) {
                         case HOUR_POS:
-                            dispbuff[4] = SEG_OFF;  // 小时十位
-                            dispbuff[5] = SEG_OFF;  // 小时个位
+                            // 小时闪烁
+                            dispbuff[4] = SEG_OFF;  // 小时个位
+                            dispbuff[5] = SEG_OFF;  // 小时十位
                             break;
                         case MIN_POS:
-                            dispbuff[2] = SEG_OFF;  // 分钟十位
-                            dispbuff[3] = SEG_OFF;  // 分钟个位
+                            // 分钟闪烁
+                            dispbuff[2] = SEG_OFF;  // 分钟个位
+                            dispbuff[3] = SEG_OFF;  // 分钟十位
                             break;
                         case SEC_POS:
-                            dispbuff[0] = SEG_OFF;  // 秒十位
-                            dispbuff[1] = SEG_OFF;  // 秒个位
+                            // 秒闪烁
+                            dispbuff[0] = SEG_OFF;  // 秒个位
+                            dispbuff[1] = SEG_OFF;  // 秒十位
                             break;
                     }
                 }

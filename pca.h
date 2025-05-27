@@ -35,8 +35,8 @@ typedef struct {
 #define SEC_POS   6
 
 // 显示模式定义
-#define DISPLAY_TIME_MODE    0  // 显示时分秒 (HHMMSS)
-#define DISPLAY_DATE_MODE    1  // 显示年月日 (YYMMDD)
+#define DISPLAY_TIME_MODE    0  // 显示时分秒 (HHMMSS，右侧6位)
+#define DISPLAY_DATE_MODE    1  // 显示年月日 (YYYYMMDD，全部8位)
 
 // 外部变量声明
 extern SYS_PARAMS SysPara1;
@@ -46,12 +46,13 @@ extern BYTE datetime_display_mode;  // 日期时间显示模式
 // 基础函数声明
 void PCA_Init(void);                      // PCA初始化函数
 void delay_ms(unsigned int ms);           // 延时函数
-void FillDispBuf(BYTE hour, BYTE min, BYTE sec); // 填充时间显示缓冲区
-void FillDateBuf(WORD year, BYTE month, BYTE day); // 填充日期显示缓冲区
+void FillDispBuf(BYTE hour, BYTE min, BYTE sec); // 填充时间显示缓冲区 (6位)
+void FillDateBuf(WORD year, BYTE month, BYTE day); // 填充日期显示缓冲区 (8位)
 void SendTo595(unsigned char data_seg, unsigned char data_bit); // 发送数据到595
 void disp(void);                          // 显示函数
 void Resetdispbuff(void);                 // 重置显示缓冲区
-void FillCustomDispBuf(BYTE val1, BYTE val2, BYTE val3, BYTE val4, BYTE val5, BYTE val6); // 自定义显示缓冲区填充
+void FillCustomDispBuf(BYTE val1, BYTE val2, BYTE val3, BYTE val4, BYTE val5, BYTE val6); // 自定义显示缓冲区填充 (6位)
+void FillCustomDispBuf8(BYTE val1, BYTE val2, BYTE val3, BYTE val4, BYTE val5, BYTE val6, BYTE val7, BYTE val8); // 8位自定义显示缓冲区填充
 
 // 时间设置相关函数声明
 void PCA_SetTimeEditMode(BYTE position);   // 设置时间编辑模式

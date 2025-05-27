@@ -1,4 +1,4 @@
-C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/27/2025 21:42:52 PAGE 1   
+C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/27/2025 21:55:54 PAGE 1   
 
 
 C51 COMPILER V9.54, COMPILATION OF MODULE KEYBOARD_CONTROL
@@ -62,7 +62,7 @@ line level    source
   52   1          timed_watering.current_record.start_hour = PCA_GetHour();
   53   1          timed_watering.current_record.start_min = PCA_GetMin();
   54   1          timed_watering.current_record.start_sec = PCA_GetSec();
-C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/27/2025 21:42:52 PAGE 2   
+C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/27/2025 21:55:54 PAGE 2   
 
   55   1          
   56   1          // 记录开始时的累计流量
@@ -126,7 +126,7 @@ line level    source
  114   1          manual_watering_record.end_sec = PCA_GetSec();
  115   1          
  116   1          // 计算浇水量和累计流量
-C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/27/2025 21:42:52 PAGE 3   
+C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/27/2025 21:55:54 PAGE 3   
 
  117   1          current_total_flow = FlowMeter_GetTotalFlow();
  118   1          manual_watering_record.water_volume = current_total_flow - manual_watering_record.total_flow;
@@ -190,7 +190,7 @@ line level    source
  176           * ========================================
  177           * 定时定量浇花功能详细使用说明
  178           * ========================================
-C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/27/2025 21:42:52 PAGE 4   
+C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/27/2025 21:55:54 PAGE 4   
 
  179           * 
  180           * 功能概述：
@@ -254,7 +254,7 @@ line level    source
  238           * 3. 停止阶段：
  239           *    - 当累计流量达到设定毫升数时
  240           *    - 继电器自动断开，停止浇水
-C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/27/2025 21:42:52 PAGE 5   
+C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/27/2025 21:55:54 PAGE 5   
 
  241           *    - 标记今天已完成浇水，明天同一时间再次触发
  242           * 
@@ -318,7 +318,7 @@ line level    source
  300   4                      auto_display_mode = DISPLAY_MODE_CLOCK;
  301   4                      FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
  302   4                      display_update_flag = 1;
-C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/27/2025 21:42:52 PAGE 6   
+C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/27/2025 21:55:54 PAGE 6   
 
  303   4                  } else {
  304   4                      TimedWatering_Start();
@@ -382,7 +382,7 @@ line level    source
  359   4                          break;
  360   4                  }
  361   3                  auto_display_mode = DISPLAY_MODE_AUTO;
-C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/27/2025 21:42:52 PAGE 7   
+C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/27/2025 21:55:54 PAGE 7   
 
  362   3                  display_update_flag = 1;
  363   3              }
@@ -446,7 +446,7 @@ line level    source
  421   3                  // 保存累计流量到24C02
  422   3                  AT24C02_WriteTotalFlow(current_total_flow);
  423   3                  
-C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/27/2025 21:42:52 PAGE 8   
+C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/27/2025 21:55:54 PAGE 8   
 
  424   3                  // 记录自动浇水结束
  425   3                  EndAutoWateringRecord();
@@ -510,7 +510,7 @@ line level    source
  483   2              // 显示当前参数
  484   2              switch(param_mode) {
  485   3                  case PARAM_MODE_HOUR:
-C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/27/2025 21:42:52 PAGE 9   
+C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/27/2025 21:55:54 PAGE 9   
 
  486   3                      // 显示开始小时 "小时数03"
  487   3                      val1 = timed_watering.start_hour % 10;
@@ -574,7 +574,7 @@ line level    source
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
    CODE SIZE        =   1681    ----
-C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/27/2025 21:42:52 PAGE 10  
+C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/27/2025 21:55:54 PAGE 10  
 
    CONSTANT SIZE    =   ----    ----
    XDATA SIZE       =     65    ----
