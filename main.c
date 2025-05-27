@@ -27,7 +27,7 @@ BYTE sysState = SYS_STATE_OFF;
 sbit KEY = P3^3;            // 按键连接到P3.3
 bit keyPressed = 0;         // 按键按下标志
 bit justEnteredSetMode = 0; // 标志是否刚刚进入设置模式
-unsigned int keyPressTime = 0; // 按键按下持续时间（以10ms为单位）
+unsigned int xdata keyPressTime = 0; // 按键按下持续时间（以10ms为单位）
 #define LONG_PRESS_TIME 100   // 长按时间阈值（约1秒，调整为合理值）
 
 // 按键处理函数
@@ -54,8 +54,12 @@ void processKey() {
             switch (sysState) {
                 case SYS_STATE_OFF:
                     // 检查是否定时浇水正在运行
-                    if(!timed_watering.enabled) {
+                    if(!timed_watering.enabled || !timed_watering.is_watering) {
                         sysState = SYS_STATE_WATERING;
+                        
+                        // 开始手动浇水记录 - 优化后无需传参
+                        StartManualWateringRecord();
+                        
                         Relay_On();
                         FlowMeter_Reset();
                         FlowMeter_Start();
@@ -70,6 +74,9 @@ void processKey() {
                     Relay_Off();
                     FlowMeter_Stop();
                     FlowMeter_SetMode(FLOW_MODE_OFF);
+                    
+                    // 结束手动浇水记录 - 优化后无需传参
+                    EndManualWateringRecord();
                     break;
                     
                 case SYS_STATE_SET_YEAR:

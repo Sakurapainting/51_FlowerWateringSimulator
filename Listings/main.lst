@@ -1,4 +1,4 @@
-C51 COMPILER V9.54   MAIN                                                                  05/27/2025 20:54:42 PAGE 1   
+C51 COMPILER V9.54   MAIN                                                                  05/27/2025 21:42:52 PAGE 1   
 
 
 C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
@@ -37,7 +37,7 @@ line level    source
   27          sbit KEY = P3^3;            // 按键连接到P3.3
   28          bit keyPressed = 0;         // 按键按下标志
   29          bit justEnteredSetMode = 0; // 标志是否刚刚进入设置模式
-  30          unsigned int keyPressTime = 0; // 按键按下持续时间（以10ms为单位）
+  30          unsigned int xdata keyPressTime = 0; // 按键按下持续时间（以10ms为单位）
   31          #define LONG_PRESS_TIME 100   // 长按时间阈值（约1秒，调整为合理值）
   32          
   33          // 按键处理函数
@@ -62,245 +62,252 @@ line level    source
   52   2              if (keyPressTime < LONG_PRESS_TIME) {
   53   3                  // 短按：根据当前状态增加对应的数值
   54   3                  switch (sysState) {
-C51 COMPILER V9.54   MAIN                                                                  05/27/2025 20:54:42 PAGE 2   
+C51 COMPILER V9.54   MAIN                                                                  05/27/2025 21:42:52 PAGE 2   
 
   55   4                      case SYS_STATE_OFF:
   56   4                          // 检查是否定时浇水正在运行
-  57   4                          if(!timed_watering.enabled) {
+  57   4                          if(!timed_watering.enabled || !timed_watering.is_watering) {
   58   5                              sysState = SYS_STATE_WATERING;
-  59   5                              Relay_On();
-  60   5                              FlowMeter_Reset();
-  61   5                              FlowMeter_Start();
-  62   5                              FlowMeter_SetMode(FLOW_MODE_CURR);
-  63   5                              FlowMeter_UpdateDisplay();
-  64   5                              auto_display_mode = DISPLAY_MODE_CLOCK; // 手动浇水时显示时钟
-  65   5                          }
-  66   4                          break;
-  67   4                          
-  68   4                      case SYS_STATE_WATERING:
-  69   4                          sysState = SYS_STATE_OFF;
-  70   4                          Relay_Off();
-  71   4                          FlowMeter_Stop();
-  72   4                          FlowMeter_SetMode(FLOW_MODE_OFF);
-  73   4                          break;
-  74   4                          
-  75   4                      case SYS_STATE_SET_YEAR:
-  76   4                          PCA_IncreaseTimeValue(YEAR_POS);
-  77   4                          break;
-  78   4                          
-  79   4                      case SYS_STATE_SET_MONTH:
-  80   4                          PCA_IncreaseTimeValue(MONTH_POS);
-  81   4                          break;
-  82   4                          
-  83   4                      case SYS_STATE_SET_DAY:
-  84   4                          PCA_IncreaseTimeValue(DAY_POS);
-  85   4                          break;
-  86   4                          
-  87   4                      case SYS_STATE_SET_HOUR:
-  88   4                          PCA_IncreaseTimeValue(HOUR_POS);
-  89   4                          break;
-  90   4                          
-  91   4                      case SYS_STATE_SET_MIN:
-  92   4                          PCA_IncreaseTimeValue(MIN_POS);
-  93   4                          break;
-  94   4                          
-  95   4                      case SYS_STATE_SET_SEC:
-  96   4                          PCA_IncreaseTimeValue(SEC_POS);
-  97   4                          break;
-  98   4                  }
-  99   3              } 
- 100   2              else if (keyPressTime >= LONG_PRESS_TIME) {
- 101   3                  // 长按：切换到下一项设置
- 102   3                  if (justEnteredSetMode) {
- 103   4                      justEnteredSetMode = 0;
- 104   4                  }
- 105   3                  else if (sysState >= SYS_STATE_SET_YEAR && sysState <= SYS_STATE_SET_SEC) {
- 106   4                      sysState++;
- 107   4                      
- 108   4                      // 设置完所有参数后退出设置模式
- 109   4                      if (sysState > SYS_STATE_SET_SEC) {
- 110   5                          sysState = SYS_STATE_OFF;
- 111   5                          PCA_ExitTimeEditMode();
- 112   5                          // 恢复到时间显示模式并重置自动轮换
- 113   5                          PCA_SetDisplayMode(DISPLAY_TIME_MODE);
- 114   5                          PCA_ResetAutoToggle();
- 115   5                      } else {
- 116   5                          // 根据当前设置状态切换显示模式和编辑位置
-C51 COMPILER V9.54   MAIN                                                                  05/27/2025 20:54:42 PAGE 3   
+  59   5                              
+  60   5                              // 开始手动浇水记录 - 优化后无需传参
+  61   5                              StartManualWateringRecord();
+  62   5                              
+  63   5                              Relay_On();
+  64   5                              FlowMeter_Reset();
+  65   5                              FlowMeter_Start();
+  66   5                              FlowMeter_SetMode(FLOW_MODE_CURR);
+  67   5                              FlowMeter_UpdateDisplay();
+  68   5                              auto_display_mode = DISPLAY_MODE_CLOCK; // 手动浇水时显示时钟
+  69   5                          }
+  70   4                          break;
+  71   4                          
+  72   4                      case SYS_STATE_WATERING:
+  73   4                          sysState = SYS_STATE_OFF;
+  74   4                          Relay_Off();
+  75   4                          FlowMeter_Stop();
+  76   4                          FlowMeter_SetMode(FLOW_MODE_OFF);
+  77   4                          
+  78   4                          // 结束手动浇水记录 - 优化后无需传参
+  79   4                          EndManualWateringRecord();
+  80   4                          break;
+  81   4                          
+  82   4                      case SYS_STATE_SET_YEAR:
+  83   4                          PCA_IncreaseTimeValue(YEAR_POS);
+  84   4                          break;
+  85   4                          
+  86   4                      case SYS_STATE_SET_MONTH:
+  87   4                          PCA_IncreaseTimeValue(MONTH_POS);
+  88   4                          break;
+  89   4                          
+  90   4                      case SYS_STATE_SET_DAY:
+  91   4                          PCA_IncreaseTimeValue(DAY_POS);
+  92   4                          break;
+  93   4                          
+  94   4                      case SYS_STATE_SET_HOUR:
+  95   4                          PCA_IncreaseTimeValue(HOUR_POS);
+  96   4                          break;
+  97   4                          
+  98   4                      case SYS_STATE_SET_MIN:
+  99   4                          PCA_IncreaseTimeValue(MIN_POS);
+ 100   4                          break;
+ 101   4                          
+ 102   4                      case SYS_STATE_SET_SEC:
+ 103   4                          PCA_IncreaseTimeValue(SEC_POS);
+ 104   4                          break;
+ 105   4                  }
+ 106   3              } 
+ 107   2              else if (keyPressTime >= LONG_PRESS_TIME) {
+ 108   3                  // 长按：切换到下一项设置
+ 109   3                  if (justEnteredSetMode) {
+ 110   4                      justEnteredSetMode = 0;
+ 111   4                  }
+ 112   3                  else if (sysState >= SYS_STATE_SET_YEAR && sysState <= SYS_STATE_SET_SEC) {
+ 113   4                      sysState++;
+ 114   4                      
+ 115   4                      // 设置完所有参数后退出设置模式
+ 116   4                      if (sysState > SYS_STATE_SET_SEC) {
+C51 COMPILER V9.54   MAIN                                                                  05/27/2025 21:42:52 PAGE 3   
 
- 117   5                          switch(sysState) {
- 118   6                              case SYS_STATE_SET_YEAR:
- 119   6                                  PCA_SetTimeEditMode(YEAR_POS);
- 120   6                                  PCA_SetDisplayMode(DISPLAY_DATE_MODE);
- 121   6                                  break;
- 122   6                              case SYS_STATE_SET_MONTH:
- 123   6                                  PCA_SetTimeEditMode(MONTH_POS);
- 124   6                                  PCA_SetDisplayMode(DISPLAY_DATE_MODE);
- 125   6                                  break;
- 126   6                              case SYS_STATE_SET_DAY:
- 127   6                                  PCA_SetTimeEditMode(DAY_POS);
- 128   6                                  PCA_SetDisplayMode(DISPLAY_DATE_MODE);
- 129   6                                  break;
- 130   6                              case SYS_STATE_SET_HOUR:
- 131   6                                  PCA_SetTimeEditMode(HOUR_POS);
- 132   6                                  PCA_SetDisplayMode(DISPLAY_TIME_MODE);  // 切换到时间显示模式
- 133   6                                  break;
- 134   6                              case SYS_STATE_SET_MIN:
- 135   6                                  PCA_SetTimeEditMode(MIN_POS);
- 136   6                                  PCA_SetDisplayMode(DISPLAY_TIME_MODE);
- 137   6                                  break;
- 138   6                              case SYS_STATE_SET_SEC:
- 139   6                                  PCA_SetTimeEditMode(SEC_POS);
- 140   6                                  PCA_SetDisplayMode(DISPLAY_TIME_MODE);
- 141   6                                  break;
- 142   6                          }
- 143   5                      }
- 144   4                  }
- 145   3              }
- 146   2              
- 147   2              keyPressed = 0;
- 148   2              keyPressTime = 0;
- 149   2              delay_ms(20);
- 150   2          }
- 151   1      }
- 152          
- 153          void main(void) {
- 154   1          EA = 1;
- 155   1          P0 = 0xFF;
- 156   1          
- 157   1          /* 
- 158   1           * ========================================
- 159   1           * 智能浇花系统 - P3.3按键时间设置功能
- 160   1           * ========================================
- 161   1           * 
- 162   1           * 【P3.3按键操作说明】
- 163   1           * ==================
- 164   1           * 
- 165   1           * 🔘 短按功能：
- 166   1           *    - 正常模式：启动/停止手动浇水
- 167   1           *    - 设置模式：增加当前设置项的数值
+ 117   5                          sysState = SYS_STATE_OFF;
+ 118   5                          PCA_ExitTimeEditMode();
+ 119   5                          // 恢复到时间显示模式并重置自动轮换
+ 120   5                          PCA_SetDisplayMode(DISPLAY_TIME_MODE);
+ 121   5                          PCA_ResetAutoToggle();
+ 122   5                      } else {
+ 123   5                          // 根据当前设置状态切换显示模式和编辑位置
+ 124   5                          switch(sysState) {
+ 125   6                              case SYS_STATE_SET_YEAR:
+ 126   6                                  PCA_SetTimeEditMode(YEAR_POS);
+ 127   6                                  PCA_SetDisplayMode(DISPLAY_DATE_MODE);
+ 128   6                                  break;
+ 129   6                              case SYS_STATE_SET_MONTH:
+ 130   6                                  PCA_SetTimeEditMode(MONTH_POS);
+ 131   6                                  PCA_SetDisplayMode(DISPLAY_DATE_MODE);
+ 132   6                                  break;
+ 133   6                              case SYS_STATE_SET_DAY:
+ 134   6                                  PCA_SetTimeEditMode(DAY_POS);
+ 135   6                                  PCA_SetDisplayMode(DISPLAY_DATE_MODE);
+ 136   6                                  break;
+ 137   6                              case SYS_STATE_SET_HOUR:
+ 138   6                                  PCA_SetTimeEditMode(HOUR_POS);
+ 139   6                                  PCA_SetDisplayMode(DISPLAY_TIME_MODE);  // 切换到时间显示模式
+ 140   6                                  break;
+ 141   6                              case SYS_STATE_SET_MIN:
+ 142   6                                  PCA_SetTimeEditMode(MIN_POS);
+ 143   6                                  PCA_SetDisplayMode(DISPLAY_TIME_MODE);
+ 144   6                                  break;
+ 145   6                              case SYS_STATE_SET_SEC:
+ 146   6                                  PCA_SetTimeEditMode(SEC_POS);
+ 147   6                                  PCA_SetDisplayMode(DISPLAY_TIME_MODE);
+ 148   6                                  break;
+ 149   6                          }
+ 150   5                      }
+ 151   4                  }
+ 152   3              }
+ 153   2              
+ 154   2              keyPressed = 0;
+ 155   2              keyPressTime = 0;
+ 156   2              delay_ms(20);
+ 157   2          }
+ 158   1      }
+ 159          
+ 160          void main(void) {
+ 161   1          EA = 1;
+ 162   1          P0 = 0xFF;
+ 163   1          
+ 164   1          /* 
+ 165   1           * ========================================
+ 166   1           * 智能浇花系统 - P3.3按键时间设置功能
+ 167   1           * ========================================
  168   1           * 
- 169   1           * 🔘 长按功能（约1秒）：
- 170   1           *    - 正常模式：进入时间设置模式
- 171   1           *    - 设置模式：切换到下一个设置项
- 172   1           * 
- 173   1           * 【时间设置流程】
- 174   1           * ================
+ 169   1           * 【P3.3按键操作说明】
+ 170   1           * ==================
+ 171   1           * 
+ 172   1           * 🔘 短按功能：
+ 173   1           *    - 正常模式：启动/停止手动浇水
+ 174   1           *    - 设置模式：增加当前设置项的数值
  175   1           * 
- 176   1           * 1️⃣ 长按P3.3 → 进入年份设置
- 177   1           *    显示：日期模式 (YYMMDD)，年份位闪烁
- 178   1           *    操作：短按P3.3增加年份 (2000-2099)
-C51 COMPILER V9.54   MAIN                                                                  05/27/2025 20:54:42 PAGE 4   
+ 176   1           * 🔘 长按功能（约1秒）：
+ 177   1           *    - 正常模式：进入时间设置模式
+ 178   1           *    - 设置模式：切换到下一个设置项
+C51 COMPILER V9.54   MAIN                                                                  05/27/2025 21:42:52 PAGE 4   
 
  179   1           * 
- 180   1           * 2️⃣ 长按P3.3 → 切换到月份设置
- 181   1           *    显示：日期模式 (YYMMDD)，月份位闪烁
- 182   1           *    操作：短按P3.3增加月份 (1-12)
- 183   1           * 
- 184   1           * 3️⃣ 长按P3.3 → 切换到日期设置
- 185   1           *    显示：日期模式 (YYMMDD)，日期位闪烁
- 186   1           *    操作：短按P3.3增加日期 (1-31，自动适应月份)
- 187   1           * 
- 188   1           * 4️⃣ 长按P3.3 → 切换到小时设置
- 189   1           *    显示：时间模式 (HHMMSS)，小时位闪烁
- 190   1           *    操作：短按P3.3增加小时 (0-23)
- 191   1           * 
- 192   1           * 5️⃣ 长按P3.3 → 切换到分钟设置
- 193   1           *    显示：时间模式 (HHMMSS)，分钟位闪烁
- 194   1           *    操作：短按P3.3增加分钟 (0-59)
- 195   1           * 
- 196   1           * 6️⃣ 长按P3.3 → 切换到秒设置
- 197   1           *    显示：时间模式 (HHMMSS)，秒位闪烁
- 198   1           *    操作：短按P3.3增加秒 (0-59)
- 199   1           * 
- 200   1           * 7️⃣ 长按P3.3 → 完成设置，退出设置模式
- 201   1           *    显示：返回正常时间显示模式
+ 180   1           * 【时间设置流程】
+ 181   1           * ================
+ 182   1           * 
+ 183   1           * 1️⃣ 长按P3.3 → 进入年份设置
+ 184   1           *    显示：日期模式 (YYMMDD)，年份位闪烁
+ 185   1           *    操作：短按P3.3增加年份 (2000-2099)
+ 186   1           * 
+ 187   1           * 2️⃣ 长按P3.3 → 切换到月份设置
+ 188   1           *    显示：日期模式 (YYMMDD)，月份位闪烁
+ 189   1           *    操作：短按P3.3增加月份 (1-12)
+ 190   1           * 
+ 191   1           * 3️⃣ 长按P3.3 → 切换到日期设置
+ 192   1           *    显示：日期模式 (YYMMDD)，日期位闪烁
+ 193   1           *    操作：短按P3.3增加日期 (1-31，自动适应月份)
+ 194   1           * 
+ 195   1           * 4️⃣ 长按P3.3 → 切换到小时设置
+ 196   1           *    显示：时间模式 (HHMMSS)，小时位闪烁
+ 197   1           *    操作：短按P3.3增加小时 (0-23)
+ 198   1           * 
+ 199   1           * 5️⃣ 长按P3.3 → 切换到分钟设置
+ 200   1           *    显示：时间模式 (HHMMSS)，分钟位闪烁
+ 201   1           *    操作：短按P3.3增加分钟 (0-59)
  202   1           * 
- 203   1           * 【显示模式说明】
- 204   1           * ================
- 205   1           * 
- 206   1           * 日期设置时 (步骤1-3)：
- 207   1           * ┌────────────────────────────────
-             -─────┐
- 208   1           * │ 数码管格式：YYMMDD                  │
- 209   1           * │ 示例："250527" = 2025年5月27日      │
- 210   1           * │ 闪烁部分：当前正在设置的位          │
- 211   1           * └────────────────────────────────
-             -─────┘
+ 203   1           * 6️⃣ 长按P3.3 → 切换到秒设置
+ 204   1           *    显示：时间模式 (HHMMSS)，秒位闪烁
+ 205   1           *    操作：短按P3.3增加秒 (0-59)
+ 206   1           * 
+ 207   1           * 7️⃣ 长按P3.3 → 完成设置，退出设置模式
+ 208   1           *    显示：返回正常时间显示模式
+ 209   1           * 
+ 210   1           * 【显示模式说明】
+ 211   1           * ================
  212   1           * 
- 213   1           * 时间设置时 (步骤4-6)：
+ 213   1           * 日期设置时 (步骤1-3)：
  214   1           * ┌────────────────────────────────
              -─────┐
- 215   1           * │ 数码管格式：HHMMSS                  │
- 216   1           * │ 示例："143025" = 14:30:25           │
+ 215   1           * │ 数码管格式：YYMMDD                  │
+ 216   1           * │ 示例："250527" = 2025年5月27日      │
  217   1           * │ 闪烁部分：当前正在设置的位          │
  218   1           * └────────────────────────────────
              -─────┘
  219   1           * 
- 220   1           * 【使用示例】
- 221   1           * ============
- 222   1           * 
- 223   1           * 设置时间为 2025年12月25日 09:30:00：
- 224   1           * 
- 225   1           * 1. 长按P3.3进入设置 → 显示当前日期，年份闪烁
- 226   1           * 2. 短按P3.3将年份调到25 (2025年)
- 227   1           * 3. 长按P3.3切换到月份 → 月份闪烁
- 228   1           * 4. 短按P3.3将月份调到12
- 229   1           * 5. 长按P3.3切换到日期 → 日期闪烁
- 230   1           * 6. 短按P3.3将日期调到25
- 231   1           * 7. 长按P3.3切换到小时 → 显示切换为时间，小时闪烁
- 232   1           * 8. 短按P3.3将小时调到09
- 233   1           * 9. 长按P3.3切换到分钟 → 分钟闪烁
- 234   1           * 10. 短按P3.3将分钟调到30
- 235   1           * 11. 长按P3.3切换到秒 → 秒闪烁
- 236   1           * 12. 保持秒为00
-C51 COMPILER V9.54   MAIN                                                                  05/27/2025 20:54:42 PAGE 5   
+ 220   1           * 时间设置时 (步骤4-6)：
+ 221   1           * ┌────────────────────────────────
+             -─────┐
+ 222   1           * │ 数码管格式：HHMMSS                  │
+ 223   1           * │ 示例："143025" = 14:30:25           │
+ 224   1           * │ 闪烁部分：当前正在设置的位          │
+ 225   1           * └────────────────────────────────
+             -─────┘
+ 226   1           * 
+ 227   1           * 【使用示例】
+ 228   1           * ============
+ 229   1           * 
+ 230   1           * 设置时间为 2025年12月25日 09:30:00：
+ 231   1           * 
+ 232   1           * 1. 长按P3.3进入设置 → 显示当前日期，年份闪烁
+ 233   1           * 2. 短按P3.3将年份调到25 (2025年)
+ 234   1           * 3. 长按P3.3切换到月份 → 月份闪烁
+ 235   1           * 4. 短按P3.3将月份调到12
+ 236   1           * 5. 长按P3.3切换到日期 → 日期闪烁
+C51 COMPILER V9.54   MAIN                                                                  05/27/2025 21:42:52 PAGE 5   
 
- 237   1           * 13. 长按P3.3完成设置 → 退出设置模式
- 238   1           * 
- 239   1           * 【注意事项】
- 240   1           * ============
- 241   1           * 
- 242   1           * ✓ 年份范围：2000-2099，超出范围会循环
- 243   1           * ✓ 闰年自动处理：2月份会自动适应28/29天
- 244   1           * ✓ 日期自动调整：切换月份时会自动调整日期上限
- 245   1           * ✓ 设置过程中可随时查看：闪烁显示当前设置项
- 246   1           * ✓ 意外退出：重新长按P3.3可重新进入设置
- 247   1           */
- 248   1          
- 249   1          PCA_Init();
- 250   1          Relay_Init();
- 251   1          WaveGen_Init();
- 252   1          WaveGen_Start();
- 253   1          UART_Init();
- 254   1          I2C_Init();  
- 255   1          FlowMeter_Init();
- 256   1          KeyboardControl_Init();  // 初始化按键控制
- 257   1          
- 258   1          // 发送启动信息到串口
- 259   1          UART_SendString("\r\nWatering System Started v3.1\r\n");
- 260   1          UART_SendString("Auto Display: Time<->Date every 5 seconds\r\n");
- 261   1          UART_SendString("P3.3 Key: Long press to set date/time\r\n");
- 262   1          UART_SendString("Setting order: Year->Month->Day->Hour->Min->Sec\r\n");
- 263   1          
- 264   1          while (1) {
- 265   2              processKey();
- 266   2              KeyboardControl_Scan();
- 267   2              CheckAndUpdateAutoDisplay();
- 268   2              FlowMeter_UpdateDisplay();
- 269   2              UART_ProcessCommand();
- 270   2              
- 271   2              delay_ms(10);
- 272   2          }
- 273   1      }
+ 237   1           * 6. 短按P3.3将日期调到25
+ 238   1           * 7. 长按P3.3切换到小时 → 显示切换为时间，小时闪烁
+ 239   1           * 8. 短按P3.3将小时调到09
+ 240   1           * 9. 长按P3.3切换到分钟 → 分钟闪烁
+ 241   1           * 10. 短按P3.3将分钟调到30
+ 242   1           * 11. 长按P3.3切换到秒 → 秒闪烁
+ 243   1           * 12. 保持秒为00
+ 244   1           * 13. 长按P3.3完成设置 → 退出设置模式
+ 245   1           * 
+ 246   1           * 【注意事项】
+ 247   1           * ============
+ 248   1           * 
+ 249   1           * ✓ 年份范围：2000-2099，超出范围会循环
+ 250   1           * ✓ 闰年自动处理：2月份会自动适应28/29天
+ 251   1           * ✓ 日期自动调整：切换月份时会自动调整日期上限
+ 252   1           * ✓ 设置过程中可随时查看：闪烁显示当前设置项
+ 253   1           * ✓ 意外退出：重新长按P3.3可重新进入设置
+ 254   1           */
+ 255   1          
+ 256   1          PCA_Init();
+ 257   1          Relay_Init();
+ 258   1          WaveGen_Init();
+ 259   1          WaveGen_Start();
+ 260   1          UART_Init();
+ 261   1          I2C_Init();  
+ 262   1          FlowMeter_Init();
+ 263   1          KeyboardControl_Init();  // 初始化按键控制
+ 264   1          
+ 265   1          // 发送启动信息到串口
+ 266   1          UART_SendString("\r\nWatering System Started v3.1\r\n");
+ 267   1          UART_SendString("Auto Display: Time<->Date every 5 seconds\r\n");
+ 268   1          UART_SendString("P3.3 Key: Long press to set date/time\r\n");
+ 269   1          UART_SendString("Setting order: Year->Month->Day->Hour->Min->Sec\r\n");
+ 270   1          
+ 271   1          while (1) {
+ 272   2              processKey();
+ 273   2              KeyboardControl_Scan();
+ 274   2              CheckAndUpdateAutoDisplay();
+ 275   2              FlowMeter_UpdateDisplay();
+ 276   2              UART_ProcessCommand();
+ 277   2              
+ 278   2              delay_ms(10);
+ 279   2          }
+ 280   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    432    ----
+   CODE SIZE        =    472    ----
    CONSTANT SIZE    =    167    ----
-   XDATA SIZE       =   ----    ----
+   XDATA SIZE       =      2    ----
    PDATA SIZE       =   ----    ----
-   DATA SIZE        =      3    ----
+   DATA SIZE        =      1    ----
    IDATA SIZE       =   ----    ----
    BIT SIZE         =      2    ----
 END OF MODULE INFORMATION.

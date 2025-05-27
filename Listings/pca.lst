@@ -1,4 +1,4 @@
-C51 COMPILER V9.54   PCA                                                                   05/27/2025 20:54:42 PAGE 1   
+C51 COMPILER V9.54   PCA                                                                   05/27/2025 21:42:52 PAGE 1   
 
 
 C51 COMPILER V9.54, COMPILATION OF MODULE PCA
@@ -62,7 +62,7 @@ line level    source
              -E,TOTALFLOW_MODE};
   52          
   53          // 显示缓冲区
-C51 COMPILER V9.54   PCA                                                                   05/27/2025 20:54:42 PAGE 2   
+C51 COMPILER V9.54   PCA                                                                   05/27/2025 21:42:52 PAGE 2   
 
   54          unsigned char xdata dispbuff[8] = {SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF};
   55          
@@ -126,7 +126,7 @@ line level    source
  113   1          dispbuff[4] = LED[val5];
  114   1          dispbuff[5] = LED[val6];
  115   1      }
-C51 COMPILER V9.54   PCA                                                                   05/27/2025 20:54:42 PAGE 3   
+C51 COMPILER V9.54   PCA                                                                   05/27/2025 21:42:52 PAGE 3   
 
  116          
  117          void disp(void) {
@@ -190,7 +190,7 @@ line level    source
  175          // 退出时间编辑模式
  176          void PCA_ExitTimeEditMode(void) {
  177   1          timeEditMode = 0;
-C51 COMPILER V9.54   PCA                                                                   05/27/2025 20:54:42 PAGE 4   
+C51 COMPILER V9.54   PCA                                                                   05/27/2025 21:42:52 PAGE 4   
 
  178   1          // 根据当前显示模式更新显示
  179   1          if(datetime_display_mode == DISPLAY_TIME_MODE) {
@@ -254,7 +254,7 @@ line level    source
  237   3                  if(SysPara1.hour > timed_watering.start_hour || 
  238   3                     (SysPara1.hour == timed_watering.start_hour && SysPara1.min > timed_watering.start_min) ||
  239   3                     (SysPara1.hour == timed_watering.start_hour && SysPara1.min == timed_watering.start_min && 
-C51 COMPILER V9.54   PCA                                                                   05/27/2025 20:54:42 PAGE 5   
+C51 COMPILER V9.54   PCA                                                                   05/27/2025 21:42:52 PAGE 5   
 
              -SysPara1.sec > timed_watering.start_sec)) {
  240   4                      timed_watering.triggered_today = 1;  // 今天的浇水时间已过
@@ -318,7 +318,7 @@ line level    source
  298          
  299          BYTE PCA_GetDisplayMode(void) {
  300   1          return datetime_display_mode;
-C51 COMPILER V9.54   PCA                                                                   05/27/2025 20:54:42 PAGE 6   
+C51 COMPILER V9.54   PCA                                                                   05/27/2025 21:42:52 PAGE 6   
 
  301   1      }
  302          
@@ -382,7 +382,7 @@ line level    source
  359   1      }
  360          
  361          // 修改PCA中断服务函数，添加自动轮换显示逻辑
-C51 COMPILER V9.54   PCA                                                                   05/27/2025 20:54:42 PAGE 7   
+C51 COMPILER V9.54   PCA                                                                   05/27/2025 21:42:52 PAGE 7   
 
  362          void PCA_isr() interrupt 7
  363          {
@@ -446,7 +446,7 @@ line level    source
  421   7                                  case HOUR_POS:
  422   7                                      dispbuff[4] = SEG_OFF;  // 小时十位
  423   7                                      dispbuff[5] = SEG_OFF;  // 小时个位
-C51 COMPILER V9.54   PCA                                                                   05/27/2025 20:54:42 PAGE 8   
+C51 COMPILER V9.54   PCA                                                                   05/27/2025 21:42:52 PAGE 8   
 
  424   7                                      break;
  425   7                                  case MIN_POS:
@@ -510,7 +510,7 @@ line level    source
  483   6                              case DAY_POS:
  484   6                                  dispbuff[0] = SEG_OFF;  // 日期十位
  485   6                                  dispbuff[1] = SEG_OFF;  // 日期个位
-C51 COMPILER V9.54   PCA                                                                   05/27/2025 20:54:42 PAGE 9   
+C51 COMPILER V9.54   PCA                                                                   05/27/2025 21:42:52 PAGE 9   
 
  486   6                                  break;
  487   6                          }
@@ -574,7 +574,7 @@ line level    source
  545   1          datetime_display_mode = DISPLAY_TIME_MODE;  // 默认显示时间
  546   1          autoToggleCounter = 0;          // 初始化自动轮换计数器
  547   1          
-C51 COMPILER V9.54   PCA                                                                   05/27/2025 20:54:42 PAGE 10  
+C51 COMPILER V9.54   PCA                                                                   05/27/2025 21:42:52 PAGE 10  
 
  548   1          if(datetime_display_mode == DISPLAY_TIME_MODE) {
  549   2              FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);

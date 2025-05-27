@@ -2,7 +2,7 @@
 #include "intrins.h"
 
 // 全局变量定义
-unsigned long totalFlow = 0;  // 从flowmeter.c移至此处
+unsigned long xdata totalFlow = 0;  // 从flowmeter.c移至此处
 
 // 外部变量声明（如果需要访问闹钟时间）
 // extern AlarmTime alarmTime;  // 如果项目中有闹钟功能，取消注释

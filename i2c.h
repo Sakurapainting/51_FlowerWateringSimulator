@@ -58,6 +58,6 @@ void SaveWateringToEEPROM(void);               // 保存浇水量到EEPROM
 void ReadWateringFromEEPROM(void);             // 从EEPROM读取浇水量
 
 // 外部变量声明
-extern unsigned long totalFlow;
+extern unsigned long xdata totalFlow;
 
 #endif /* __I2C_H__ */

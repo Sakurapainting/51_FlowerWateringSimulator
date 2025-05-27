@@ -4,24 +4,149 @@
 #include "i2c.h"  // 添加I2C头文件
 
 // 定时浇水配置 - 默认值：6:00:01开始，浇100毫升
-TimedWatering xdata timed_watering = {0, 6, 0, 1, 100, 0, 0, 0};
+TimedWatering xdata timed_watering = {0, 6, 0, 1, 100, 0, 0, 0, 0};
+
+// 手动浇水记录
+WateringRecord xdata manual_watering_record;
 
 // 显示模式：0=时钟，1=自动浇水参数
 BYTE auto_display_mode = DISPLAY_MODE_CLOCK;
 
 // 参数设置模式：0=开始小时，1=开始分钟，2=开始秒，3=浇水毫升数
-BYTE param_mode = PARAM_MODE_HOUR;  // 修正：使用PARAM_MODE_HOUR而不是PARAM_MODE_INTERVAL
+BYTE param_mode = PARAM_MODE_HOUR;
 
 // 显示更新标志
 bit display_update_flag = 0;
 
 // 按键状态记录（用于消抖）
-static BYTE key_prev_state = 0;
+static BYTE xdata key_prev_state = 0;
 
 // 按键延时消抖
 static void KeyDelay(void) {
     BYTE i = 30;
     while(i--);
+}
+
+// 优化：开始手动浇水记录 - 避免传参，直接写死类型
+void StartManualWateringRecord(void) {
+    // 记录开始时间 - 直接写死手动类型
+    manual_watering_record.type = WATERING_TYPE_MANUAL;
+    manual_watering_record.start_year = PCA_GetYear();
+    manual_watering_record.start_month = PCA_GetMonth();
+    manual_watering_record.start_day = PCA_GetDay();
+    manual_watering_record.start_hour = PCA_GetHour();
+    manual_watering_record.start_min = PCA_GetMin();
+    manual_watering_record.start_sec = PCA_GetSec();
+    
+    // 记录开始时的累计流量
+    manual_watering_record.total_flow = FlowMeter_GetTotalFlow();
+}
+
+// 优化：开始自动浇水记录 - 避免传参，直接写死类型
+void StartAutoWateringRecord(void) {
+    // 记录开始时间 - 直接写死自动类型
+    timed_watering.current_record.type = WATERING_TYPE_AUTO;
+    timed_watering.current_record.start_year = PCA_GetYear();
+    timed_watering.current_record.start_month = PCA_GetMonth();
+    timed_watering.current_record.start_day = PCA_GetDay();
+    timed_watering.current_record.start_hour = PCA_GetHour();
+    timed_watering.current_record.start_min = PCA_GetMin();
+    timed_watering.current_record.start_sec = PCA_GetSec();
+    
+    // 记录开始时的累计流量
+    timed_watering.start_total_flow = FlowMeter_GetTotalFlow();
+}
+
+// 优化：计算手动浇水持续时间 - 内联计算，避免传参
+static void CalculateManualDuration(void) {
+    unsigned int start_total_sec, end_total_sec, duration;
+    
+    // 将开始和结束时间转换为总秒数
+    start_total_sec = manual_watering_record.start_hour * 3600 + 
+                     manual_watering_record.start_min * 60 + 
+                     manual_watering_record.start_sec;
+    end_total_sec = manual_watering_record.end_hour * 3600 + 
+                   manual_watering_record.end_min * 60 + 
+                   manual_watering_record.end_sec;
+    
+    // 处理跨日期情况
+    if(end_total_sec < start_total_sec) {
+        end_total_sec += 24 * 3600;  // 加上一天的秒数
+    }
+    
+    duration = end_total_sec - start_total_sec;
+    manual_watering_record.duration_min = duration / 60;
+    manual_watering_record.duration_sec = duration % 60;
+}
+
+// 优化：计算自动浇水持续时间 - 内联计算，避免传参
+static void CalculateAutoDuration(void) {
+    unsigned int start_total_sec, end_total_sec, duration;
+    
+    // 将开始和结束时间转换为总秒数
+    start_total_sec = timed_watering.current_record.start_hour * 3600 + 
+                     timed_watering.current_record.start_min * 60 + 
+                     timed_watering.current_record.start_sec;
+    end_total_sec = timed_watering.current_record.end_hour * 3600 + 
+                   timed_watering.current_record.end_min * 60 + 
+                   timed_watering.current_record.end_sec;
+    
+    // 处理跨日期情况
+    if(end_total_sec < start_total_sec) {
+        end_total_sec += 24 * 3600;  // 加上一天的秒数
+    }
+    
+    duration = end_total_sec - start_total_sec;
+    timed_watering.current_record.duration_min = duration / 60;
+    timed_watering.current_record.duration_sec = duration % 60;
+}
+
+// 优化：结束手动浇水记录 - 避免传参，直接访问全局变量
+void EndManualWateringRecord(void) {
+    unsigned long current_total_flow;
+    
+    // 记录结束时间
+    manual_watering_record.end_year = PCA_GetYear();
+    manual_watering_record.end_month = PCA_GetMonth();
+    manual_watering_record.end_day = PCA_GetDay();
+    manual_watering_record.end_hour = PCA_GetHour();
+    manual_watering_record.end_min = PCA_GetMin();
+    manual_watering_record.end_sec = PCA_GetSec();
+    
+    // 计算浇水量和累计流量
+    current_total_flow = FlowMeter_GetTotalFlow();
+    manual_watering_record.water_volume = current_total_flow - manual_watering_record.total_flow;
+    manual_watering_record.total_flow = current_total_flow;
+    
+    // 计算持续时间
+    CalculateManualDuration();
+    
+    // 发送浇水记录到串口
+    UART_SendManualWateringRecord();
+}
+
+// 优化：结束自动浇水记录 - 避免传参，直接访问全局变量
+void EndAutoWateringRecord(void) {
+    unsigned long current_total_flow;
+    
+    // 记录结束时间
+    timed_watering.current_record.end_year = PCA_GetYear();
+    timed_watering.current_record.end_month = PCA_GetMonth();
+    timed_watering.current_record.end_day = PCA_GetDay();
+    timed_watering.current_record.end_hour = PCA_GetHour();
+    timed_watering.current_record.end_min = PCA_GetMin();
+    timed_watering.current_record.end_sec = PCA_GetSec();
+    
+    // 计算浇水量和累计流量
+    current_total_flow = FlowMeter_GetTotalFlow();
+    timed_watering.current_record.water_volume = current_total_flow - timed_watering.start_total_flow;
+    timed_watering.current_record.total_flow = current_total_flow;
+    
+    // 计算持续时间
+    CalculateAutoDuration();
+    
+    // 发送浇水记录到串口
+    UART_SendAutoWateringRecord();
 }
 
 // 初始化按键控制
@@ -41,6 +166,7 @@ void KeyboardControl_Init(void) {
     timed_watering.is_watering = 0;
     timed_watering.watering_volume_left = 0;
     timed_watering.triggered_today = 0;
+    timed_watering.start_total_flow = 0;
     
     auto_display_mode = DISPLAY_MODE_CLOCK;
     param_mode = PARAM_MODE_HOUR;
@@ -259,19 +385,21 @@ void TimedWatering_Stop(void) {
     timed_watering.enabled = 0;
     timed_watering.triggered_today = 0;
     
-    // 如果正在浇水，立即停止
+    // 如果正在浇水，立即停止并记录
     if(timed_watering.is_watering) {
         timed_watering.is_watering = 0;
         Relay_Off();
         FlowMeter_Stop();
         FlowMeter_SetMode(FLOW_MODE_OFF);
+        
+        // 记录自动浇水结束
+        EndAutoWateringRecord();
     }
 }
 
 // 更新定时浇水状态（每秒调用一次）
 void TimedWatering_Update(void) {
     unsigned long current_total_flow;
-    static unsigned long start_total_flow = 0;
     unsigned long watered_volume;
     
     if(!timed_watering.enabled) return;
@@ -279,7 +407,7 @@ void TimedWatering_Update(void) {
     if(timed_watering.is_watering) {
         // 正在浇水，检查累计流量是否达到目标
         current_total_flow = FlowMeter_GetTotalFlow();
-        watered_volume = current_total_flow - start_total_flow;
+        watered_volume = current_total_flow - timed_watering.start_total_flow;
         
         if(watered_volume >= timed_watering.water_volume_ml) {
             // 达到目标毫升数，停止浇水
@@ -292,6 +420,9 @@ void TimedWatering_Update(void) {
             
             // 保存累计流量到24C02
             AT24C02_WriteTotalFlow(current_total_flow);
+            
+            // 记录自动浇水结束
+            EndAutoWateringRecord();
             
             // 浇水完成后返回时钟显示
             auto_display_mode = DISPLAY_MODE_CLOCK;
@@ -306,7 +437,7 @@ void TimedWatering_Update(void) {
             }
         }
     } else {
-        // 💡 核心逻辑：每天检查是否到达设定时间点
+        // 每天检查是否到达设定时间点
         if(!timed_watering.triggered_today &&
            SysPara1.hour == timed_watering.start_hour &&
            SysPara1.min == timed_watering.start_min &&
@@ -315,7 +446,10 @@ void TimedWatering_Update(void) {
             // 开始浇水 - 每天在设定时间自动触发
             timed_watering.is_watering = 1;
             timed_watering.watering_volume_left = timed_watering.water_volume_ml;
-            start_total_flow = FlowMeter_GetTotalFlow();
+            timed_watering.start_total_flow = FlowMeter_GetTotalFlow();
+            
+            // 记录自动浇水开始
+            StartAutoWateringRecord();
             
             Relay_On();
             FlowMeter_Start();
@@ -325,9 +459,7 @@ void TimedWatering_Update(void) {
             display_update_flag = 1;
         }
         
-        // 💡 关键机制：午夜重置，确保每天都能触发
-        // 当时钟走到00:00:00时，重置今日触发标志
-        // 这样明天同一时间又可以触发浇水了
+        // 午夜重置，确保每天都能触发
         if(timed_watering.triggered_today && 
            SysPara1.hour == 0 && SysPara1.min == 0 && SysPara1.sec == 0) {
             timed_watering.triggered_today = 0;  // 重置标志，准备明天的触发
@@ -348,7 +480,7 @@ void DisplayAutoWateringParams(void) {
         val5 = 0;  // 显示0
         val6 = 5;  // 显示5（剩余毫升标识）
     } else {
-        // 移除闪烁显示，直接显示当前参数
+        // 显示当前参数
         switch(param_mode) {
             case PARAM_MODE_HOUR:
                 // 显示开始小时 "小时数03"
@@ -394,17 +526,12 @@ void DisplayAutoWateringParams(void) {
                 val1 = val2 = val3 = val4 = val5 = val6 = 0;
                 break;
         }
-        
-        // 移除闪烁逻辑，始终显示参数值
-        // if(display_toggle >= 4) {
-        //     val1 = val2 = val3 = val4 = 0;  // 数值部分熄灭
-        // }
     }
     
     FillCustomDispBuf(val1, val2, val3, val4, val5, val6);
 }
 
-// 添加缺失的函数：检查并更新自动显示
+// 检查并更新自动显示
 void CheckAndUpdateAutoDisplay(void) {
     if(display_update_flag) {
         display_update_flag = 0;  // 清除标志

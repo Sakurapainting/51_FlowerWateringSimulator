@@ -1,4 +1,4 @@
-C51 COMPILER V9.54   FLOWMETER                                                             05/27/2025 20:54:43 PAGE 1   
+C51 COMPILER V9.54   FLOWMETER                                                             05/27/2025 21:42:52 PAGE 1   
 
 
 C51 COMPILER V9.54, COMPILATION OF MODULE FLOWMETER
@@ -62,7 +62,7 @@ line level    source
   50           * 
   51           * 4. 24C02存储器 (P2.0/P2.1):
   52           *    - P2.0: SDA数据线，双向通信
-C51 COMPILER V9.54   FLOWMETER                                                             05/27/2025 20:54:43 PAGE 2   
+C51 COMPILER V9.54   FLOWMETER                                                             05/27/2025 21:42:52 PAGE 2   
 
   53           *    - P2.1: SCL时钟线，控制通信时序
   54           *    - 存储累计流量数据，掉电不丢失
@@ -126,7 +126,7 @@ line level    source
  107           * │ 显示：剩余毫升数 "XXXX05"            │
  108           * │ 示例："007505" = 还需浇75毫升       │
  109           * │ 实时减少，直到变为"000005"           │
-C51 COMPILER V9.54   FLOWMETER                                                             05/27/2025 20:54:43 PAGE 3   
+C51 COMPILER V9.54   FLOWMETER                                                             05/27/2025 21:42:52 PAGE 3   
 
  110           * └─────────────────────────────────�
              -��───┘
@@ -184,17 +184,17 @@ line level    source
  162          static WORD pulseCount = 0;               // 当前流量脉冲计数
  163          static WORD currentFlow = 0;              // 当前流量值（毫升/秒）
  164          // 移除本地totalFlow声明，使用i2c.c中的全局变量
- 165          extern unsigned long totalFlow;          // 累计流量值（毫升）- 使用i2c.c中的全局变量
+ 165          // extern unsigned long totalFlow;          // 累计流量值（毫升）- 使用i2c.c中的全局变量
  166          static bit isRunning = 0;                 // 流量计运行状态
  167          static bit needUpdateDisplay = 0;         // 显示更新标志
  168          static BYTE initialDisplayDelay = 0;      // 初始显示延迟计数器
  169          
  170          // 24C02存储控制变量
-C51 COMPILER V9.54   FLOWMETER                                                             05/27/2025 20:54:43 PAGE 4   
+C51 COMPILER V9.54   FLOWMETER                                                             05/27/2025 21:42:52 PAGE 4   
 
  171          static BYTE saveCounter = 0;              // 定期保存计数器
  172          static bit totalFlowChanged = 0;          // 累计流量变化标志
- 173          static unsigned long lastSavedFlow = 0;   // 上次保存的累计流量 - 移到xdata
+ 173          static unsigned long xdata lastSavedFlow = 0;   // 上次保存的累计流量 - 移到xdata
  174          
  175          // 流量计参数定义
  176          #define PULSE_FACTOR 1                   // 每个脉冲代表1毫升
@@ -254,7 +254,7 @@ line level    source
  230   2              j = 0;
  231   2              while(i > 0 && j < 10) {  // 添加边界检查
  232   3                  flowStr[j++] = temp[--i];
-C51 COMPILER V9.54   FLOWMETER                                                             05/27/2025 20:54:43 PAGE 5   
+C51 COMPILER V9.54   FLOWMETER                                                             05/27/2025 21:42:52 PAGE 5   
 
  233   3              }
  234   2              flowStr[j] = '\0';
@@ -318,7 +318,7 @@ line level    source
  292           * 
  293           * 1. 当前流量显示模式 (FLOW_MODE_CURR)：
  294           *    ┌────────────────────────────────�
-C51 COMPILER V9.54   FLOWMETER                                                             05/27/2025 20:54:43 PAGE 6   
+C51 COMPILER V9.54   FLOWMETER                                                             05/27/2025 21:42:52 PAGE 6   
 
              -��────┐
  295           *    │ 显示格式：XXXXX10                   │
@@ -382,7 +382,7 @@ line level    source
  348           * 2. 浇水开始时观察剩余毫升数
  349           * 3. 数值逐渐减少到0时自动停止
  350           */
-C51 COMPILER V9.54   FLOWMETER                                                             05/27/2025 20:54:43 PAGE 7   
+C51 COMPILER V9.54   FLOWMETER                                                             05/27/2025 21:42:52 PAGE 7   
 
  351          
  352          /*
@@ -446,7 +446,7 @@ line level    source
  410   3                  saveCounter = 0;
  411   3                  
  412   3                  // 只有当累计流量发生变化时才保存
-C51 COMPILER V9.54   FLOWMETER                                                             05/27/2025 20:54:43 PAGE 8   
+C51 COMPILER V9.54   FLOWMETER                                                             05/27/2025 21:42:52 PAGE 8   
 
  413   3                  if (totalFlowChanged) {
  414   4                      SaveTotalFlowToEEPROM();
@@ -510,7 +510,7 @@ line level    source
                   UART_SendString("累计流量已保存: ");
                   // 这里可以添加数值转换和输出代码
                   UART_SendString("毫升\r\n");
-C51 COMPILER V9.54   FLOWMETER                                                             05/27/2025 20:54:43 PAGE 9   
+C51 COMPILER V9.54   FLOWMETER                                                             05/27/2025 21:42:52 PAGE 9   
 
                   #endif
  476   1      }
@@ -574,7 +574,7 @@ line level    source
  534   1          
  535   1          // 直接填充显示缓冲区 - 显示格式如：250毫升/秒显示为"25010"
  536   1          FillCustomDispBuf(val6, val5, val4, val3, val2, val1);
-C51 COMPILER V9.54   FLOWMETER                                                             05/27/2025 20:54:43 PAGE 10  
+C51 COMPILER V9.54   FLOWMETER                                                             05/27/2025 21:42:52 PAGE 10  
 
  537   1      }
  538          
@@ -638,18 +638,18 @@ line level    source
  596   1          // 1. T0频率过高
  597   1          // 2. 继电器触点抖动
  598   1          // 3. 信号噪声
-C51 COMPILER V9.54   FLOWMETER                                                             05/27/2025 20:54:43 PAGE 11  
+C51 COMPILER V9.54   FLOWMETER                                                             05/27/2025 21:42:52 PAGE 11  
 
  599   1          pulseCount++;  // 每次中断增加脉冲计数
  600   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    956    ----
+   CODE SIZE        =   1073    ----
    CONSTANT SIZE    =     21    ----
-   XDATA SIZE       =   ----    ----
+   XDATA SIZE       =      4    ----
    PDATA SIZE       =   ----    ----
-   DATA SIZE        =     13      52
+   DATA SIZE        =      9      52
    IDATA SIZE       =   ----    ----
    BIT SIZE         =      3    ----
 END OF MODULE INFORMATION.

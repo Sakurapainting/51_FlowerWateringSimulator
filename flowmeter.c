@@ -162,7 +162,7 @@ static BYTE flowMode = FLOW_MODE_OFF;     // 流量显示模式
 static WORD pulseCount = 0;               // 当前流量脉冲计数
 static WORD currentFlow = 0;              // 当前流量值（毫升/秒）
 // 移除本地totalFlow声明，使用i2c.c中的全局变量
-extern unsigned long totalFlow;          // 累计流量值（毫升）- 使用i2c.c中的全局变量
+// extern unsigned long totalFlow;          // 累计流量值（毫升）- 使用i2c.c中的全局变量
 static bit isRunning = 0;                 // 流量计运行状态
 static bit needUpdateDisplay = 0;         // 显示更新标志
 static BYTE initialDisplayDelay = 0;      // 初始显示延迟计数器
@@ -170,7 +170,7 @@ static BYTE initialDisplayDelay = 0;      // 初始显示延迟计数器
 // 24C02存储控制变量
 static BYTE saveCounter = 0;              // 定期保存计数器
 static bit totalFlowChanged = 0;          // 累计流量变化标志
-static unsigned long lastSavedFlow = 0;   // 上次保存的累计流量 - 移到xdata
+static unsigned long xdata lastSavedFlow = 0;   // 上次保存的累计流量 - 移到xdata
 
 // 流量计参数定义
 #define PULSE_FACTOR 1                   // 每个脉冲代表1毫升

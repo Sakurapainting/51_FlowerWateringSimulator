@@ -4,7 +4,7 @@
 #include <string.h>
 
 // 串口缓冲区及状态变量
-static char xdata uart_buffer[32];  // 增加缓冲区大小以支持日期时间命令
+static char xdata uart_buffer[32];  // 缓冲区大小
 static BYTE uart_count = 0;
 static bit uart_complete = 0;
 
@@ -30,12 +30,11 @@ void UART_Init(void) {
     uart_complete = 0;
     memset(uart_buffer, 0, sizeof(uart_buffer));
     
-    // 发送启动信息
-    UART_SendString("\r\nWatering System Ready v2.0\r\n");
+    // 发送启动信息（删除DATETIME命令说明）
+    UART_SendString("\r\nWatering System Ready v2.1\r\n");
     UART_SendString("Commands Available:\r\n");
     UART_SendString("TIME:HH:MM:SS\r\n");
     UART_SendString("DATE:YYYY:MM:DD\r\n");
-    UART_SendString("DATETIME:YYYY:MM:DD:HH:MM:SS\r\n");
     UART_SendString("A:HH:MM:SS:MMMM\r\n");
     UART_SendString("DISPTIME/DISPDATE\r\n");
     UART_SendString("STOP\r\n");
@@ -55,6 +54,141 @@ void UART_SendString(char *s) {
     }
 }
 
+// 优化：内联数值输出，避免函数调用开销
+static void SendNumber(unsigned long num) {
+    if(num == 0) {
+        UART_SendByte('0');
+        return;
+    }
+    
+    // 直接计算并发送各位数字
+    if(num >= 10000) UART_SendByte('0' + (num / 10000) % 10);
+    if(num >= 1000) UART_SendByte('0' + (num / 1000) % 10);
+    if(num >= 100) UART_SendByte('0' + (num / 100) % 10);
+    if(num >= 10) UART_SendByte('0' + (num / 10) % 10);
+    UART_SendByte('0' + num % 10);
+}
+
+// 优化：内联两位数输出
+static void Send2Digits(BYTE num) {
+    UART_SendByte('0' + (num / 10));
+    UART_SendByte('0' + (num % 10));
+}
+
+// 优化后的手动浇水记录输出 - 避免传参，直接访问全局变量
+void UART_SendManualWateringRecord(void) {
+    UART_SendString("\r\n=== Watering Record ===\r\n");
+    UART_SendString("Type: Manual Watering\r\n");
+    
+    // 开始时间 - 直接访问manual_watering_record
+    UART_SendString("Start Time: 20");
+    Send2Digits(manual_watering_record.start_year % 100);
+    UART_SendByte('-');
+    Send2Digits(manual_watering_record.start_month);
+    UART_SendByte('-');
+    Send2Digits(manual_watering_record.start_day);
+    UART_SendByte(' ');
+    Send2Digits(manual_watering_record.start_hour);
+    UART_SendByte(':');
+    Send2Digits(manual_watering_record.start_min);
+    UART_SendByte(':');
+    Send2Digits(manual_watering_record.start_sec);
+    UART_SendString("\r\n");
+    
+    // 结束时间
+    UART_SendString("End Time: 20");
+    Send2Digits(manual_watering_record.end_year % 100);
+    UART_SendByte('-');
+    Send2Digits(manual_watering_record.end_month);
+    UART_SendByte('-');
+    Send2Digits(manual_watering_record.end_day);
+    UART_SendByte(' ');
+    Send2Digits(manual_watering_record.end_hour);
+    UART_SendByte(':');
+    Send2Digits(manual_watering_record.end_min);
+    UART_SendByte(':');
+    Send2Digits(manual_watering_record.end_sec);
+    UART_SendString("\r\n");
+    
+    // 浇水量
+    UART_SendString("Water Volume: ");
+    SendNumber(manual_watering_record.water_volume);
+    UART_SendString(" ml\r\n");
+    
+    // 累计流量
+    UART_SendString("Total Flow: ");
+    SendNumber(manual_watering_record.total_flow);
+    UART_SendString(" ml\r\n");
+    
+    // 持续时间 - 直接计算，避免传参
+    UART_SendString("Duration: ");
+    if(manual_watering_record.duration_min > 0) {
+        SendNumber(manual_watering_record.duration_min);
+        UART_SendString(" min ");
+    }
+    SendNumber(manual_watering_record.duration_sec);
+    UART_SendString(" sec\r\n");
+    
+    UART_SendString("=======================\r\n");
+}
+
+// 优化后的自动浇水记录输出 - 避免传参，直接访问全局变量
+void UART_SendAutoWateringRecord(void) {
+    UART_SendString("\r\n=== Watering Record ===\r\n");
+    UART_SendString("Type: Auto Watering\r\n");
+    
+    // 开始时间 - 直接访问timed_watering.current_record
+    UART_SendString("Start Time: 20");
+    Send2Digits(timed_watering.current_record.start_year % 100);
+    UART_SendByte('-');
+    Send2Digits(timed_watering.current_record.start_month);
+    UART_SendByte('-');
+    Send2Digits(timed_watering.current_record.start_day);
+    UART_SendByte(' ');
+    Send2Digits(timed_watering.current_record.start_hour);
+    UART_SendByte(':');
+    Send2Digits(timed_watering.current_record.start_min);
+    UART_SendByte(':');
+    Send2Digits(timed_watering.current_record.start_sec);
+    UART_SendString("\r\n");
+    
+    // 结束时间
+    UART_SendString("End Time: 20");
+    Send2Digits(timed_watering.current_record.end_year % 100);
+    UART_SendByte('-');
+    Send2Digits(timed_watering.current_record.end_month);
+    UART_SendByte('-');
+    Send2Digits(timed_watering.current_record.end_day);
+    UART_SendByte(' ');
+    Send2Digits(timed_watering.current_record.end_hour);
+    UART_SendByte(':');
+    Send2Digits(timed_watering.current_record.end_min);
+    UART_SendByte(':');
+    Send2Digits(timed_watering.current_record.end_sec);
+    UART_SendString("\r\n");
+    
+    // 浇水量
+    UART_SendString("Water Volume: ");
+    SendNumber(timed_watering.current_record.water_volume);
+    UART_SendString(" ml\r\n");
+    
+    // 累计流量
+    UART_SendString("Total Flow: ");
+    SendNumber(timed_watering.current_record.total_flow);
+    UART_SendString(" ml\r\n");
+    
+    // 持续时间
+    UART_SendString("Duration: ");
+    if(timed_watering.current_record.duration_min > 0) {
+        SendNumber(timed_watering.current_record.duration_min);
+        UART_SendString(" min ");
+    }
+    SendNumber(timed_watering.current_record.duration_sec);
+    UART_SendString(" sec\r\n");
+    
+    UART_SendString("=======================\r\n");
+}
+
 // 数字转换辅助函数
 static WORD ParseNumber(char *str, BYTE len) {
     WORD result = 0;
@@ -71,48 +205,8 @@ static WORD ParseNumber(char *str, BYTE len) {
 
 // 命令处理函数
 static void UART_CommandHandler(void) {
-    // 设置完整日期时间命令: "DATETIME:YYYY:MM:DD:HH:MM:SS"
-    if(strncmp(uart_buffer, "DATETIME:", 9) == 0) {
-        WORD year;
-        BYTE month, day, hour, min, sec;
-        
-        if(strlen(uart_buffer) >= 28) { // DATETIME:2025:05:27:14:30:00 = 28字符
-            year = ParseNumber(uart_buffer + 9, 4);
-            month = (BYTE)ParseNumber(uart_buffer + 14, 2);
-            day = (BYTE)ParseNumber(uart_buffer + 17, 2);
-            hour = (BYTE)ParseNumber(uart_buffer + 20, 2);
-            min = (BYTE)ParseNumber(uart_buffer + 23, 2);
-            sec = (BYTE)ParseNumber(uart_buffer + 26, 2);
-            
-            // 验证参数有效性
-            if(year >= 2000 && year <= 2099 && month >= 1 && month <= 12 && 
-               day >= 1 && day <= PCA_GetDaysInMonth(year, month) &&
-               hour < 24 && min < 60 && sec < 60) {
-                
-                PCA_SetDateTime(year, month, day, hour, min, sec);
-                
-                UART_SendString("\r\nDateTime Set: ");
-                UART_SendString(uart_buffer + 9);
-                uart_buffer[13] = '-';
-                uart_buffer[16] = '-';
-                uart_buffer[19] = ' ';
-                uart_buffer[22] = ':';
-                uart_buffer[25] = ':';
-                uart_buffer[28] = 0;
-                UART_SendString(uart_buffer + 9);
-                UART_SendString("\r\n");
-            } else {
-                UART_SendString("\r\nError: Invalid datetime\r\n");
-                UART_SendString("Format: YYYY(2000-2099):MM(1-12):DD(1-31):HH(0-23):MM(0-59):SS(0-59)\r\n");
-            }
-        } else {
-            UART_SendString("\r\nError: Wrong format\r\n");
-            UART_SendString("Format: DATETIME:YYYY:MM:DD:HH:MM:SS\r\n");
-            UART_SendString("Example: DATETIME:2025:05:27:14:30:00\r\n");
-        }
-    }
     // 设置日期命令: "DATE:YYYY:MM:DD"
-    else if(strncmp(uart_buffer, "DATE:", 5) == 0) {
+    if(strncmp(uart_buffer, "DATE:", 5) == 0) {
         WORD year;
         BYTE month, day;
         
@@ -247,7 +341,6 @@ static void UART_CommandHandler(void) {
         UART_SendString("Commands:\r\n");
         UART_SendString("TIME:HH:MM:SS - Set time\r\n");
         UART_SendString("DATE:YYYY:MM:DD - Set date\r\n");
-        UART_SendString("DATETIME:YYYY:MM:DD:HH:MM:SS - Set both\r\n");
         UART_SendString("A:HH:MM:SS:MMMM - Set auto watering\r\n");
         UART_SendString("DISPTIME/DISPDATE - Display mode\r\n");
         UART_SendString("STOP - Stop auto watering\r\n");
