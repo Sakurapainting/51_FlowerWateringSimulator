@@ -228,10 +228,10 @@ void main(void) {
     UART_Init();
     KeyboardControl_Init();  // 初始化按键控制
     
-    // 发送启动信息到串口
-    UART_SendString("\r\n浇花系统已启动\r\n");
-    UART_SendString("当前时间设置功能可用\r\n");
-    UART_SendString("定时浇水功能已初始化\r\n");
+    // 发送英文启动信息到串口
+    UART_SendString("\r\nWatering System Started\r\n");
+    UART_SendString("Time setting available\r\n");
+    UART_SendString("Auto watering initialized\r\n");
     
     while (1) {
         processKey();
@@ -239,18 +239,6 @@ void main(void) {
         CheckAndUpdateAutoDisplay();
         FlowMeter_UpdateDisplay();
         UART_ProcessCommand();
-        
-        // 添加调试信息（可选）- 注释掉以避免频繁输出
-        /*
-        static BYTE debug_counter = 0;
-        if(++debug_counter >= 100) {  // 每1秒输出一次状态
-            debug_counter = 0;
-            if(timed_watering.enabled) {
-                UART_SendString("定时浇水已启用，等待时间: ");
-                // 发送当前时间和设定时间
-            }
-        }
-        */
         
         delay_ms(10);
     }

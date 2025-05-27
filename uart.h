@@ -4,6 +4,45 @@
 #include "reg51.h"
 #include "pca.h"
 
+/*
+ * ========================================
+ * UART Commands Usage Guide
+ * ========================================
+ * 
+ * Supported Commands:
+ * ===================
+ * 
+ * 1. Set Time Command:
+ *    Format: TIME:HH:MM:SS
+ *    Example: TIME:14:30:00
+ *    Description: Set system time to 14:30:00
+ * 
+ * 2. Set Auto Watering Command:
+ *    Format: A:HH:MM:SS:MMMM
+ *    Example: A:06:00:01:0100
+ *    Description: Set auto watering at 6:00:01 for 100ml
+ *    Parameters: HH(0-23), MM(0-59), SS(0-59), MMMM(50-9999ml)
+ * 
+ * 3. Stop Auto Watering Command:
+ *    Format: STOP
+ *    Description: Stop current auto watering function
+ * 
+ * Usage Examples:
+ * ===============
+ * 
+ * Set morning watering 200ml at 7:00:
+ * Send: A:07:00:00:0200
+ * Reply: Auto Set OK
+ * 
+ * Set current time:
+ * Send: TIME:15:30:00
+ * Reply: Time Set: 15:30:00
+ * 
+ * Stop auto watering:
+ * Send: STOP
+ * Reply: Auto Stopped
+ */
+
 // 串口命令处理相关定义 - 减少缓冲区大小
 #define UART_BUF_SIZE 16    // 从32减少到16
 #define CMD_SET_TIME 1      // 设置时间命令

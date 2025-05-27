@@ -32,7 +32,7 @@ void KeyboardControl_Init(void) {
     // 初始化I2C和24C02
     I2C_Init();
     
-    // 初始化定时浇水参数为默认值
+    // 初始化定时浇水参数为默认值（不从24C02加载）
     timed_watering.enabled = 0;
     timed_watering.start_hour = 6;      // 默认6点
     timed_watering.start_min = 0;       // 0分
@@ -41,9 +41,6 @@ void KeyboardControl_Init(void) {
     timed_watering.is_watering = 0;
     timed_watering.watering_volume_left = 0;
     timed_watering.triggered_today = 0;
-    
-    // 💡 关键修改：启动时自动从24C02加载定时浇水参数
-    TimedWatering_LoadParams();
     
     auto_display_mode = DISPLAY_MODE_CLOCK;
     param_mode = PARAM_MODE_HOUR;
@@ -157,7 +154,6 @@ void KeyboardControl_Init(void) {
 void KeyboardControl_Scan(void) {
     BYTE current_keys = 0;
     BYTE key_pressed;
-    bit param_changed = 0;  // 参数修改标志
     
     // 读取当前按键状态
     if(KEY_AUTO == 0) current_keys |= 0x01;
@@ -199,20 +195,16 @@ void KeyboardControl_Scan(void) {
             switch(param_mode) {
                 case PARAM_MODE_HOUR:
                     timed_watering.start_hour = (timed_watering.start_hour + 1) % 24;
-                    param_changed = 1;
                     break;
                 case PARAM_MODE_MIN:
                     timed_watering.start_min = (timed_watering.start_min + 1) % 60;
-                    param_changed = 1;
                     break;
                 case PARAM_MODE_SEC:
                     timed_watering.start_sec = (timed_watering.start_sec + 1) % 60;
-                    param_changed = 1;
                     break;
                 case PARAM_MODE_VOLUME:
                     if(timed_watering.water_volume_ml < 9950) {
                         timed_watering.water_volume_ml += 50;
-                        param_changed = 1;
                     }
                     break;
             }
@@ -227,31 +219,22 @@ void KeyboardControl_Scan(void) {
             switch(param_mode) {
                 case PARAM_MODE_HOUR:
                     timed_watering.start_hour = (timed_watering.start_hour == 0) ? 23 : (timed_watering.start_hour - 1);
-                    param_changed = 1;
                     break;
                 case PARAM_MODE_MIN:
                     timed_watering.start_min = (timed_watering.start_min == 0) ? 59 : (timed_watering.start_min - 1);
-                    param_changed = 1;
                     break;
                 case PARAM_MODE_SEC:
                     timed_watering.start_sec = (timed_watering.start_sec == 0) ? 59 : (timed_watering.start_sec - 1);
-                    param_changed = 1;
                     break;
                 case PARAM_MODE_VOLUME:
                     if(timed_watering.water_volume_ml > 50) {
                         timed_watering.water_volume_ml -= 50;
-                        param_changed = 1;
                     }
                     break;
             }
             auto_display_mode = DISPLAY_MODE_AUTO;
             display_update_flag = 1;
         }
-    }
-    
-    // 💡 关键新增：参数修改后立即保存
-    if(param_changed) {
-        TimedWatering_SaveParams();
     }
     
     key_prev_state = current_keys;
@@ -262,9 +245,6 @@ void TimedWatering_Start(void) {
     timed_watering.enabled = 1;
     timed_watering.is_watering = 0;
     timed_watering.triggered_today = 0;  // 重置触发标志
-    
-    // 💡 立即保存参数到24C02
-    TimedWatering_SaveParams();
     
     // 启动后立即返回时钟显示模式，而不是显示参数
     auto_display_mode = DISPLAY_MODE_CLOCK;
@@ -286,9 +266,6 @@ void TimedWatering_Stop(void) {
         FlowMeter_Stop();
         FlowMeter_SetMode(FLOW_MODE_OFF);
     }
-    
-    // 💡 立即保存参数到24C02
-    TimedWatering_SaveParams();
 }
 
 // 更新定时浇水状态（每秒调用一次）
@@ -434,37 +411,6 @@ void CheckAndUpdateAutoDisplay(void) {
         
         if(auto_display_mode == DISPLAY_MODE_AUTO) {
             DisplayAutoWateringParams();
-        }
-    }
-}
-
-// 保存定时浇水参数到24C02
-void TimedWatering_SaveParams(void) {
-    AT24C02_WriteTimedWateringParams(&timed_watering);
-}
-
-// 从24C02加载定时浇水参数
-void TimedWatering_LoadParams(void) {
-    AT24C02_ReadTimedWateringParams(&timed_watering);
-    
-    // 💡 关键修改：保持加载的enabled状态，但重置运行时状态
-    // 如果之前启用了定时浇水，加载后依然保持启用
-    // timed_watering.enabled = timed_watering.enabled;  // 保持原值
-    
-    // 重置运行时状态
-    timed_watering.is_watering = 0;
-    timed_watering.watering_volume_left = 0;
-    
-    // 💡 重要：检查是否需要重置今日触发标志
-    // 如果系统重启，应该允许今天再次触发（除非今天已经过了设定时间）
-    if(timed_watering.enabled) {
-        // 如果当前时间已经超过了设定时间，标记为今日已触发
-        if(SysPara1.hour > timed_watering.start_hour || 
-           (SysPara1.hour == timed_watering.start_hour && SysPara1.min > timed_watering.start_min) ||
-           (SysPara1.hour == timed_watering.start_hour && SysPara1.min == timed_watering.start_min && SysPara1.sec > timed_watering.start_sec)) {
-            timed_watering.triggered_today = 1;  // 今天的浇水时间已过
-        } else {
-            timed_watering.triggered_today = 0;  // 今天的浇水时间还没到
         }
     }
 }

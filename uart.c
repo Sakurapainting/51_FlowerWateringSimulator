@@ -1,5 +1,6 @@
 #include "uart.h"
 #include "flowmeter.h"
+#include "keyboard_control.h"  // 添加此头文件以使用定时浇水功能
 #include <string.h>
 
 // 串口缓冲区及状态变量 - 减少缓冲区大小
@@ -29,9 +30,10 @@ void UART_Init(void) {
     uart_complete = 0;
     memset(uart_buffer, 0, sizeof(uart_buffer));
     
-    // 发送简化的初始提示信息
-    UART_SendString("\r\n浇花系统启动\r\n");
+    // 发送英文启动信息
+    UART_SendString("\r\nSystem Ready\r\n");
     UART_SendString("TIME:HH:MM:SS\r\n");
+    UART_SendString("A:HH:MM:SS:MMMM\r\n");
 }
 
 // 发送一个字节
@@ -50,7 +52,7 @@ void UART_SendString(char *s) {
 
 // 命令处理函数
 static void UART_CommandHandler(void) {
-    // 命令格式: "TIME:HH:MM:SS"
+    // 时间设置命令格式: "TIME:HH:MM:SS"
     if(strncmp(uart_buffer, "TIME:", 5) == 0) {
         BYTE hour = 0, min = 0, sec = 0;
         
@@ -65,7 +67,7 @@ static void UART_CommandHandler(void) {
                 // 直接修改SysPara1中的时间值
                 PCA_SetTime(hour, min, sec);
                 
-                UART_SendString("\r\n时间设置成功: ");
+                UART_SendString("\r\nTime Set: ");
                 // 发送时间字符串
                 uart_buffer[7] = ':';
                 uart_buffer[10] = ':';
@@ -74,19 +76,78 @@ static void UART_CommandHandler(void) {
                 UART_SendString("\r\n");
             }
             else {
-                UART_SendString("\r\n错误: 无效的时间值\r\n");
-                UART_SendString("时间格式: HH(0-23):MM(0-59):SS(0-59)\r\n");
+                UART_SendString("\r\nError: Invalid time\r\n");
+                UART_SendString("Format: HH(0-23):MM(0-59):SS(0-59)\r\n");
             }
         }
         else {
-            UART_SendString("\r\n错误: 时间格式错误\r\n");
-            UART_SendString("正确格式: TIME:HH:MM:SS\r\n");
-            UART_SendString("例如: TIME:14:30:00\r\n");
+            UART_SendString("\r\nError: Wrong format\r\n");
+            UART_SendString("Format: TIME:HH:MM:SS\r\n");
+            UART_SendString("Example: TIME:14:30:00\r\n");
         }
     }
+    // 定时浇水设置命令格式: "A:HH:MM:SS:MMMM"
+    else if(strncmp(uart_buffer, "A:", 2) == 0) {
+        BYTE hour, min, sec;
+        unsigned int volume;
+        
+        // 解析定时浇水参数 A:HH:MM:SS:MMMM
+        if(strlen(uart_buffer) >= 15) { // 确保格式正确且长度足够
+            hour = (uart_buffer[2] - '0') * 10 + (uart_buffer[3] - '0');
+            min = (uart_buffer[5] - '0') * 10 + (uart_buffer[6] - '0');
+            sec = (uart_buffer[8] - '0') * 10 + (uart_buffer[9] - '0');
+            
+            // 解析毫升数(最多4位)
+            volume = 0;
+            volume += (uart_buffer[11] - '0') * 1000;
+            volume += (uart_buffer[12] - '0') * 100;
+            volume += (uart_buffer[13] - '0') * 10;
+            volume += (uart_buffer[14] - '0');
+            
+            // 检查参数有效性
+            if(hour < 24 && min < 60 && sec < 60 && volume >= 50 && volume <= 9999) {
+                // 设置定时浇水参数
+                timed_watering.start_hour = hour;
+                timed_watering.start_min = min;
+                timed_watering.start_sec = sec;
+                timed_watering.water_volume_ml = volume;
+                timed_watering.enabled = 1;
+                timed_watering.triggered_today = 0;
+                
+                UART_SendString("\r\nAuto Set OK\r\n");
+                UART_SendString("Time: ");
+                uart_buffer[4] = ':';
+                uart_buffer[7] = ':';
+                uart_buffer[10] = 0;
+                UART_SendString(uart_buffer + 2);
+                UART_SendString("\r\nVolume: ");
+                uart_buffer[15] = 0;
+                UART_SendString(uart_buffer + 11);
+                UART_SendString("ml\r\n");
+            }
+            else {
+                UART_SendString("\r\nError: Invalid params\r\n");
+                UART_SendString("Time: HH(0-23):MM(0-59):SS(0-59)\r\n");
+                UART_SendString("Volume: 50-9999ml\r\n");
+            }
+        }
+        else {
+            UART_SendString("\r\nError: Wrong format\r\n");
+            UART_SendString("Format: A:HH:MM:SS:MMMM\r\n");
+            UART_SendString("Example: A:06:00:01:0100\r\n");
+        }
+    }
+    // 停止定时浇水命令: "STOP"
+    else if(strncmp(uart_buffer, "STOP", 4) == 0) {
+        TimedWatering_Stop();
+        UART_SendString("\r\nAuto Stopped\r\n");
+    }
     else {
-        UART_SendString("\r\n错误: 未知命令\r\n");
-        UART_SendString("支持的命令: TIME:HH:MM:SS\r\n");
+        UART_SendString("\r\nError: Unknown cmd\r\n");
+        UART_SendString("Commands:\r\n");
+        UART_SendString("TIME:HH:MM:SS - Set time\r\n");
+        UART_SendString("A:HH:MM:SS:MMMM - Set auto\r\n");
+        UART_SendString("STOP - Stop auto\r\n");
     }
 }
 

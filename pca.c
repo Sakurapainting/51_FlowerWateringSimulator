@@ -199,7 +199,7 @@ void PCA_SetTime(BYTE hour, BYTE min, BYTE sec) {
         SysPara1.min = min;
         SysPara1.sec = sec;
         
-        // 💡 新增：时间修改后重新计算今日触发标志
+        // 时间修改后重新计算今日触发标志（不保存到24C02）
         if(timed_watering.enabled) {
             // 重新判断今天的浇水时间是否已过
             if(SysPara1.hour > timed_watering.start_hour || 
@@ -210,8 +210,8 @@ void PCA_SetTime(BYTE hour, BYTE min, BYTE sec) {
                 timed_watering.triggered_today = 0;  // 今天的浇水时间还没到，可以触发
             }
             
-            // 保存更新后的状态
-            TimedWatering_SaveParams();
+            // 移除保存调用
+            // TimedWatering_SaveParams();
         }
         
         // 如果当前是时钟显示模式，更新显示

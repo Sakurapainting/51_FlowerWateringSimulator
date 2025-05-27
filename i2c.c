@@ -1,6 +1,5 @@
 #include "i2c.h"
 #include "intrins.h"
-#include "keyboard_control.h"  // 添加这个包含以获取TimedWatering结构体定义
 
 // I2C延时函数
 static void I2C_Delay(void) {
@@ -135,36 +134,11 @@ unsigned long AT24C02_ReadTotalFlow(void) {
     return flow;
 }
 
-// 写定时浇水参数到24C02
-void AT24C02_WriteTimedWateringParams(TimedWatering *params) {
-    AT24C02_WriteByte(TIMED_WATERING_ADDR_0, params->enabled);
-    AT24C02_WriteByte(TIMED_WATERING_ADDR_1, params->start_hour);
-    AT24C02_WriteByte(TIMED_WATERING_ADDR_2, params->start_min);
-    AT24C02_WriteByte(TIMED_WATERING_ADDR_3, params->start_sec);
-    AT24C02_WriteByte(TIMED_WATERING_ADDR_4, (BYTE)(params->water_volume_ml & 0xFF));
-    AT24C02_WriteByte(TIMED_WATERING_ADDR_5, (BYTE)((params->water_volume_ml >> 8) & 0xFF));
-    AT24C02_WriteByte(TIMED_WATERING_ADDR_6, params->triggered_today);
-}
+// 移除定时浇水参数相关函数
+// void AT24C02_WriteTimedWateringParams(TimedWatering *params) {
+//     // 移除此函数
+// }
 
-// 从24C02读定时浇水参数
-void AT24C02_ReadTimedWateringParams(TimedWatering *params) {
-    params->enabled = AT24C02_ReadByte(TIMED_WATERING_ADDR_0);
-    params->start_hour = AT24C02_ReadByte(TIMED_WATERING_ADDR_1);
-    params->start_min = AT24C02_ReadByte(TIMED_WATERING_ADDR_2);
-    params->start_sec = AT24C02_ReadByte(TIMED_WATERING_ADDR_3);
-    params->water_volume_ml = AT24C02_ReadByte(TIMED_WATERING_ADDR_4);
-    params->water_volume_ml |= ((unsigned int)AT24C02_ReadByte(TIMED_WATERING_ADDR_5)) << 8;
-    params->triggered_today = AT24C02_ReadByte(TIMED_WATERING_ADDR_6);
-    
-    // 设置运行时参数为默认值
-    params->is_watering = 0;
-    params->watering_volume_left = 0;
-    
-    // 参数有效性检查
-    if(params->start_hour > 23) params->start_hour = 6;
-    if(params->start_min > 59) params->start_min = 0;
-    if(params->start_sec > 59) params->start_sec = 1;
-    if(params->water_volume_ml < 50 || params->water_volume_ml > 9999) {
-        params->water_volume_ml = 100;
-    }
-}
+// void AT24C02_ReadTimedWateringParams(TimedWatering *params) {
+//     // 移除此函数
+// }

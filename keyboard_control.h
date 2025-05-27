@@ -208,7 +208,5 @@ void TimedWatering_Start(void);
 void TimedWatering_Stop(void);
 void DisplayAutoWateringParams(void);
 void CheckAndUpdateAutoDisplay(void);
-void TimedWatering_SaveParams(void);    // 添加保存参数函数
-void TimedWatering_LoadParams(void);    // 添加加载参数函数
 
 #endif
