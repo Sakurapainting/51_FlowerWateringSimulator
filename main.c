@@ -173,10 +173,10 @@ void main(void) {
     KeyboardControl_Init();  // 初始化按键控制
     
     // 发送启动信息到串口
-    UART_SendString("\r\nWatering System Started v4.0 (8-Digit Display)\r\n");
+    UART_SendString("\r\nWatering System Started v4.1 (8-Digit Display)\r\n");
     UART_SendString("Auto Display: Time<->Date every 5 seconds\r\n");
     UART_SendString("Date Format: YYYYMMDD (8-digit full display)\r\n");
-    UART_SendString("Time Format:   HHMMSS (6-digit right display)\r\n");
+    UART_SendString("Time Format: HH-MM-SS (8-digit full display)\r\n");  // 更新格式说明
     UART_SendString("P3.3 Key: Long press to set date/time\r\n");
     UART_SendString("Setting order: Year->Month->Day->Hour->Min->Sec\r\n");
     

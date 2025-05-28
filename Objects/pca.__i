@@ -1,1 +1,0 @@
-"pca.c" OPTIMIZE (8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\pca.lst) OBJECT(.\Objects\pca.obj)

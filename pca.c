@@ -52,8 +52,21 @@ sbit OE   = DISP_PORT^3;  // 输出使能(低有效)
 #define CURRENTFLOW_MODE 0x39 // 当前流量模式
 #define TOTALFLOW_MODE 0X71   // 累计流量模式
 
-/* 共阴极数码管段码定义 */
-static code const unsigned char LED[] = {0x3F,0x06,0x5B,0x4F,0x66,0x6D,0x7D,0x07,0x7F,0x6F,CURRENTFLOW_MODE,TOTALFLOW_MODE};
+/* 共阴极数码管段码定义 - 添加横线显示 */
+static code const unsigned char LED[] = {
+    0x3F,  // 0
+    0x06,  // 1
+    0x5B,  // 2
+    0x4F,  // 3
+    0x66,  // 4
+    0x6D,  // 5
+    0x7D,  // 6
+    0x07,  // 7
+    0x7F,  // 8
+    0x6F,  // 9
+    CURRENTFLOW_MODE,  // 10 - 当前流量模式
+    TOTALFLOW_MODE     // 11 - 累计流量模式
+};
 
 // 显示缓冲区
 unsigned char xdata dispbuff[8] = {SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF};
@@ -75,21 +88,24 @@ void Resetdispbuff() {
 
 void FillDispBuf(BYTE hour, BYTE min, BYTE sec) {
     Resetdispbuff();
+    
     // 秒部分（右起0-1位）
-    dispbuff[0] = LED[sec % 10]; // 秒个位
-    dispbuff[1] = LED[sec / 10]; // 秒十位
+    dispbuff[0] = LED[sec % 10];   // 秒个位
+    dispbuff[1] = LED[sec / 10];   // 秒十位
     
-    // 分钟部分（右起2-3位）
-    dispbuff[2] = LED[min % 10];
-    dispbuff[3] = LED[min / 10];
+    // 第一个横线（右起第2位）
+    dispbuff[2] = 0x40;  // 显示横线 "-"
     
-    // 小时部分（右起4-5位）
-    dispbuff[4] = LED[hour % 10];
-    dispbuff[5] = LED[hour / 10];
+    // 分钟部分（右起3-4位）
+    dispbuff[3] = LED[min % 10];   // 分个位
+    dispbuff[4] = LED[min / 10];   // 分十位
     
-    // 时间显示时，左边两位不显示
-    dispbuff[6] = SEG_OFF;
-    dispbuff[7] = SEG_OFF;
+    // 第二个横线（右起第5位）
+    dispbuff[5] = 0x40;  // 显示横线 "-"
+    
+    // 小时部分（右起6-7位）
+    dispbuff[6] = LED[hour % 10];  // 时个位
+    dispbuff[7] = LED[hour / 10];  // 时十位
 }
 
 // 修改：填充日期显示缓冲区 (YYYYMMDD格式，使用全部8位数码管)
@@ -494,22 +510,22 @@ void PCA_ProcessBlinkUpdate(void) {
                 }
             }
         } else {
-            // 编辑时间 (时分秒) - 保持原来的6位显示
+            // 编辑时间 (时分秒) - 现在使用全部8位显示 HH-MM-SS
             FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
             if (blinkState) {
                 switch (timeEditMode) {
                     case HOUR_POS:
-                        // 小时闪烁
-                        dispbuff[4] = SEG_OFF;  // 小时个位
-                        dispbuff[5] = SEG_OFF;  // 小时十位
+                        // 小时闪烁 (位置6-7)
+                        dispbuff[6] = SEG_OFF;  // 小时个位
+                        dispbuff[7] = SEG_OFF;  // 小时十位
                         break;
                     case MIN_POS:
-                        // 分钟闪烁
-                        dispbuff[2] = SEG_OFF;  // 分钟个位
-                        dispbuff[3] = SEG_OFF;  // 分钟十位
+                        // 分钟闪烁 (位置3-4)
+                        dispbuff[3] = SEG_OFF;  // 分钟个位
+                        dispbuff[4] = SEG_OFF;  // 分钟十位
                         break;
                     case SEC_POS:
-                        // 秒闪烁
+                        // 秒闪烁 (位置0-1)
                         dispbuff[0] = SEG_OFF;  // 秒个位
                         dispbuff[1] = SEG_OFF;  // 秒十位
                         break;
