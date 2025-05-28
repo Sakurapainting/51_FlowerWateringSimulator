@@ -34,7 +34,7 @@
 // 流量计参数
 static BYTE flowMode = FLOW_MODE_OFF;     // 流量显示模式
 static WORD pulseCount = 0;               // 当前流量脉冲计数
-static WORD currentFlow = 0;              // 当前流量值（毫升/秒）
+static unsigned long currentFlow = 0;              // 当前流量值（毫升/秒）- 改为unsigned long
 // 移除本地totalFlow声明，使用i2c.c中的全局变量
 // extern unsigned long totalFlow;          // 累计流量值（毫升）- 使用i2c.c中的全局变量
 static bit isRunning = 0;                 // 流量计运行状态
@@ -357,42 +357,46 @@ void FlowMeter_UpdateDisplay(void) {
     }
 }
 
-// 更新当前流量显示
+// 更新当前流量显示 - 扩展到8位数码管，支持7位流量值
 void UpdateCurrentFlowDisplay(void) {
-    BYTE val1, val2, val3, val4, val5, val6;
+    BYTE val1, val2, val3, val4, val5, val6, val7, val8;
     
-    // 提取当前流量各位数字（毫升/秒）
-    WORD flow_display = currentFlow;  // currentFlow已经是毫升/秒的值
+    // 提取当前流量各位数字（毫升/秒）- 支持最大9999999毫升/秒
+    unsigned long flow_display = (unsigned long)currentFlow;
     
-    // 构造显示数字 - 格式：XXXX毫升/秒
-    val1 = 10;  // 10，表示当前流量显示模式
-    val2 = (flow_display / 10000) % 10; // 万位（毫升/秒）
-    val3 = (flow_display / 1000) % 10;  // 千位（毫升/秒）
-    val4 = (flow_display / 100) % 10;   // 百位（毫升/秒）
-    val5 = (flow_display / 10) % 10;    // 十位（毫升/秒）
-    val6 = flow_display % 10;           // 个位（毫升/秒）
+    // 构造8位显示数字 - 格式：XXXXXXX10（前7位流量值，最后1位模式标识10）
+    val1 = 10;  // 模式标识保持不变 - "10"表示当前流量
+    val2 = (BYTE)(flow_display % 10);                    // 个位（毫升/秒）
+    val3 = (BYTE)((flow_display / 10) % 10);             // 十位（毫升/秒）
+    val4 = (BYTE)((flow_display / 100) % 10);            // 百位（毫升/秒）
+    val5 = (BYTE)((flow_display / 1000) % 10);           // 千位（毫升/秒）
+    val6 = (BYTE)((flow_display / 10000) % 10);          // 万位（毫升/秒）
+    val7 = (BYTE)((flow_display / 100000) % 10);         // 十万位（毫升/秒）
+    val8 = (BYTE)((flow_display / 1000000) % 10);        // 百万位（毫升/秒）
     
-    // 直接填充显示缓冲区 - 显示格式如：250毫升/秒显示为"25010"
-    FillCustomDispBuf(val6, val5, val4, val3, val2, val1);
+    // 使用8位显示缓冲区
+    FillCustomDispBuf8(val1, val2, val3, val4, val5, val6, val7, val8);
 }
 
-// 更新累计流量显示
+// 更新累计流量显示 - 扩展到8位数码管，支持7位流量值
 void UpdateTotalFlowDisplay(void) {
-    BYTE val1, val2, val3, val4, val5, val6;
+    BYTE val1, val2, val3, val4, val5, val6, val7, val8;
     
-    // 提取总流量各位数字（毫升）
-    unsigned long flow_ml = totalFlow;  // 直接使用毫升值
+    // 提取总流量各位数字（毫升）- 支持最大9999999毫升累计
+    unsigned long flow_ml = totalFlow;
     
-    // 构造显示数字
-    val1 = 11;  // 11,累计流量显示模式
-    val2 = (BYTE)((flow_ml / 10000) % 10); // 万位（毫升）
-    val3 = (BYTE)((flow_ml / 1000) % 10);  // 千位（毫升）
-    val4 = (BYTE)((flow_ml / 100) % 10);   // 百位（毫升）
-    val5 = (BYTE)((flow_ml / 10) % 10);    // 十位（毫升）
-    val6 = (BYTE)(flow_ml % 10);           // 个位（毫升）
+    // 构造8位显示数字 - 格式：XXXXXXX11（前7位流量值，最后1位模式标识11）
+    val1 = 11;  // 模式标识保持不变 - "11"表示累计流量
+    val2 = (BYTE)(flow_ml % 10);                 // 个位（毫升）
+    val3 = (BYTE)((flow_ml / 10) % 10);          // 十位（毫升）
+    val4 = (BYTE)((flow_ml / 100) % 10);         // 百位（毫升）
+    val5 = (BYTE)((flow_ml / 1000) % 10);        // 千位（毫升）
+    val6 = (BYTE)((flow_ml / 10000) % 10);       // 万位（毫升）
+    val7 = (BYTE)((flow_ml / 100000) % 10);      // 十万位（毫升）
+    val8 = (BYTE)((flow_ml / 1000000) % 10);     // 百万位（毫升）
     
-    // 直接填充显示缓冲区
-    FillCustomDispBuf(val6, val5, val4, val3, val2, val1);
+    // 使用8位显示缓冲区
+    FillCustomDispBuf8(val1, val2, val3, val4, val5, val6, val7, val8);
 }
 
 // 设置流量显示模式

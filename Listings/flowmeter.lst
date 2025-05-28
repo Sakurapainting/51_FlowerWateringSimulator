@@ -1,4 +1,4 @@
-C51 COMPILER V9.54   FLOWMETER                                                             05/28/2025 12:47:22 PAGE 1   
+C51 COMPILER V9.54   FLOWMETER                                                             05/28/2025 16:26:36 PAGE 1   
 
 
 C51 COMPILER V9.54, COMPILATION OF MODULE FLOWMETER
@@ -46,7 +46,7 @@ line level    source
   34          // 流量计参数
   35          static BYTE flowMode = FLOW_MODE_OFF;     // 流量显示模式
   36          static WORD pulseCount = 0;               // 当前流量脉冲计数
-  37          static WORD currentFlow = 0;              // 当前流量值（毫升/秒）
+  37          static unsigned long currentFlow = 0;              // 当前流量值（毫升/秒）- 改为unsigned long
   38          // 移除本地totalFlow声明，使用i2c.c中的全局变量
   39          // extern unsigned long totalFlow;          // 累计流量值（毫升）- 使用i2c.c中的全局变量
   40          static bit isRunning = 0;                 // 流量计运行状态
@@ -62,7 +62,7 @@ line level    source
   50          #define PULSE_FACTOR 1                   // 每个脉冲代表1毫升
   51          #define FLOW_UPDATE_INTERVAL 1           // 每秒更新一次流量值
   52          #define SAVE_INTERVAL 10                 // 每10秒保存一次到24C02
-C51 COMPILER V9.54   FLOWMETER                                                             05/28/2025 12:47:22 PAGE 2   
+C51 COMPILER V9.54   FLOWMETER                                                             05/28/2025 16:26:36 PAGE 2   
 
   53          #define IMMEDIATE_SAVE_THRESHOLD 50      // 累计差值超过50ml立即保存
   54          
@@ -126,7 +126,7 @@ line level    source
  112   1          
  113   1          UART_SendString(" ml\r\n");
  114   1          
-C51 COMPILER V9.54   FLOWMETER                                                             05/28/2025 12:47:22 PAGE 3   
+C51 COMPILER V9.54   FLOWMETER                                                             05/28/2025 16:26:36 PAGE 3   
 
  115   1          isRunning = 0;                     // 初始不运行
  116   1          flowMode = FLOW_MODE_OFF;          // 默认显示模式为关闭
@@ -190,7 +190,7 @@ line level    source
  171           *    │ 显示格式：XXXXX11                   │
  172           *    │ 含义：累计总流量，单位毫升           │
  173           *    │ 示例："012311" = 123毫升总流量      │
-C51 COMPILER V9.54   FLOWMETER                                                             05/28/2025 12:47:22 PAGE 4   
+C51 COMPILER V9.54   FLOWMETER                                                             05/28/2025 16:26:36 PAGE 4   
 
  174           *    │ 右侧"11"标识累计流量模式            │
  175           *    └────────────────────────────────�
@@ -254,7 +254,7 @@ line level    source
  230           *      例如：显示"250 5 "表示当前流量为250毫升/秒
  231           * 
  232           * 2. 累计流量显示模式（FLOW_MODE_TOTAL）:
-C51 COMPILER V9.54   FLOWMETER                                                             05/28/2025 12:47:22 PAGE 5   
+C51 COMPILER V9.54   FLOWMETER                                                             05/28/2025 16:26:36 PAGE 5   
 
  233           *    - 数码管从右到左依次为：位1-位6
  234           *    - 位1: 显示数字"1"，表示当前为累计流量显示模式
@@ -318,7 +318,7 @@ line level    source
  292   1          if (isRunning) {
  293   2              static BYTE displayToggle = 0;
  294   2              
-C51 COMPILER V9.54   FLOWMETER                                                             05/28/2025 12:47:22 PAGE 6   
+C51 COMPILER V9.54   FLOWMETER                                                             05/28/2025 16:26:36 PAGE 6   
 
  295   2              if (++displayToggle >= 3) {  
  296   3                  displayToggle = 0;
@@ -382,86 +382,90 @@ line level    source
  354   3              } else if (flowMode == FLOW_MODE_TOTAL) {
  355   3                  UpdateTotalFlowDisplay();
  356   3              }
-C51 COMPILER V9.54   FLOWMETER                                                             05/28/2025 12:47:22 PAGE 7   
+C51 COMPILER V9.54   FLOWMETER                                                             05/28/2025 16:26:36 PAGE 7   
 
  357   2          }
  358   1      }
  359          
- 360          // 更新当前流量显示
+ 360          // 更新当前流量显示 - 扩展到8位数码管，支持7位流量值
  361          void UpdateCurrentFlowDisplay(void) {
- 362   1          BYTE val1, val2, val3, val4, val5, val6;
+ 362   1          BYTE val1, val2, val3, val4, val5, val6, val7, val8;
  363   1          
- 364   1          // 提取当前流量各位数字（毫升/秒）
- 365   1          WORD flow_display = currentFlow;  // currentFlow已经是毫升/秒的值
+ 364   1          // 提取当前流量各位数字（毫升/秒）- 支持最大9999999毫升/秒
+ 365   1          unsigned long flow_display = (unsigned long)currentFlow;
  366   1          
- 367   1          // 构造显示数字 - 格式：XXXX毫升/秒
- 368   1          val1 = 10;  // 10，表示当前流量显示模式
- 369   1          val2 = (flow_display / 10000) % 10; // 万位（毫升/秒）
- 370   1          val3 = (flow_display / 1000) % 10;  // 千位（毫升/秒）
- 371   1          val4 = (flow_display / 100) % 10;   // 百位（毫升/秒）
- 372   1          val5 = (flow_display / 10) % 10;    // 十位（毫升/秒）
- 373   1          val6 = flow_display % 10;           // 个位（毫升/秒）
- 374   1          
- 375   1          // 直接填充显示缓冲区 - 显示格式如：250毫升/秒显示为"25010"
- 376   1          FillCustomDispBuf(val6, val5, val4, val3, val2, val1);
- 377   1      }
- 378          
- 379          // 更新累计流量显示
- 380          void UpdateTotalFlowDisplay(void) {
- 381   1          BYTE val1, val2, val3, val4, val5, val6;
- 382   1          
- 383   1          // 提取总流量各位数字（毫升）
- 384   1          unsigned long flow_ml = totalFlow;  // 直接使用毫升值
- 385   1          
- 386   1          // 构造显示数字
- 387   1          val1 = 11;  // 11,累计流量显示模式
- 388   1          val2 = (BYTE)((flow_ml / 10000) % 10); // 万位（毫升）
- 389   1          val3 = (BYTE)((flow_ml / 1000) % 10);  // 千位（毫升）
- 390   1          val4 = (BYTE)((flow_ml / 100) % 10);   // 百位（毫升）
- 391   1          val5 = (BYTE)((flow_ml / 10) % 10);    // 十位（毫升）
- 392   1          val6 = (BYTE)(flow_ml % 10);           // 个位（毫升）
- 393   1          
- 394   1          // 直接填充显示缓冲区
- 395   1          FillCustomDispBuf(val6, val5, val4, val3, val2, val1);
- 396   1      }
- 397          
- 398          // 设置流量显示模式
- 399          void FlowMeter_SetMode(BYTE mode) {
- 400   1          flowMode = mode;
- 401   1          
- 402   1          // 仅设置更新标志，实际显示在主循环中执行
- 403   1          needUpdateDisplay = 1;
- 404   1      }
- 405          
- 406          // 获取当前流量显示模式
- 407          BYTE FlowMeter_GetMode(void) {
- 408   1          return flowMode;
- 409   1      }
- 410          
- 411          // 获取累计流量
- 412          unsigned long FlowMeter_GetTotalFlow(void) {
- 413   1          return totalFlow;
- 414   1      }
- 415          
- 416          // 外部中断0服务函数 - 用于脉冲计数
- 417          void INT0_ISR() interrupt 0 {
- 418   1          // 简单计数，每次下降沿中断增加计数
-C51 COMPILER V9.54   FLOWMETER                                                             05/28/2025 12:47:22 PAGE 8   
+ 367   1          // 构造8位显示数字 - 格式：XXXXXXX10（前7位流量值，最后1位模式标识10）
+ 368   1          val1 = 10;  // 模式标识保持不变 - "10"表示当前流量
+ 369   1          val2 = (BYTE)(flow_display % 10);                    // 个位（毫升/秒）
+ 370   1          val3 = (BYTE)((flow_display / 10) % 10);             // 十位（毫升/秒）
+ 371   1          val4 = (BYTE)((flow_display / 100) % 10);            // 百位（毫升/秒）
+ 372   1          val5 = (BYTE)((flow_display / 1000) % 10);           // 千位（毫升/秒）
+ 373   1          val6 = (BYTE)((flow_display / 10000) % 10);          // 万位（毫升/秒）
+ 374   1          val7 = (BYTE)((flow_display / 100000) % 10);         // 十万位（毫升/秒）
+ 375   1          val8 = (BYTE)((flow_display / 1000000) % 10);        // 百万位（毫升/秒）
+ 376   1          
+ 377   1          // 使用8位显示缓冲区
+ 378   1          FillCustomDispBuf8(val1, val2, val3, val4, val5, val6, val7, val8);
+ 379   1      }
+ 380          
+ 381          // 更新累计流量显示 - 扩展到8位数码管，支持7位流量值
+ 382          void UpdateTotalFlowDisplay(void) {
+ 383   1          BYTE val1, val2, val3, val4, val5, val6, val7, val8;
+ 384   1          
+ 385   1          // 提取总流量各位数字（毫升）- 支持最大9999999毫升累计
+ 386   1          unsigned long flow_ml = totalFlow;
+ 387   1          
+ 388   1          // 构造8位显示数字 - 格式：XXXXXXX11（前7位流量值，最后1位模式标识11）
+ 389   1          val1 = 11;  // 模式标识保持不变 - "11"表示累计流量
+ 390   1          val2 = (BYTE)(flow_ml % 10);                 // 个位（毫升）
+ 391   1          val3 = (BYTE)((flow_ml / 10) % 10);          // 十位（毫升）
+ 392   1          val4 = (BYTE)((flow_ml / 100) % 10);         // 百位（毫升）
+ 393   1          val5 = (BYTE)((flow_ml / 1000) % 10);        // 千位（毫升）
+ 394   1          val6 = (BYTE)((flow_ml / 10000) % 10);       // 万位（毫升）
+ 395   1          val7 = (BYTE)((flow_ml / 100000) % 10);      // 十万位（毫升）
+ 396   1          val8 = (BYTE)((flow_ml / 1000000) % 10);     // 百万位（毫升）
+ 397   1          
+ 398   1          // 使用8位显示缓冲区
+ 399   1          FillCustomDispBuf8(val1, val2, val3, val4, val5, val6, val7, val8);
+ 400   1      }
+ 401          
+ 402          // 设置流量显示模式
+ 403          void FlowMeter_SetMode(BYTE mode) {
+ 404   1          flowMode = mode;
+ 405   1          
+ 406   1          // 仅设置更新标志，实际显示在主循环中执行
+ 407   1          needUpdateDisplay = 1;
+ 408   1      }
+ 409          
+ 410          // 获取当前流量显示模式
+ 411          BYTE FlowMeter_GetMode(void) {
+ 412   1          return flowMode;
+ 413   1      }
+ 414          
+ 415          // 获取累计流量
+ 416          unsigned long FlowMeter_GetTotalFlow(void) {
+ 417   1          return totalFlow;
+ 418   1      }
+C51 COMPILER V9.54   FLOWMETER                                                             05/28/2025 16:26:36 PAGE 8   
 
- 419   1          // 如果这里被调用太频繁，可能是：
- 420   1          // 1. T0频率过高
- 421   1          // 2. 继电器触点抖动
- 422   1          // 3. 信号噪声
- 423   1          pulseCount++;  // 每次中断增加脉冲计数
- 424   1      }
+ 419          
+ 420          // 外部中断0服务函数 - 用于脉冲计数
+ 421          void INT0_ISR() interrupt 0 {
+ 422   1          // 简单计数，每次下降沿中断增加计数
+ 423   1          // 如果这里被调用太频繁，可能是：
+ 424   1          // 1. T0频率过高
+ 425   1          // 2. 继电器触点抖动
+ 426   1          // 3. 信号噪声
+ 427   1          pulseCount++;  // 每次中断增加脉冲计数
+ 428   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    962    ----
+   CODE SIZE        =   1174    ----
    CONSTANT SIZE    =     21    ----
    XDATA SIZE       =      4    ----
    PDATA SIZE       =   ----    ----
-   DATA SIZE        =      9      48
+   DATA SIZE        =     11      56
    IDATA SIZE       =   ----    ----
    BIT SIZE         =      3    ----
 END OF MODULE INFORMATION.

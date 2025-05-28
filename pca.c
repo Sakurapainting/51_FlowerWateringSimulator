@@ -52,7 +52,7 @@ sbit OE   = DISP_PORT^3;  // 输出使能(低有效)
 #define CURRENTFLOW_MODE 0x39 // 当前流量模式
 #define TOTALFLOW_MODE 0X71   // 累计流量模式
 
-/* 共阴极数码管段码定义 - 添加横线显示 */
+/* 共阴极数码管段码定义 - 添加字母显示 */
 static code const unsigned char LED[] = {
     0x3F,  // 0
     0x06,  // 1
@@ -65,7 +65,11 @@ static code const unsigned char LED[] = {
     0x7F,  // 8
     0x6F,  // 9
     CURRENTFLOW_MODE,  // 10 - 当前流量模式
-    TOTALFLOW_MODE     // 11 - 累计流量模式
+    TOTALFLOW_MODE,    // 11 - 累计流量模式
+    0x5F,  // 12 - 字母"d"
+    0x77,  // 13 - 字母"A"
+    0x7C,  // 14 - 字母"B"
+    0x58   // 15 - 字母"c"（小写）
 };
 
 // 显示缓冲区
@@ -127,7 +131,22 @@ void FillDateBuf(WORD year, BYTE month, BYTE day) {
     dispbuff[7] = LED[(year / 1000) % 10];  // 年千位
 }
 
-// 自定义显示缓冲区填充函数
+// 新增：8位自定义显示缓冲区填充函数
+void FillCustomDispBuf8(BYTE val1, BYTE val2, BYTE val3, BYTE val4, BYTE val5, BYTE val6, BYTE val7, BYTE val8) {
+    Resetdispbuff();
+    
+    // 填充全部8个数字位
+    dispbuff[0] = LED[val1];
+    dispbuff[1] = LED[val2];
+    dispbuff[2] = LED[val3];
+    dispbuff[3] = LED[val4];
+    dispbuff[4] = LED[val5];
+    dispbuff[5] = LED[val6];
+    dispbuff[6] = LED[val7];
+    dispbuff[7] = LED[val8];
+}
+
+// 保持原有的6位函数用于兼容
 void FillCustomDispBuf(BYTE val1, BYTE val2, BYTE val3, BYTE val4, BYTE val5, BYTE val6) {
     Resetdispbuff();
     

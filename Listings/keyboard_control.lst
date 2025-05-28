@@ -1,4 +1,4 @@
-C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/28/2025 12:47:23 PAGE 1   
+C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/28/2025 16:35:39 PAGE 1   
 
 
 C51 COMPILER V9.54, COMPILATION OF MODULE KEYBOARD_CONTROL
@@ -62,7 +62,7 @@ line level    source
   52   1          timed_watering.current_record.start_hour = PCA_GetHour();
   53   1          timed_watering.current_record.start_min = PCA_GetMin();
   54   1          timed_watering.current_record.start_sec = PCA_GetSec();
-C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/28/2025 12:47:23 PAGE 2   
+C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/28/2025 16:35:39 PAGE 2   
 
   55   1          
   56   1          // 记录开始时的累计流量
@@ -126,7 +126,7 @@ line level    source
  114   1          manual_watering_record.end_sec = PCA_GetSec();
  115   1          
  116   1          // 计算浇水量和累计流量
-C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/28/2025 12:47:23 PAGE 3   
+C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/28/2025 16:35:39 PAGE 3   
 
  117   1          current_total_flow = FlowMeter_GetTotalFlow();
  118   1          manual_watering_record.water_volume = current_total_flow - manual_watering_record.total_flow;
@@ -190,7 +190,7 @@ line level    source
  176           * ========================================
  177           * 定时定量浇花功能详细使用说明
  178           * ========================================
-C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/28/2025 12:47:23 PAGE 4   
+C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/28/2025 16:35:39 PAGE 4   
 
  179           * 
  180           * 功能概述：
@@ -254,7 +254,7 @@ line level    source
  238           * 3. 停止阶段：
  239           *    - 当累计流量达到设定毫升数时
  240           *    - 继电器自动断开，停止浇水
-C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/28/2025 12:47:23 PAGE 5   
+C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/28/2025 16:35:39 PAGE 5   
 
  241           *    - 标记今天已完成浇水，明天同一时间再次触发
  242           * 
@@ -318,7 +318,7 @@ line level    source
  300   4                      auto_display_mode = DISPLAY_MODE_CLOCK;
  301   4                      FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
  302   4                      display_update_flag = 1;
-C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/28/2025 12:47:23 PAGE 6   
+C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/28/2025 16:35:39 PAGE 6   
 
  303   4                  } else {
  304   4                      TimedWatering_Start();
@@ -382,7 +382,7 @@ line level    source
  359   4                          break;
  360   4                  }
  361   3                  auto_display_mode = DISPLAY_MODE_AUTO;
-C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/28/2025 12:47:23 PAGE 7   
+C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/28/2025 16:35:39 PAGE 7   
 
  362   3                  display_update_flag = 1;
  363   3              }
@@ -446,7 +446,7 @@ line level    source
  421   3                  // 保存累计流量到24C02
  422   3                  AT24C02_WriteTotalFlow(current_total_flow);
  423   3                  
-C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/28/2025 12:47:23 PAGE 8   
+C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/28/2025 16:35:39 PAGE 8   
 
  424   3                  // 记录自动浇水结束
  425   3                  EndAutoWateringRecord();
@@ -494,92 +494,97 @@ line level    source
  467   2          }
  468   1      }
  469          
- 470          // 显示自动浇水参数
+ 470          // 显示自动浇水参数 - 扩展到8位数码管
  471          void DisplayAutoWateringParams(void) {
- 472   1          BYTE val1, val2, val3, val4, val5, val6;
+ 472   1          BYTE val1, val2, val3, val4, val5, val6, val7, val8;
  473   1          
  474   1          if(timed_watering.is_watering) {
- 475   2              // 显示剩余毫升数
- 476   2              val1 = timed_watering.watering_volume_left % 10;
- 477   2              val2 = (timed_watering.watering_volume_left / 10) % 10;
- 478   2              val3 = (timed_watering.watering_volume_left / 100) % 10;
- 479   2              val4 = (timed_watering.watering_volume_left / 1000) % 10;
- 480   2              val5 = 0;  // 显示0
- 481   2              val6 = 5;  // 显示5（剩余毫升标识）
- 482   2          } else {
- 483   2              // 显示当前参数
- 484   2              switch(param_mode) {
- 485   3                  case PARAM_MODE_HOUR:
-C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/28/2025 12:47:23 PAGE 9   
+ 475   2              // 显示剩余毫升数 - 格式：XXXXXXXd（前7位剩余量，最后1位标识d）
+ 476   2              unsigned int remaining = timed_watering.watering_volume_left;
+ 477   2              val1 = 12;  // 模式标识改为 "d" (使用LED数组索引12)
+ 478   2              val2 = remaining % 10;
+ 479   2              val3 = (remaining / 10) % 10;
+ 480   2              val4 = (remaining / 100) % 10;
+ 481   2              val5 = (remaining / 1000) % 10;
+ 482   2              val6 = (remaining / 10000) % 10;
+ 483   2              val7 = 0;  // 十万位通常为0
+ 484   2              val8 = 0;  // 百万位通常为0
+ 485   2          } else {
+C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/28/2025 16:35:39 PAGE 9   
 
- 486   3                      // 显示开始小时 "小时数03"
- 487   3                      val1 = timed_watering.start_hour % 10;
- 488   3                      val2 = (timed_watering.start_hour / 10) % 10;
- 489   3                      val3 = 0;
- 490   3                      val4 = 0;
- 491   3                      val5 = 0;
- 492   3                      val6 = 3;  // 显示3（小时标识）
- 493   3                      break;
- 494   3                      
- 495   3                  case PARAM_MODE_MIN:
- 496   3                      // 显示开始分钟 "分钟数02"
- 497   3                      val1 = timed_watering.start_min % 10;
- 498   3                      val2 = (timed_watering.start_min / 10) % 10;
- 499   3                      val3 = 0;
- 500   3                      val4 = 0;
- 501   3                      val5 = 0;
- 502   3                      val6 = 2;  // 显示2（分钟标识）
- 503   3                      break;
- 504   3                      
- 505   3                  case PARAM_MODE_SEC:
- 506   3                      // 显示开始秒 "秒数01"
- 507   3                      val1 = timed_watering.start_sec % 10;
- 508   3                      val2 = (timed_watering.start_sec / 10) % 10;
- 509   3                      val3 = 0;
- 510   3                      val4 = 0;
- 511   3                      val5 = 0;
- 512   3                      val6 = 1;  // 显示1（秒标识）
- 513   3                      break;
- 514   3                      
- 515   3                  case PARAM_MODE_VOLUME:
- 516   3                      // 显示浇水毫升数 "毫升数05"
- 517   3                      val1 = timed_watering.water_volume_ml % 10;
- 518   3                      val2 = (timed_watering.water_volume_ml / 10) % 10;
- 519   3                      val3 = (timed_watering.water_volume_ml / 100) % 10;
- 520   3                      val4 = (timed_watering.water_volume_ml / 1000) % 10;
- 521   3                      val5 = 0;
- 522   3                      val6 = 5;  // 显示5（毫升标识）
- 523   3                      break;
- 524   3                      
- 525   3                  default:
- 526   3                      val1 = val2 = val3 = val4 = val5 = val6 = 0;
- 527   3                      break;
- 528   3              }
- 529   2          }
- 530   1          
- 531   1          FillCustomDispBuf(val1, val2, val3, val4, val5, val6);
- 532   1      }
- 533          
- 534          // 检查并更新自动显示
- 535          void CheckAndUpdateAutoDisplay(void) {
- 536   1          if(display_update_flag) {
- 537   2              display_update_flag = 0;  // 清除标志
- 538   2              
- 539   2              if(auto_display_mode == DISPLAY_MODE_AUTO) {
- 540   3                  DisplayAutoWateringParams();
- 541   3              }
- 542   2          }
- 543   1      }
+ 486   2              // 显示当前参数设置
+ 487   2              switch(param_mode) {
+ 488   3                  case PARAM_MODE_HOUR:
+ 489   3                      // 显示开始小时 - 格式：000000Hc（前6位填零，H为小时值，最后1位标�
+             -��c）
+ 490   3                      val1 = 15;  // 模式标识改为 "c" (使用LED数组索引15)
+ 491   3                      val2 = timed_watering.start_hour % 10;           // 小时个位
+ 492   3                      val3 = (timed_watering.start_hour / 10) % 10;    // 小时十位
+ 493   3                      val4 = val5 = val6 = val7 = val8 = 0;           // 其余位填零
+ 494   3                      break;
+ 495   3                      
+ 496   3                  case PARAM_MODE_MIN:
+ 497   3                      // 显示开始分钟 - 格式：000000MB（前6位填零，M为分钟值，最后1位标�
+             -��B）
+ 498   3                      val1 = 14;  // 模式标识改为 "B" (使用LED数组索引14)
+ 499   3                      val2 = timed_watering.start_min % 10;           // 分钟个位
+ 500   3                      val3 = (timed_watering.start_min / 10) % 10;    // 分钟十位
+ 501   3                      val4 = val5 = val6 = val7 = val8 = 0;          // 其余位填零
+ 502   3                      break;
+ 503   3                      
+ 504   3                  case PARAM_MODE_SEC:
+ 505   3                      // 显示开始秒 - 格式：000000SA（前6位填零，S为秒值，最后1位标识A）
+ 506   3                      val1 = 13;  // 模式标识改为 "A" (使用LED数组索引13)
+ 507   3                      val2 = timed_watering.start_sec % 10;           // 秒个位
+ 508   3                      val3 = (timed_watering.start_sec / 10) % 10;    // 秒十位
+ 509   3                      val4 = val5 = val6 = val7 = val8 = 0;          // 其余位填零
+ 510   3                      break;
+ 511   3                      
+ 512   3                  case PARAM_MODE_VOLUME:
+ 513   3                      {  // 添加大括号创建新作用域
+ 514   4                          // 显示浇水毫升数 - 格式：XXXXXXXd（前7位毫升数，最后1位标识d）
+ 515   4                          unsigned int volume = timed_watering.water_volume_ml;
+ 516   4                          val1 = 12;  // 模式标识改为 "d" (使用LED数组索引12)
+ 517   4                          val2 = volume % 10;
+ 518   4                          val3 = (volume / 10) % 10;
+ 519   4                          val4 = (volume / 100) % 10;
+ 520   4                          val5 = (volume / 1000) % 10;
+ 521   4                          val6 = (volume / 10000) % 10;
+ 522   4                          val7 = 0;  // 十万位通常为0
+ 523   4                          val8 = 0;  // 百万位通常为0
+ 524   4                      }  // 结束大括号
+ 525   3                      break;
+ 526   3                      
+ 527   3                  default:
+ 528   3                      val1 = val2 = val3 = val4 = val5 = val6 = val7 = val8 = 0;
+ 529   3                      break;
+ 530   3              }
+ 531   2          }
+ 532   1          
+ 533   1          // 使用8位显示缓冲区
+ 534   1          FillCustomDispBuf8(val1, val2, val3, val4, val5, val6, val7, val8);
+ 535   1      }
+ 536          
+ 537          // 检查并更新自动显示
+ 538          void CheckAndUpdateAutoDisplay(void) {
+ 539   1          if(display_update_flag) {
+ 540   2              display_update_flag = 0;  // 清除标志
+ 541   2              
+ 542   2              if(auto_display_mode == DISPLAY_MODE_AUTO) {
+ 543   3                  DisplayAutoWateringParams();
+ 544   3              }
+ 545   2          }
+C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/28/2025 16:35:39 PAGE 10  
+
+ 546   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =   1681    ----
-C51 COMPILER V9.54   KEYBOARD_CONTROL                                                      05/28/2025 12:47:23 PAGE 10  
-
+   CODE SIZE        =   1618    ----
    CONSTANT SIZE    =   ----    ----
    XDATA SIZE       =     65    ----
    PDATA SIZE       =   ----    ----
-   DATA SIZE        =      2      24
+   DATA SIZE        =      2      28
    IDATA SIZE       =   ----    ----
    BIT SIZE         =      1    ----
 END OF MODULE INFORMATION.

@@ -467,68 +467,71 @@ void TimedWatering_Update(void) {
     }
 }
 
-// 显示自动浇水参数
+// 显示自动浇水参数 - 扩展到8位数码管
 void DisplayAutoWateringParams(void) {
-    BYTE val1, val2, val3, val4, val5, val6;
+    BYTE val1, val2, val3, val4, val5, val6, val7, val8;
     
     if(timed_watering.is_watering) {
-        // 显示剩余毫升数
-        val1 = timed_watering.watering_volume_left % 10;
-        val2 = (timed_watering.watering_volume_left / 10) % 10;
-        val3 = (timed_watering.watering_volume_left / 100) % 10;
-        val4 = (timed_watering.watering_volume_left / 1000) % 10;
-        val5 = 0;  // 显示0
-        val6 = 5;  // 显示5（剩余毫升标识）
+        // 显示剩余毫升数 - 格式：XXXXXXXd（前7位剩余量，最后1位标识d）
+        unsigned int remaining = timed_watering.watering_volume_left;
+        val1 = 12;  // 模式标识改为 "d" (使用LED数组索引12)
+        val2 = remaining % 10;
+        val3 = (remaining / 10) % 10;
+        val4 = (remaining / 100) % 10;
+        val5 = (remaining / 1000) % 10;
+        val6 = (remaining / 10000) % 10;
+        val7 = 0;  // 十万位通常为0
+        val8 = 0;  // 百万位通常为0
     } else {
-        // 显示当前参数
+        // 显示当前参数设置
         switch(param_mode) {
             case PARAM_MODE_HOUR:
-                // 显示开始小时 "小时数03"
-                val1 = timed_watering.start_hour % 10;
-                val2 = (timed_watering.start_hour / 10) % 10;
-                val3 = 0;
-                val4 = 0;
-                val5 = 0;
-                val6 = 3;  // 显示3（小时标识）
+                // 显示开始小时 - 格式：000000Hc（前6位填零，H为小时值，最后1位标识c）
+                val1 = 15;  // 模式标识改为 "c" (使用LED数组索引15)
+                val2 = timed_watering.start_hour % 10;           // 小时个位
+                val3 = (timed_watering.start_hour / 10) % 10;    // 小时十位
+                val4 = val5 = val6 = val7 = val8 = 0;           // 其余位填零
                 break;
                 
             case PARAM_MODE_MIN:
-                // 显示开始分钟 "分钟数02"
-                val1 = timed_watering.start_min % 10;
-                val2 = (timed_watering.start_min / 10) % 10;
-                val3 = 0;
-                val4 = 0;
-                val5 = 0;
-                val6 = 2;  // 显示2（分钟标识）
+                // 显示开始分钟 - 格式：000000MB（前6位填零，M为分钟值，最后1位标识B）
+                val1 = 14;  // 模式标识改为 "B" (使用LED数组索引14)
+                val2 = timed_watering.start_min % 10;           // 分钟个位
+                val3 = (timed_watering.start_min / 10) % 10;    // 分钟十位
+                val4 = val5 = val6 = val7 = val8 = 0;          // 其余位填零
                 break;
                 
             case PARAM_MODE_SEC:
-                // 显示开始秒 "秒数01"
-                val1 = timed_watering.start_sec % 10;
-                val2 = (timed_watering.start_sec / 10) % 10;
-                val3 = 0;
-                val4 = 0;
-                val5 = 0;
-                val6 = 1;  // 显示1（秒标识）
+                // 显示开始秒 - 格式：000000SA（前6位填零，S为秒值，最后1位标识A）
+                val1 = 13;  // 模式标识改为 "A" (使用LED数组索引13)
+                val2 = timed_watering.start_sec % 10;           // 秒个位
+                val3 = (timed_watering.start_sec / 10) % 10;    // 秒十位
+                val4 = val5 = val6 = val7 = val8 = 0;          // 其余位填零
                 break;
                 
             case PARAM_MODE_VOLUME:
-                // 显示浇水毫升数 "毫升数05"
-                val1 = timed_watering.water_volume_ml % 10;
-                val2 = (timed_watering.water_volume_ml / 10) % 10;
-                val3 = (timed_watering.water_volume_ml / 100) % 10;
-                val4 = (timed_watering.water_volume_ml / 1000) % 10;
-                val5 = 0;
-                val6 = 5;  // 显示5（毫升标识）
+                {  // 添加大括号创建新作用域
+                    // 显示浇水毫升数 - 格式：XXXXXXXd（前7位毫升数，最后1位标识d）
+                    unsigned int volume = timed_watering.water_volume_ml;
+                    val1 = 12;  // 模式标识改为 "d" (使用LED数组索引12)
+                    val2 = volume % 10;
+                    val3 = (volume / 10) % 10;
+                    val4 = (volume / 100) % 10;
+                    val5 = (volume / 1000) % 10;
+                    val6 = (volume / 10000) % 10;
+                    val7 = 0;  // 十万位通常为0
+                    val8 = 0;  // 百万位通常为0
+                }  // 结束大括号
                 break;
                 
             default:
-                val1 = val2 = val3 = val4 = val5 = val6 = 0;
+                val1 = val2 = val3 = val4 = val5 = val6 = val7 = val8 = 0;
                 break;
         }
     }
     
-    FillCustomDispBuf(val1, val2, val3, val4, val5, val6);
+    // 使用8位显示缓冲区
+    FillCustomDispBuf8(val1, val2, val3, val4, val5, val6, val7, val8);
 }
 
 // 检查并更新自动显示

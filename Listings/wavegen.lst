@@ -1,4 +1,4 @@
-C51 COMPILER V9.54   WAVEGEN                                                               05/28/2025 12:47:22 PAGE 1   
+C51 COMPILER V9.54   WAVEGEN                                                               05/28/2025 16:26:36 PAGE 1   
 
 
 C51 COMPILER V9.54, COMPILATION OF MODULE WAVEGEN
@@ -62,7 +62,7 @@ line level    source
   52   1          TL0 = T0_INIT_VAL & 0xFF;
   53   1          
   54   1          // 软件2分频
-C51 COMPILER V9.54   WAVEGEN                                                               05/28/2025 12:47:22 PAGE 2   
+C51 COMPILER V9.54   WAVEGEN                                                               05/28/2025 16:26:36 PAGE 2   
 
   55   1          divider = !divider;
   56   1          if(!divider) {
