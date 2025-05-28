@@ -148,12 +148,6 @@ void FlowMeter_Reset(void) {
     // 如果需要重置累计流量，应该提供单独的函数
 }
 
-// 新增：重置累计流量（同时清除24C02中的数据）
-void FlowMeter_ResetTotal(void) {
-    totalFlow = 0;
-    AT24C02_WriteTotalFlow(0);
-}
-
 /*
  * ========================================
  * 流量计显示功能详细说明
@@ -349,34 +343,6 @@ void SaveTotalFlowToEEPROM(void) {
     #endif
 }
 
-// 从24C02读取累计流量
-unsigned long LoadTotalFlowFromEEPROM(void) {
-    unsigned long loadedFlow = AT24C02_ReadTotalFlow();
-    
-    // 数据有效性检查（防止读取到无效数据）
-    if (loadedFlow > 999999) {  // 如果累计流量超过999升，认为数据异常
-        loadedFlow = 0;         // 重置为0
-        AT24C02_WriteTotalFlow(0); // 清零24C02中的数据
-    }
-    
-    return loadedFlow;
-}
-
-// 强制保存当前累计流量（外部调用）
-void FlowMeter_ForceSave(void) {
-    SaveTotalFlowToEEPROM();
-}
-
-// 获取上次保存时间点的累计流量
-unsigned long FlowMeter_GetLastSavedFlow(void) {
-    return lastSavedFlow;
-}
-
-// 检查累计流量是否有未保存的变化
-bit FlowMeter_HasUnsavedChanges(void) {
-    return totalFlowChanged;
-}
-
 // 检查并更新显示（在主循环中调用，不在中断中）
 void FlowMeter_UpdateDisplay(void) {
     if (needUpdateDisplay) {
@@ -429,16 +395,6 @@ void UpdateTotalFlowDisplay(void) {
     FillCustomDispBuf(val6, val5, val4, val3, val2, val1);
 }
 
-// 显示当前流量（这个函数仅供外部调用，不在内部调用链中使用）
-void FlowMeter_DisplayCurrent(void) {
-    UpdateCurrentFlowDisplay();
-}
-
-// 显示累计流量（这个函数仅供外部调用，不在内部调用链中使用）
-void FlowMeter_DisplayTotal(void) {
-    UpdateTotalFlowDisplay();
-}
-
 // 设置流量显示模式
 void FlowMeter_SetMode(BYTE mode) {
     flowMode = mode;
@@ -450,12 +406,6 @@ void FlowMeter_SetMode(BYTE mode) {
 // 获取当前流量显示模式
 BYTE FlowMeter_GetMode(void) {
     return flowMode;
-}
-
-// 获取当前流量
-WORD FlowMeter_GetCurrentFlow(void) {
-    // 返回实际的毫升/秒值，用于定时浇水计算
-    return currentFlow;  // 直接返回毫升/秒值
 }
 
 // 获取累计流量

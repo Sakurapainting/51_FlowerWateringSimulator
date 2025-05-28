@@ -42,17 +42,6 @@ void WaveGen_Start(void) {
     }
 }
 
-// 停止方波发生器
-void WaveGen_Stop(void) {
-    TR0 = 0;               // 停止T0
-    WAVE_OUT = 0;          // 输出低电平
-    isRunning = 0;
-}
-
-// 获取方波发生器状态
-BYTE WaveGen_GetState(void) {
-    return isRunning;
-}
 
 // T0中断服务函数 - 最简化版本
 void T0_ISR() interrupt 1 {

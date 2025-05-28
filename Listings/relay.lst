@@ -1,4 +1,4 @@
-C51 COMPILER V9.54   RELAY                                                                 05/27/2025 22:17:17 PAGE 1   
+C51 COMPILER V9.54   RELAY                                                                 05/28/2025 12:17:16 PAGE 1   
 
 
 C51 COMPILER V9.54, COMPILATION OF MODULE RELAY
@@ -37,15 +37,10 @@ line level    source
   25          void Relay_Off(void) {
   26   1          RELAY_CTRL = 1;      // 高电平，关闭继电器（断开，水阀关闭）
   27   1      }
-  28          
-  29          BYTE Relay_GetState(void) {
-  30   1          // 低电平为开，返回0表示开，1表示关
-  31   1          return (RELAY_CTRL == 0) ? 1 : 0;
-  32   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =     23    ----
+   CODE SIZE        =     13    ----
    CONSTANT SIZE    =   ----    ----
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----

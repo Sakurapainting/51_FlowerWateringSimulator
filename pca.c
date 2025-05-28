@@ -123,21 +123,6 @@ void FillCustomDispBuf(BYTE val1, BYTE val2, BYTE val3, BYTE val4, BYTE val5, BY
     dispbuff[7] = SEG_OFF;
 }
 
-// 新增：8位自定义显示缓冲区填充函数
-void FillCustomDispBuf8(BYTE val1, BYTE val2, BYTE val3, BYTE val4, BYTE val5, BYTE val6, BYTE val7, BYTE val8) {
-    Resetdispbuff();
-    
-    // 填充8个数字位
-    dispbuff[0] = LED[val1];  // 最右位
-    dispbuff[1] = LED[val2];
-    dispbuff[2] = LED[val3];
-    dispbuff[3] = LED[val4];
-    dispbuff[4] = LED[val5];
-    dispbuff[5] = LED[val6];
-    dispbuff[6] = LED[val7];
-    dispbuff[7] = LED[val8];  // 最左位
-}
-
 void disp(void) {
     unsigned char i;
     static unsigned char pos = 0;  // 当前扫描的位置
@@ -294,12 +279,6 @@ void PCA_SetDate(WORD year, BYTE month, BYTE day) {
     }
 }
 
-// 新增：设置完整日期时间
-void PCA_SetDateTime(WORD year, BYTE month, BYTE day, BYTE hour, BYTE min, BYTE sec) {
-    PCA_SetDate(year, month, day);
-    PCA_SetTime(hour, min, sec);
-}
-
 // 新增：获取时间相关函数
 WORD PCA_GetYear(void) { return SysPara1.year; }
 BYTE PCA_GetMonth(void) { return SysPara1.month; }
@@ -318,10 +297,6 @@ void PCA_SetDisplayMode(BYTE mode) {
             FillDateBuf(SysPara1.year, SysPara1.month, SysPara1.day);
         }
     }
-}
-
-BYTE PCA_GetDisplayMode(void) {
-    return datetime_display_mode;
 }
 
 void PCA_ToggleDisplayMode(void) {
@@ -594,18 +569,3 @@ void PCA_Init(void)
 void PCA_ResetAutoToggle(void) {
     autoToggleCounter = 0;
 }
-
-// 新增：手动切换显示模式（同时重置自动轮换）
-void PCA_ManualToggleDisplay(void) {
-    datetime_display_mode = (datetime_display_mode == DISPLAY_TIME_MODE) ? 
-                           DISPLAY_DATE_MODE : DISPLAY_TIME_MODE;
-    autoToggleCounter = 0;  // 重置计数器
-    
-    // 立即更新显示
-    if(datetime_display_mode == DISPLAY_TIME_MODE) {
-        FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
-    } else {
-        FillDateBuf(SysPara1.year, SysPara1.month, SysPara1.day);
-    }
-}
-

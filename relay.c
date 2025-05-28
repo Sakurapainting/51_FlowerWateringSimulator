@@ -25,8 +25,3 @@ void Relay_On(void) {
 void Relay_Off(void) {
     RELAY_CTRL = 1;      // 高电平，关闭继电器（断开，水阀关闭）
 }
-
-BYTE Relay_GetState(void) {
-    // 低电平为开，返回0表示开，1表示关
-    return (RELAY_CTRL == 0) ? 1 : 0;
-}

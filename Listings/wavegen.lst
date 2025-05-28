@@ -1,4 +1,4 @@
-C51 COMPILER V9.54   WAVEGEN                                                               05/27/2025 22:17:17 PAGE 1   
+C51 COMPILER V9.54   WAVEGEN                                                               05/28/2025 12:18:05 PAGE 1   
 
 
 C51 COMPILER V9.54, COMPILATION OF MODULE WAVEGEN
@@ -52,38 +52,27 @@ line level    source
   42   2          }
   43   1      }
   44          
-  45          // 停止方波发生器
-  46          void WaveGen_Stop(void) {
-  47   1          TR0 = 0;               // 停止T0
-  48   1          WAVE_OUT = 0;          // 输出低电平
-  49   1          isRunning = 0;
-  50   1      }
-  51          
-  52          // 获取方波发生器状态
-  53          BYTE WaveGen_GetState(void) {
-  54   1          return isRunning;
-C51 COMPILER V9.54   WAVEGEN                                                               05/27/2025 22:17:17 PAGE 2   
+  45          
+  46          // T0中断服务函数 - 最简化版本
+  47          void T0_ISR() interrupt 1 {
+  48   1          static bit divider = 0;
+  49   1          
+  50   1          // 重新加载计数初值
+  51   1          TH0 = T0_INIT_VAL >> 8;
+  52   1          TL0 = T0_INIT_VAL & 0xFF;
+  53   1          
+  54   1          // 软件2分频
+C51 COMPILER V9.54   WAVEGEN                                                               05/28/2025 12:18:05 PAGE 2   
 
-  55   1      }
-  56          
-  57          // T0中断服务函数 - 最简化版本
-  58          void T0_ISR() interrupt 1 {
-  59   1          static bit divider = 0;
-  60   1          
-  61   1          // 重新加载计数初值
-  62   1          TH0 = T0_INIT_VAL >> 8;
-  63   1          TL0 = T0_INIT_VAL & 0xFF;
-  64   1          
-  65   1          // 软件2分频
-  66   1          divider = !divider;
-  67   1          if(!divider) {
-  68   2              WAVE_OUT = !WAVE_OUT;
-  69   2          }
-  70   1      }
+  55   1          divider = !divider;
+  56   1          if(!divider) {
+  57   2              WAVE_OUT = !WAVE_OUT;
+  58   2          }
+  59   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =     62    ----
+   CODE SIZE        =     49    ----
    CONSTANT SIZE    =   ----    ----
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----

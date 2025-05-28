@@ -1,4 +1,4 @@
-C51 COMPILER V9.54   PCA                                                                   05/27/2025 22:18:17 PAGE 1   
+C51 COMPILER V9.54   PCA                                                                   05/28/2025 12:16:13 PAGE 1   
 
 
 C51 COMPILER V9.54, COMPILATION OF MODULE PCA
@@ -62,7 +62,7 @@ line level    source
              -E,TOTALFLOW_MODE};
   52          
   53          // 显示缓冲区
-C51 COMPILER V9.54   PCA                                                                   05/27/2025 22:18:17 PAGE 2   
+C51 COMPILER V9.54   PCA                                                                   05/28/2025 12:16:13 PAGE 2   
 
   54          unsigned char xdata dispbuff[8] = {SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF,SEG_OFF};
   55          
@@ -126,7 +126,7 @@ line level    source
  113   1          // 填充6个数字位（右侧6位）
  114   1          dispbuff[0] = LED[val1];
  115   1          dispbuff[1] = LED[val2];
-C51 COMPILER V9.54   PCA                                                                   05/27/2025 22:18:17 PAGE 3   
+C51 COMPILER V9.54   PCA                                                                   05/28/2025 12:16:13 PAGE 3   
 
  116   1          dispbuff[2] = LED[val3];
  117   1          dispbuff[3] = LED[val4];
@@ -138,519 +138,476 @@ line level    source
  123   1          dispbuff[7] = SEG_OFF;
  124   1      }
  125          
- 126          // 新增：8位自定义显示缓冲区填充函数
- 127          void FillCustomDispBuf8(BYTE val1, BYTE val2, BYTE val3, BYTE val4, BYTE val5, BYTE val6, BYTE val7, BYTE 
-             -val8) {
- 128   1          Resetdispbuff();
- 129   1          
- 130   1          // 填充8个数字位
- 131   1          dispbuff[0] = LED[val1];  // 最右位
- 132   1          dispbuff[1] = LED[val2];
- 133   1          dispbuff[2] = LED[val3];
- 134   1          dispbuff[3] = LED[val4];
- 135   1          dispbuff[4] = LED[val5];
- 136   1          dispbuff[5] = LED[val6];
- 137   1          dispbuff[6] = LED[val7];
- 138   1          dispbuff[7] = LED[val8];  // 最左位
- 139   1      }
- 140          
- 141          void disp(void) {
- 142   1          unsigned char i;
- 143   1          static unsigned char pos = 0;  // 当前扫描的位置
- 144   1          static unsigned char mark = 0x01;  // 位选掩码
- 145   1          unsigned char tmpdata;
+ 126          void disp(void) {
+ 127   1          unsigned char i;
+ 128   1          static unsigned char pos = 0;  // 当前扫描的位置
+ 129   1          static unsigned char mark = 0x01;  // 位选掩码
+ 130   1          unsigned char tmpdata;
+ 131   1          
+ 132   1          // 设置输出使能为高，准备数据传输
+ 133   1          OE = 1;
+ 134   1          
+ 135   1          // 准备位选数据（低电平有效）
+ 136   1          tmpdata = ~mark;
+ 137   1          
+ 138   1          // 发送位选数据到74HC595
+ 139   1          for(i = 0; i < 8; i++) {
+ 140   2              // 从最高位开始发送
+ 141   2              DATA = (tmpdata & 0x80) ? 1 : 0;
+ 142   2              SCK = 0;
+ 143   2              SCK = 1;
+ 144   2              tmpdata <<= 1;
+ 145   2          }
  146   1          
- 147   1          // 设置输出使能为高，准备数据传输
- 148   1          OE = 1;
- 149   1          
- 150   1          // 准备位选数据（低电平有效）
- 151   1          tmpdata = ~mark;
- 152   1          
- 153   1          // 发送位选数据到74HC595
- 154   1          for(i = 0; i < 8; i++) {
- 155   2              // 从最高位开始发送
- 156   2              DATA = (tmpdata & 0x80) ? 1 : 0;
- 157   2              SCK = 0;
- 158   2              SCK = 1;
- 159   2              tmpdata <<= 1;
- 160   2          }
- 161   1          
- 162   1          // 发送段码数据到74HC595
- 163   1          tmpdata = dispbuff[pos];
- 164   1          for(i = 0; i < 8; i++) {
- 165   2              // 从最高位开始发送
- 166   2              DATA = (tmpdata & 0x80) ? 1 : 0;
- 167   2              SCK = 0;
- 168   2              SCK = 1;
- 169   2              tmpdata <<= 1;
- 170   2          }
- 171   1          
- 172   1          // 锁存数据并输出
- 173   1          RCK = 0;
- 174   1          RCK = 1;
- 175   1          
- 176   1          // 使能输出
-C51 COMPILER V9.54   PCA                                                                   05/27/2025 22:18:17 PAGE 4   
+ 147   1          // 发送段码数据到74HC595
+ 148   1          tmpdata = dispbuff[pos];
+ 149   1          for(i = 0; i < 8; i++) {
+ 150   2              // 从最高位开始发送
+ 151   2              DATA = (tmpdata & 0x80) ? 1 : 0;
+ 152   2              SCK = 0;
+ 153   2              SCK = 1;
+ 154   2              tmpdata <<= 1;
+ 155   2          }
+ 156   1          
+ 157   1          // 锁存数据并输出
+ 158   1          RCK = 0;
+ 159   1          RCK = 1;
+ 160   1          
+ 161   1          // 使能输出
+ 162   1          OE = 0;
+ 163   1          
+ 164   1          // 移动到下一位
+ 165   1          pos = (pos + 1) % 8;
+ 166   1          mark = (mark << 1) | (mark >> 7);  // 循环左移
+ 167   1          if(mark == 0) mark = 0x01;  // 确保非零
+ 168   1      }
+ 169          
+ 170          // 时间编辑相关变量
+ 171          static BYTE timeEditMode = 0;  // 0: 正常显示, 1-6: 编辑年月日时分秒
+ 172          static BYTE blinkState = 0;    // 闪烁状态: 0 显示, 1 不显示
+ 173          
+ 174          // 新增：自动轮换显示相关变量
+ 175          static BYTE xdata autoToggleCounter = 0;  // 自动切换计数器
+ 176          #define AUTO_TOGGLE_INTERVAL 5       // 每5秒切换一次显示模式
+ 177          
+C51 COMPILER V9.54   PCA                                                                   05/28/2025 12:16:13 PAGE 4   
 
- 177   1          OE = 0;
- 178   1          
- 179   1          // 移动到下一位
- 180   1          pos = (pos + 1) % 8;
- 181   1          mark = (mark << 1) | (mark >> 7);  // 循环左移
- 182   1          if(mark == 0) mark = 0x01;  // 确保非零
- 183   1      }
- 184          
- 185          // 时间编辑相关变量
- 186          static BYTE timeEditMode = 0;  // 0: 正常显示, 1-6: 编辑年月日时分秒
- 187          static BYTE blinkState = 0;    // 闪烁状态: 0 显示, 1 不显示
- 188          
- 189          // 新增：自动轮换显示相关变量
- 190          static BYTE xdata autoToggleCounter = 0;  // 自动切换计数器
- 191          #define AUTO_TOGGLE_INTERVAL 5       // 每5秒切换一次显示模式
- 192          
- 193          // 设置时间编辑模式
- 194          void PCA_SetTimeEditMode(BYTE position) {
- 195   1          timeEditMode = position;
- 196   1          blinkState = 0;  // 开始时处于显示状态
- 197   1      }
- 198          
- 199          // 退出时间编辑模式
- 200          void PCA_ExitTimeEditMode(void) {
- 201   1          timeEditMode = 0;
- 202   1          // 根据当前显示模式更新显示
- 203   1          if(datetime_display_mode == DISPLAY_TIME_MODE) {
- 204   2              FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
- 205   2          } else {
- 206   2              FillDateBuf(SysPara1.year, SysPara1.month, SysPara1.day);
- 207   2          }
- 208   1      }
- 209          
- 210          // 增加时间值
- 211          void PCA_IncreaseTimeValue(BYTE position) {
- 212   1          switch (position) {
- 213   2              case YEAR_POS:
- 214   2                  SysPara1.year++;
- 215   2                  if(SysPara1.year > 2099) SysPara1.year = 2000;  // 年份范围2000-2099
- 216   2                  break;
- 217   2              case MONTH_POS:
- 218   2                  SysPara1.month++;
- 219   2                  if(SysPara1.month > 12) SysPara1.month = 1;
- 220   2                  // 检查日期是否超出当月最大天数
- 221   2                  if(SysPara1.day > PCA_GetDaysInMonth(SysPara1.year, SysPara1.month)) {
- 222   3                      SysPara1.day = PCA_GetDaysInMonth(SysPara1.year, SysPara1.month);
- 223   3                  }
+ 178          // 设置时间编辑模式
+ 179          void PCA_SetTimeEditMode(BYTE position) {
+ 180   1          timeEditMode = position;
+ 181   1          blinkState = 0;  // 开始时处于显示状态
+ 182   1      }
+ 183          
+ 184          // 退出时间编辑模式
+ 185          void PCA_ExitTimeEditMode(void) {
+ 186   1          timeEditMode = 0;
+ 187   1          // 根据当前显示模式更新显示
+ 188   1          if(datetime_display_mode == DISPLAY_TIME_MODE) {
+ 189   2              FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
+ 190   2          } else {
+ 191   2              FillDateBuf(SysPara1.year, SysPara1.month, SysPara1.day);
+ 192   2          }
+ 193   1      }
+ 194          
+ 195          // 增加时间值
+ 196          void PCA_IncreaseTimeValue(BYTE position) {
+ 197   1          switch (position) {
+ 198   2              case YEAR_POS:
+ 199   2                  SysPara1.year++;
+ 200   2                  if(SysPara1.year > 2099) SysPara1.year = 2000;  // 年份范围2000-2099
+ 201   2                  break;
+ 202   2              case MONTH_POS:
+ 203   2                  SysPara1.month++;
+ 204   2                  if(SysPara1.month > 12) SysPara1.month = 1;
+ 205   2                  // 检查日期是否超出当月最大天数
+ 206   2                  if(SysPara1.day > PCA_GetDaysInMonth(SysPara1.year, SysPara1.month)) {
+ 207   3                      SysPara1.day = PCA_GetDaysInMonth(SysPara1.year, SysPara1.month);
+ 208   3                  }
+ 209   2                  break;
+ 210   2              case DAY_POS:
+ 211   2                  SysPara1.day++;
+ 212   2                  if(SysPara1.day > PCA_GetDaysInMonth(SysPara1.year, SysPara1.month)) {
+ 213   3                      SysPara1.day = 1;
+ 214   3                  }
+ 215   2                  break;
+ 216   2              case HOUR_POS:
+ 217   2                  SysPara1.hour = (SysPara1.hour + 1) % 24;
+ 218   2                  break;
+ 219   2              case MIN_POS:
+ 220   2                  SysPara1.min = (SysPara1.min + 1) % 60;
+ 221   2                  break;
+ 222   2              case SEC_POS:
+ 223   2                  SysPara1.sec = (SysPara1.sec + 1) % 60;
  224   2                  break;
- 225   2              case DAY_POS:
- 226   2                  SysPara1.day++;
- 227   2                  if(SysPara1.day > PCA_GetDaysInMonth(SysPara1.year, SysPara1.month)) {
- 228   3                      SysPara1.day = 1;
- 229   3                  }
- 230   2                  break;
- 231   2              case HOUR_POS:
- 232   2                  SysPara1.hour = (SysPara1.hour + 1) % 24;
- 233   2                  break;
- 234   2              case MIN_POS:
- 235   2                  SysPara1.min = (SysPara1.min + 1) % 60;
- 236   2                  break;
- 237   2              case SEC_POS:
- 238   2                  SysPara1.sec = (SysPara1.sec + 1) % 60;
-C51 COMPILER V9.54   PCA                                                                   05/27/2025 22:18:17 PAGE 5   
+ 225   2          }
+ 226   1          
+ 227   1          // 更新显示
+ 228   1          if(datetime_display_mode == DISPLAY_TIME_MODE) {
+ 229   2              FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
+ 230   2          } else {
+ 231   2              FillDateBuf(SysPara1.year, SysPara1.month, SysPara1.day);
+ 232   2          }
+ 233   1      }
+ 234          
+ 235          // 设置时分秒
+ 236          void PCA_SetTime(BYTE hour, BYTE min, BYTE sec) {
+ 237   1          // 验证输入时间是否有效
+ 238   1          if(hour < 24 && min < 60 && sec < 60) {
+ 239   2              SysPara1.hour = hour;
+C51 COMPILER V9.54   PCA                                                                   05/28/2025 12:16:13 PAGE 5   
 
- 239   2                  break;
- 240   2          }
- 241   1          
- 242   1          // 更新显示
- 243   1          if(datetime_display_mode == DISPLAY_TIME_MODE) {
- 244   2              FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
- 245   2          } else {
- 246   2              FillDateBuf(SysPara1.year, SysPara1.month, SysPara1.day);
- 247   2          }
- 248   1      }
- 249          
- 250          // 设置时分秒
- 251          void PCA_SetTime(BYTE hour, BYTE min, BYTE sec) {
- 252   1          // 验证输入时间是否有效
- 253   1          if(hour < 24 && min < 60 && sec < 60) {
- 254   2              SysPara1.hour = hour;
- 255   2              SysPara1.min = min;
- 256   2              SysPara1.sec = sec;
- 257   2              
- 258   2              // 时间修改后重新计算今日触发标志
- 259   2              if(timed_watering.enabled) {
- 260   3                  // 重新判断今天的浇水时间是否已过
- 261   3                  if(SysPara1.hour > timed_watering.start_hour || 
- 262   3                     (SysPara1.hour == timed_watering.start_hour && SysPara1.min > timed_watering.start_min) ||
- 263   3                     (SysPara1.hour == timed_watering.start_hour && SysPara1.min == timed_watering.start_min && 
+ 240   2              SysPara1.min = min;
+ 241   2              SysPara1.sec = sec;
+ 242   2              
+ 243   2              // 时间修改后重新计算今日触发标志
+ 244   2              if(timed_watering.enabled) {
+ 245   3                  // 重新判断今天的浇水时间是否已过
+ 246   3                  if(SysPara1.hour > timed_watering.start_hour || 
+ 247   3                     (SysPara1.hour == timed_watering.start_hour && SysPara1.min > timed_watering.start_min) ||
+ 248   3                     (SysPara1.hour == timed_watering.start_hour && SysPara1.min == timed_watering.start_min && 
              -SysPara1.sec > timed_watering.start_sec)) {
- 264   4                      timed_watering.triggered_today = 1;  // 今天的浇水时间已过
- 265   4                  } else {
- 266   4                      timed_watering.triggered_today = 0;  // 今天的浇水时间还没到，可以触发
- 267   4                  }
- 268   3              }
- 269   2              
- 270   2              // 如果当前是时钟显示模式，更新显示
- 271   2              if(FlowMeter_GetMode() == FLOW_MODE_OFF && timeEditMode == 0) {
- 272   3                  if(datetime_display_mode == DISPLAY_TIME_MODE) {
- 273   4                      FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
- 274   4                  }
- 275   3              }
- 276   2          }
- 277   1      }
- 278          
- 279          // 新增：设置年月日
- 280          void PCA_SetDate(WORD year, BYTE month, BYTE day) {
- 281   1          // 验证输入日期是否有效
- 282   1          if(year >= 2000 && year <= 2099 && month >= 1 && month <= 12 && 
- 283   1             day >= 1 && day <= PCA_GetDaysInMonth(year, month)) {
- 284   2              SysPara1.year = year;
- 285   2              SysPara1.month = month;
- 286   2              SysPara1.day = day;
- 287   2              
- 288   2              // 如果当前是日期显示模式，更新显示
- 289   2              if(FlowMeter_GetMode() == FLOW_MODE_OFF && timeEditMode == 0) {
- 290   3                  if(datetime_display_mode == DISPLAY_DATE_MODE) {
- 291   4                      FillDateBuf(SysPara1.year, SysPara1.month, SysPara1.day);
- 292   4                  }
- 293   3              }
- 294   2          }
- 295   1      }
- 296          
- 297          // 新增：设置完整日期时间
- 298          void PCA_SetDateTime(WORD year, BYTE month, BYTE day, BYTE hour, BYTE min, BYTE sec) {
- 299   1          PCA_SetDate(year, month, day);
-C51 COMPILER V9.54   PCA                                                                   05/27/2025 22:18:17 PAGE 6   
+ 249   4                      timed_watering.triggered_today = 1;  // 今天的浇水时间已过
+ 250   4                  } else {
+ 251   4                      timed_watering.triggered_today = 0;  // 今天的浇水时间还没到，可以触发
+ 252   4                  }
+ 253   3              }
+ 254   2              
+ 255   2              // 如果当前是时钟显示模式，更新显示
+ 256   2              if(FlowMeter_GetMode() == FLOW_MODE_OFF && timeEditMode == 0) {
+ 257   3                  if(datetime_display_mode == DISPLAY_TIME_MODE) {
+ 258   4                      FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
+ 259   4                  }
+ 260   3              }
+ 261   2          }
+ 262   1      }
+ 263          
+ 264          // 新增：设置年月日
+ 265          void PCA_SetDate(WORD year, BYTE month, BYTE day) {
+ 266   1          // 验证输入日期是否有效
+ 267   1          if(year >= 2000 && year <= 2099 && month >= 1 && month <= 12 && 
+ 268   1             day >= 1 && day <= PCA_GetDaysInMonth(year, month)) {
+ 269   2              SysPara1.year = year;
+ 270   2              SysPara1.month = month;
+ 271   2              SysPara1.day = day;
+ 272   2              
+ 273   2              // 如果当前是日期显示模式，更新显示
+ 274   2              if(FlowMeter_GetMode() == FLOW_MODE_OFF && timeEditMode == 0) {
+ 275   3                  if(datetime_display_mode == DISPLAY_DATE_MODE) {
+ 276   4                      FillDateBuf(SysPara1.year, SysPara1.month, SysPara1.day);
+ 277   4                  }
+ 278   3              }
+ 279   2          }
+ 280   1      }
+ 281          
+ 282          // 新增：获取时间相关函数
+ 283          WORD PCA_GetYear(void) { return SysPara1.year; }
+ 284          BYTE PCA_GetMonth(void) { return SysPara1.month; }
+ 285          BYTE PCA_GetDay(void) { return SysPara1.day; }
+ 286          BYTE PCA_GetHour(void) { return SysPara1.hour; }
+ 287          BYTE PCA_GetMin(void) { return SysPara1.min; }
+ 288          BYTE PCA_GetSec(void) { return SysPara1.sec; }
+ 289          
+ 290          // 新增：显示模式控制函数
+ 291          void PCA_SetDisplayMode(BYTE mode) {
+ 292   1          datetime_display_mode = mode;
+ 293   1          if(timeEditMode == 0) {  // 非编辑模式下立即更新显示
+ 294   2              if(mode == DISPLAY_TIME_MODE) {
+ 295   3                  FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
+ 296   3              } else {
+ 297   3                  FillDateBuf(SysPara1.year, SysPara1.month, SysPara1.day);
+ 298   3              }
+ 299   2          }
+ 300   1      }
+C51 COMPILER V9.54   PCA                                                                   05/28/2025 12:16:13 PAGE 6   
 
- 300   1          PCA_SetTime(hour, min, sec);
- 301   1      }
- 302          
- 303          // 新增：获取时间相关函数
- 304          WORD PCA_GetYear(void) { return SysPara1.year; }
- 305          BYTE PCA_GetMonth(void) { return SysPara1.month; }
- 306          BYTE PCA_GetDay(void) { return SysPara1.day; }
- 307          BYTE PCA_GetHour(void) { return SysPara1.hour; }
- 308          BYTE PCA_GetMin(void) { return SysPara1.min; }
- 309          BYTE PCA_GetSec(void) { return SysPara1.sec; }
- 310          
- 311          // 新增：显示模式控制函数
- 312          void PCA_SetDisplayMode(BYTE mode) {
- 313   1          datetime_display_mode = mode;
- 314   1          if(timeEditMode == 0) {  // 非编辑模式下立即更新显示
- 315   2              if(mode == DISPLAY_TIME_MODE) {
- 316   3                  FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
- 317   3              } else {
- 318   3                  FillDateBuf(SysPara1.year, SysPara1.month, SysPara1.day);
- 319   3              }
- 320   2          }
- 321   1      }
- 322          
- 323          BYTE PCA_GetDisplayMode(void) {
- 324   1          return datetime_display_mode;
- 325   1      }
- 326          
- 327          void PCA_ToggleDisplayMode(void) {
- 328   1          datetime_display_mode = (datetime_display_mode == DISPLAY_TIME_MODE) ? DISPLAY_DATE_MODE : DISPLAY_TIM
+ 301          
+ 302          void PCA_ToggleDisplayMode(void) {
+ 303   1          datetime_display_mode = (datetime_display_mode == DISPLAY_TIME_MODE) ? DISPLAY_DATE_MODE : DISPLAY_TIM
              -E_MODE;
- 329   1          PCA_SetDisplayMode(datetime_display_mode);
- 330   1      }
- 331          
- 332          // 新增：日期计算辅助函数
- 333          bit PCA_IsLeapYear(WORD year) {
- 334   1          return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
- 335   1      }
- 336          
- 337          BYTE PCA_GetDaysInMonth(WORD year, BYTE month) {
- 338   1          static code BYTE daysInMonth[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
- 339   1          
- 340   1          if(month == 2 && PCA_IsLeapYear(year)) {
- 341   2              return 29;  // 闰年2月有29天
- 342   2          }
- 343   1          return daysInMonth[month - 1];
- 344   1      }
- 345          
- 346          // 新增：更新日期时间（处理日期跨越）
- 347          void PCA_UpdateDateTime(void) {
- 348   1          // 秒进位
- 349   1          SysPara1.sec++;
- 350   1          if(SysPara1.sec >= 60) {
- 351   2              SysPara1.sec = 0;
- 352   2              
- 353   2              // 分钟进位
- 354   2              SysPara1.min++;
- 355   2              if(SysPara1.min >= 60) {
- 356   3                  SysPara1.min = 0;
- 357   3                  
- 358   3                  // 小时进位
- 359   3                  SysPara1.hour++;
- 360   3                  if(SysPara1.hour >= 24) {
-C51 COMPILER V9.54   PCA                                                                   05/27/2025 22:18:17 PAGE 7   
+ 304   1          PCA_SetDisplayMode(datetime_display_mode);
+ 305   1      }
+ 306          
+ 307          // 新增：日期计算辅助函数
+ 308          bit PCA_IsLeapYear(WORD year) {
+ 309   1          return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+ 310   1      }
+ 311          
+ 312          BYTE PCA_GetDaysInMonth(WORD year, BYTE month) {
+ 313   1          static code BYTE daysInMonth[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+ 314   1          
+ 315   1          if(month == 2 && PCA_IsLeapYear(year)) {
+ 316   2              return 29;  // 闰年2月有29天
+ 317   2          }
+ 318   1          return daysInMonth[month - 1];
+ 319   1      }
+ 320          
+ 321          // 新增：更新日期时间（处理日期跨越）
+ 322          void PCA_UpdateDateTime(void) {
+ 323   1          // 秒进位
+ 324   1          SysPara1.sec++;
+ 325   1          if(SysPara1.sec >= 60) {
+ 326   2              SysPara1.sec = 0;
+ 327   2              
+ 328   2              // 分钟进位
+ 329   2              SysPara1.min++;
+ 330   2              if(SysPara1.min >= 60) {
+ 331   3                  SysPara1.min = 0;
+ 332   3                  
+ 333   3                  // 小时进位
+ 334   3                  SysPara1.hour++;
+ 335   3                  if(SysPara1.hour >= 24) {
+ 336   4                      SysPara1.hour = 0;
+ 337   4                      
+ 338   4                      // 日期进位
+ 339   4                      SysPara1.day++;
+ 340   4                      if(SysPara1.day > PCA_GetDaysInMonth(SysPara1.year, SysPara1.month)) {
+ 341   5                          SysPara1.day = 1;
+ 342   5                          
+ 343   5                          // 月份进位
+ 344   5                          SysPara1.month++;
+ 345   5                          if(SysPara1.month > 12) {
+ 346   6                              SysPara1.month = 1;
+ 347   6                              
+ 348   6                              // 年份进位
+ 349   6                              SysPara1.year++;
+ 350   6                              if(SysPara1.year > 2099) {
+ 351   7                                  SysPara1.year = 2000; // 年份超限后回到2000年
+ 352   7                              }
+ 353   6                          }
+ 354   5                      }
+ 355   4                  }
+ 356   3              }
+ 357   2          }
+ 358   1      }
+ 359          
+ 360          // 修改PCA中断服务函数，添加自动轮换显示逻辑
+ 361          void PCA_isr() interrupt 7
+C51 COMPILER V9.54   PCA                                                                   05/28/2025 12:16:13 PAGE 7   
 
- 361   4                      SysPara1.hour = 0;
- 362   4                      
- 363   4                      // 日期进位
- 364   4                      SysPara1.day++;
- 365   4                      if(SysPara1.day > PCA_GetDaysInMonth(SysPara1.year, SysPara1.month)) {
- 366   5                          SysPara1.day = 1;
- 367   5                          
- 368   5                          // 月份进位
- 369   5                          SysPara1.month++;
- 370   5                          if(SysPara1.month > 12) {
- 371   6                              SysPara1.month = 1;
- 372   6                              
- 373   6                              // 年份进位
- 374   6                              SysPara1.year++;
- 375   6                              if(SysPara1.year > 2099) {
- 376   7                                  SysPara1.year = 2000; // 年份超限后回到2000年
- 377   7                              }
- 378   6                          }
- 379   5                      }
- 380   4                  }
- 381   3              }
- 382   2          }
- 383   1      }
- 384          
- 385          // 修改PCA中断服务函数，添加自动轮换显示逻辑
- 386          void PCA_isr() interrupt 7
- 387          {
- 388   1          if(CCF1){
- 389   2              CCF1 = 0;
- 390   2              CCAP1L = value1;
- 391   2              CCAP1H = value1 >> 8;
- 392   2              value1 += T1000Hz;
- 393   2              disp();
- 394   2          }
- 395   1      
- 396   1          if(CCF0){
- 397   2              CCF0 = 0;
- 398   2              CCAP0L = value;
- 399   2              CCAP0H = value >> 8;
- 400   2              value += T100Hz;
- 401   2              cnt++;
- 402   2              
- 403   2              if(cnt >= 100) {
- 404   3                  cnt = 0;
- 405   3                  PCA_LED = !PCA_LED;
- 406   3                  
- 407   3                  // 确保每1秒调用一次流量计算
- 408   3                  FlowMeter_CalcFlow();  // 每秒调用一次，统计过去1秒的脉冲数
- 409   3                  
- 410   3                  // 使用新的日期时间更新函数
- 411   3                  PCA_UpdateDateTime();
- 412   3                  
- 413   3                  // 更新定时浇水状态 - 确保在时钟更新后立即调用
- 414   3                  TimedWatering_Update();
- 415   3                  
- 416   3                  // 时间编辑模式闪烁控制
- 417   3                  if (timeEditMode > 0) {
- 418   4                      blinkState = !blinkState;
- 419   4                      
- 420   4                      // 根据编辑的是日期还是时间来更新显示
- 421   4                      if(timeEditMode <= DAY_POS) {
- 422   5                          // 编辑日期 (年月日) - 使用完整8位显示
-C51 COMPILER V9.54   PCA                                                                   05/27/2025 22:18:17 PAGE 8   
+ 362          {
+ 363   1          if(CCF1){
+ 364   2              CCF1 = 0;
+ 365   2              CCAP1L = value1;
+ 366   2              CCAP1H = value1 >> 8;
+ 367   2              value1 += T1000Hz;
+ 368   2              disp();
+ 369   2          }
+ 370   1      
+ 371   1          if(CCF0){
+ 372   2              CCF0 = 0;
+ 373   2              CCAP0L = value;
+ 374   2              CCAP0H = value >> 8;
+ 375   2              value += T100Hz;
+ 376   2              cnt++;
+ 377   2              
+ 378   2              if(cnt >= 100) {
+ 379   3                  cnt = 0;
+ 380   3                  PCA_LED = !PCA_LED;
+ 381   3                  
+ 382   3                  // 确保每1秒调用一次流量计算
+ 383   3                  FlowMeter_CalcFlow();  // 每秒调用一次，统计过去1秒的脉冲数
+ 384   3                  
+ 385   3                  // 使用新的日期时间更新函数
+ 386   3                  PCA_UpdateDateTime();
+ 387   3                  
+ 388   3                  // 更新定时浇水状态 - 确保在时钟更新后立即调用
+ 389   3                  TimedWatering_Update();
+ 390   3                  
+ 391   3                  // 时间编辑模式闪烁控制
+ 392   3                  if (timeEditMode > 0) {
+ 393   4                      blinkState = !blinkState;
+ 394   4                      
+ 395   4                      // 根据编辑的是日期还是时间来更新显示
+ 396   4                      if(timeEditMode <= DAY_POS) {
+ 397   5                          // 编辑日期 (年月日) - 使用完整8位显示
+ 398   5                          FillDateBuf(SysPara1.year, SysPara1.month, SysPara1.day);
+ 399   5                          if (blinkState) {
+ 400   6                              switch (timeEditMode) {
+ 401   7                                  case YEAR_POS:
+ 402   7                                      // 年份闪烁 - 4位全部闪烁
+ 403   7                                      dispbuff[4] = SEG_OFF;  // 年个位
+ 404   7                                      dispbuff[5] = SEG_OFF;  // 年十位
+ 405   7                                      dispbuff[6] = SEG_OFF;  // 年百位
+ 406   7                                      dispbuff[7] = SEG_OFF;  // 年千位
+ 407   7                                      break;
+ 408   7                                  case MONTH_POS:
+ 409   7                                      // 月份闪烁
+ 410   7                                      dispbuff[2] = SEG_OFF;  // 月个位
+ 411   7                                      dispbuff[3] = SEG_OFF;  // 月十位
+ 412   7                                      break;
+ 413   7                                  case DAY_POS:
+ 414   7                                      // 日期闪烁
+ 415   7                                      dispbuff[0] = SEG_OFF;  // 日个位
+ 416   7                                      dispbuff[1] = SEG_OFF;  // 日十位
+ 417   7                                      break;
+ 418   7                              }
+ 419   6                          }
+ 420   5                      } else {
+ 421   5                          // 编辑时间 (时分秒) - 保持原来的6位显示
+ 422   5                          FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
+ 423   5                          if (blinkState) {
+C51 COMPILER V9.54   PCA                                                                   05/28/2025 12:16:13 PAGE 8   
 
- 423   5                          FillDateBuf(SysPara1.year, SysPara1.month, SysPara1.day);
- 424   5                          if (blinkState) {
- 425   6                              switch (timeEditMode) {
- 426   7                                  case YEAR_POS:
- 427   7                                      // 年份闪烁 - 4位全部闪烁
- 428   7                                      dispbuff[4] = SEG_OFF;  // 年个位
- 429   7                                      dispbuff[5] = SEG_OFF;  // 年十位
- 430   7                                      dispbuff[6] = SEG_OFF;  // 年百位
- 431   7                                      dispbuff[7] = SEG_OFF;  // 年千位
- 432   7                                      break;
- 433   7                                  case MONTH_POS:
- 434   7                                      // 月份闪烁
- 435   7                                      dispbuff[2] = SEG_OFF;  // 月个位
- 436   7                                      dispbuff[3] = SEG_OFF;  // 月十位
- 437   7                                      break;
- 438   7                                  case DAY_POS:
- 439   7                                      // 日期闪烁
- 440   7                                      dispbuff[0] = SEG_OFF;  // 日个位
- 441   7                                      dispbuff[1] = SEG_OFF;  // 日十位
- 442   7                                      break;
- 443   7                              }
- 444   6                          }
- 445   5                      } else {
- 446   5                          // 编辑时间 (时分秒) - 保持原来的6位显示
- 447   5                          FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
- 448   5                          if (blinkState) {
- 449   6                              switch (timeEditMode) {
- 450   7                                  case HOUR_POS:
- 451   7                                      // 小时闪烁
- 452   7                                      dispbuff[4] = SEG_OFF;  // 小时个位
- 453   7                                      dispbuff[5] = SEG_OFF;  // 小时十位
- 454   7                                      break;
- 455   7                                  case MIN_POS:
- 456   7                                      // 分钟闪烁
- 457   7                                      dispbuff[2] = SEG_OFF;  // 分钟个位
- 458   7                                      dispbuff[3] = SEG_OFF;  // 分钟十位
- 459   7                                      break;
- 460   7                                  case SEC_POS:
- 461   7                                      // 秒闪烁
- 462   7                                      dispbuff[0] = SEG_OFF;  // 秒个位
- 463   7                                      dispbuff[1] = SEG_OFF;  // 秒十位
- 464   7                                      break;
- 465   7                              }
- 466   6                          }
+ 424   6                              switch (timeEditMode) {
+ 425   7                                  case HOUR_POS:
+ 426   7                                      // 小时闪烁
+ 427   7                                      dispbuff[4] = SEG_OFF;  // 小时个位
+ 428   7                                      dispbuff[5] = SEG_OFF;  // 小时十位
+ 429   7                                      break;
+ 430   7                                  case MIN_POS:
+ 431   7                                      // 分钟闪烁
+ 432   7                                      dispbuff[2] = SEG_OFF;  // 分钟个位
+ 433   7                                      dispbuff[3] = SEG_OFF;  // 分钟十位
+ 434   7                                      break;
+ 435   7                                  case SEC_POS:
+ 436   7                                      // 秒闪烁
+ 437   7                                      dispbuff[0] = SEG_OFF;  // 秒个位
+ 438   7                                      dispbuff[1] = SEG_OFF;  // 秒十位
+ 439   7                                      break;
+ 440   7                              }
+ 441   6                          }
+ 442   5                      }
+ 443   4                  }
+ 444   3                  // 正常显示模式的逻辑
+ 445   3                  else if (FlowMeter_GetMode() == FLOW_MODE_OFF) {
+ 446   4                      // 时钟显示模式：实现自动轮换显示
+ 447   4                      if(auto_display_mode == DISPLAY_MODE_CLOCK) {
+ 448   5                          // 自动轮换计数器递增
+ 449   5                          autoToggleCounter++;
+ 450   5                          
+ 451   5                          // 每AUTO_TOGGLE_INTERVAL秒切换一次显示模式
+ 452   5                          if(autoToggleCounter >= AUTO_TOGGLE_INTERVAL) {
+ 453   6                              autoToggleCounter = 0;
+ 454   6                              PCA_ToggleDisplayMode();
+ 455   6                          }
+ 456   5                          
+ 457   5                          // 根据当前显示模式更新显示
+ 458   5                          if(datetime_display_mode == DISPLAY_TIME_MODE) {
+ 459   6                              FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
+ 460   6                          } else {
+ 461   6                              FillDateBuf(SysPara1.year, SysPara1.month, SysPara1.day);
+ 462   6                          }
+ 463   5                      }
+ 464   4                      // 自动浇水参数显示模式：设置更新标志
+ 465   4                      else if(auto_display_mode == DISPLAY_MODE_AUTO) {
+ 466   5                          display_update_flag = 1;  // 设置标志，在主循环中更新显示
  467   5                      }
  468   4                  }
- 469   3                  // 正常显示模式的逻辑
- 470   3                  else if (FlowMeter_GetMode() == FLOW_MODE_OFF) {
- 471   4                      // 时钟显示模式：实现自动轮换显示
- 472   4                      if(auto_display_mode == DISPLAY_MODE_CLOCK) {
- 473   5                          // 自动轮换计数器递增
- 474   5                          autoToggleCounter++;
- 475   5                          
- 476   5                          // 每AUTO_TOGGLE_INTERVAL秒切换一次显示模式
- 477   5                          if(autoToggleCounter >= AUTO_TOGGLE_INTERVAL) {
- 478   6                              autoToggleCounter = 0;
- 479   6                              PCA_ToggleDisplayMode();
- 480   6                          }
- 481   5                          
- 482   5                          // 根据当前显示模式更新显示
- 483   5                          if(datetime_display_mode == DISPLAY_TIME_MODE) {
- 484   6                              FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
-C51 COMPILER V9.54   PCA                                                                   05/27/2025 22:18:17 PAGE 9   
+ 469   3              }
+ 470   2              else if(cnt % 50 == 0 && timeEditMode > 0) {
+ 471   3                  // 0.5秒闪烁一次
+ 472   3                  blinkState = !blinkState;
+ 473   3                  
+ 474   3                  // 根据编辑的是日期还是时间来更新显示
+ 475   3                  if(timeEditMode <= DAY_POS) {
+ 476   4                      // 编辑日期 (年月日) - 使用完整8位显示
+ 477   4                      FillDateBuf(SysPara1.year, SysPara1.month, SysPara1.day);
+ 478   4                      if (blinkState) {
+ 479   5                          switch (timeEditMode) {
+ 480   6                              case YEAR_POS:
+ 481   6                                  // 年份闪烁 - 4位全部闪烁
+ 482   6                                  dispbuff[4] = SEG_OFF;  // 年个位
+ 483   6                                  dispbuff[5] = SEG_OFF;  // 年十位
+ 484   6                                  dispbuff[6] = SEG_OFF;  // 年百位
+ 485   6                                  dispbuff[7] = SEG_OFF;  // 年千位
+C51 COMPILER V9.54   PCA                                                                   05/28/2025 12:16:13 PAGE 9   
 
- 485   6                          } else {
- 486   6                              FillDateBuf(SysPara1.year, SysPara1.month, SysPara1.day);
- 487   6                          }
- 488   5                      }
- 489   4                      // 自动浇水参数显示模式：设置更新标志
- 490   4                      else if(auto_display_mode == DISPLAY_MODE_AUTO) {
- 491   5                          display_update_flag = 1;  // 设置标志，在主循环中更新显示
- 492   5                      }
- 493   4                  }
- 494   3              }
- 495   2              else if(cnt % 50 == 0 && timeEditMode > 0) {
- 496   3                  // 0.5秒闪烁一次
- 497   3                  blinkState = !blinkState;
- 498   3                  
- 499   3                  // 根据编辑的是日期还是时间来更新显示
- 500   3                  if(timeEditMode <= DAY_POS) {
- 501   4                      // 编辑日期 (年月日) - 使用完整8位显示
- 502   4                      FillDateBuf(SysPara1.year, SysPara1.month, SysPara1.day);
- 503   4                      if (blinkState) {
- 504   5                          switch (timeEditMode) {
- 505   6                              case YEAR_POS:
- 506   6                                  // 年份闪烁 - 4位全部闪烁
- 507   6                                  dispbuff[4] = SEG_OFF;  // 年个位
- 508   6                                  dispbuff[5] = SEG_OFF;  // 年十位
- 509   6                                  dispbuff[6] = SEG_OFF;  // 年百位
- 510   6                                  dispbuff[7] = SEG_OFF;  // 年千位
- 511   6                                  break;
- 512   6                              case MONTH_POS:
- 513   6                                  // 月份闪烁
- 514   6                                  dispbuff[2] = SEG_OFF;  // 月个位
- 515   6                                  dispbuff[3] = SEG_OFF;  // 月十位
- 516   6                                  break;
- 517   6                              case DAY_POS:
- 518   6                                  // 日期闪烁
- 519   6                                  dispbuff[0] = SEG_OFF;  // 日个位
- 520   6                                  dispbuff[1] = SEG_OFF;  // 日十位
- 521   6                                  break;
- 522   6                          }
- 523   5                      }
- 524   4                  } else {
- 525   4                      // 编辑时间 (时分秒) - 保持原来的6位显示
- 526   4                      FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
- 527   4                      if (blinkState) {
- 528   5                          switch (timeEditMode) {
- 529   6                              case HOUR_POS:
- 530   6                                  // 小时闪烁
- 531   6                                  dispbuff[4] = SEG_OFF;  // 小时个位
- 532   6                                  dispbuff[5] = SEG_OFF;  // 小时十位
- 533   6                                  break;
- 534   6                              case MIN_POS:
- 535   6                                  // 分钟闪烁
- 536   6                                  dispbuff[2] = SEG_OFF;  // 分钟个位
- 537   6                                  dispbuff[3] = SEG_OFF;  // 分钟十位
- 538   6                                  break;
- 539   6                              case SEC_POS:
- 540   6                                  // 秒闪烁
- 541   6                                  dispbuff[0] = SEG_OFF;  // 秒个位
- 542   6                                  dispbuff[1] = SEG_OFF;  // 秒十位
- 543   6                                  break;
- 544   6                          }
- 545   5                      }
- 546   4                  }
-C51 COMPILER V9.54   PCA                                                                   05/27/2025 22:18:17 PAGE 10  
+ 486   6                                  break;
+ 487   6                              case MONTH_POS:
+ 488   6                                  // 月份闪烁
+ 489   6                                  dispbuff[2] = SEG_OFF;  // 月个位
+ 490   6                                  dispbuff[3] = SEG_OFF;  // 月十位
+ 491   6                                  break;
+ 492   6                              case DAY_POS:
+ 493   6                                  // 日期闪烁
+ 494   6                                  dispbuff[0] = SEG_OFF;  // 日个位
+ 495   6                                  dispbuff[1] = SEG_OFF;  // 日十位
+ 496   6                                  break;
+ 497   6                          }
+ 498   5                      }
+ 499   4                  } else {
+ 500   4                      // 编辑时间 (时分秒) - 保持原来的6位显示
+ 501   4                      FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
+ 502   4                      if (blinkState) {
+ 503   5                          switch (timeEditMode) {
+ 504   6                              case HOUR_POS:
+ 505   6                                  // 小时闪烁
+ 506   6                                  dispbuff[4] = SEG_OFF;  // 小时个位
+ 507   6                                  dispbuff[5] = SEG_OFF;  // 小时十位
+ 508   6                                  break;
+ 509   6                              case MIN_POS:
+ 510   6                                  // 分钟闪烁
+ 511   6                                  dispbuff[2] = SEG_OFF;  // 分钟个位
+ 512   6                                  dispbuff[3] = SEG_OFF;  // 分钟十位
+ 513   6                                  break;
+ 514   6                              case SEC_POS:
+ 515   6                                  // 秒闪烁
+ 516   6                                  dispbuff[0] = SEG_OFF;  // 秒个位
+ 517   6                                  dispbuff[1] = SEG_OFF;  // 秒十位
+ 518   6                                  break;
+ 519   6                          }
+ 520   5                      }
+ 521   4                  }
+ 522   3              }
+ 523   2          }
+ 524   1      }
+ 525          
+ 526          void PCA_Init(void)
+ 527          {
+ 528   1          CCON = 0;                       // Initial PCA control register
+ 529   1                                          // PCA timer stop running
+ 530   1                                          // Clear CF flag
+ 531   1                                          // Clear all module interrupt flag
+ 532   1          CL = 0;                         // Reset PCA base timer
+ 533   1          CH = 0;
+ 534   1          CMOD = 0x00;                    // Set PCA timer clock source as Fosc/12
+ 535   1                                          // Disable PCA timer overflow interrupt
+ 536   1          
+ 537   1          // 初始化PCA模块1 (1000Hz)
+ 538   1          value1 = T1000Hz;
+ 539   1          CCAP1L = value1;
+ 540   1          CCAP1H = value1 >> 8;           // Initial PCA module-1
+ 541   1          value1 += T1000Hz;
+ 542   1          CCAPM1 = 0x49;                  // PCA module-1 work in 16-bit timer mode
+ 543   1                                          // and enable PCA interrupt
+ 544   1          
+ 545   1          // 初始化PCA模块0 (100Hz)
+ 546   1          value = T100Hz;
+ 547   1          CCAP0L = value;
+C51 COMPILER V9.54   PCA                                                                   05/28/2025 12:16:13 PAGE 10  
 
- 547   3              }
- 548   2          }
- 549   1      }
- 550          
- 551          void PCA_Init(void)
- 552          {
- 553   1          CCON = 0;                       // Initial PCA control register
- 554   1                                          // PCA timer stop running
- 555   1                                          // Clear CF flag
- 556   1                                          // Clear all module interrupt flag
- 557   1          CL = 0;                         // Reset PCA base timer
- 558   1          CH = 0;
- 559   1          CMOD = 0x00;                    // Set PCA timer clock source as Fosc/12
- 560   1                                          // Disable PCA timer overflow interrupt
- 561   1          
- 562   1          // 初始化PCA模块1 (1000Hz)
- 563   1          value1 = T1000Hz;
- 564   1          CCAP1L = value1;
- 565   1          CCAP1H = value1 >> 8;           // Initial PCA module-1
- 566   1          value1 += T1000Hz;
- 567   1          CCAPM1 = 0x49;                  // PCA module-1 work in 16-bit timer mode
- 568   1                                          // and enable PCA interrupt
- 569   1          
- 570   1          // 初始化PCA模块0 (100Hz)
- 571   1          value = T100Hz;
- 572   1          CCAP0L = value;
- 573   1          CCAP0H = value >> 8;            // Initial PCA module-0
- 574   1          value += T100Hz;
- 575   1          CCAPM0 = 0x49;                  // PCA module-0 work in 16-bit timer mode
- 576   1                                          // and enable PCA interrupt
- 577   1          
- 578   1          CR = 1;                         // PCA timer start run
- 579   1          EA = 1;                         // Enable global interrupt
- 580   1          cnt = 0;
- 581   1      
- 582   1          // 初始化显示 - 根据默认显示模式
- 583   1          datetime_display_mode = DISPLAY_TIME_MODE;  // 默认显示时间
- 584   1          autoToggleCounter = 0;          // 初始化自动轮换计数器
- 585   1          
- 586   1          if(datetime_display_mode == DISPLAY_TIME_MODE) {
- 587   2              FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
- 588   2          } else {
- 589   2              FillDateBuf(SysPara1.year, SysPara1.month, SysPara1.day);
- 590   2          }
- 591   1      }
- 592          
- 593          // 新增：重置自动轮换计数器（在进入设置模式时调用）
- 594          void PCA_ResetAutoToggle(void) {
- 595   1          autoToggleCounter = 0;
- 596   1      }
- 597          
- 598          // 新增：手动切换显示模式（同时重置自动轮换）
- 599          void PCA_ManualToggleDisplay(void) {
- 600   1          datetime_display_mode = (datetime_display_mode == DISPLAY_TIME_MODE) ? 
- 601   1                                 DISPLAY_DATE_MODE : DISPLAY_TIME_MODE;
- 602   1          autoToggleCounter = 0;  // 重置计数器
- 603   1          
- 604   1          // 立即更新显示
- 605   1          if(datetime_display_mode == DISPLAY_TIME_MODE) {
- 606   2              FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
- 607   2          } else {
- 608   2              FillDateBuf(SysPara1.year, SysPara1.month, SysPara1.day);
-C51 COMPILER V9.54   PCA                                                                   05/27/2025 22:18:17 PAGE 11  
-
- 609   2          }
- 610   1      }
- 611          
+ 548   1          CCAP0H = value >> 8;            // Initial PCA module-0
+ 549   1          value += T100Hz;
+ 550   1          CCAPM0 = 0x49;                  // PCA module-0 work in 16-bit timer mode
+ 551   1                                          // and enable PCA interrupt
+ 552   1          
+ 553   1          CR = 1;                         // PCA timer start run
+ 554   1          EA = 1;                         // Enable global interrupt
+ 555   1          cnt = 0;
+ 556   1      
+ 557   1          // 初始化显示 - 根据默认显示模式
+ 558   1          datetime_display_mode = DISPLAY_TIME_MODE;  // 默认显示时间
+ 559   1          autoToggleCounter = 0;          // 初始化自动轮换计数器
+ 560   1          
+ 561   1          if(datetime_display_mode == DISPLAY_TIME_MODE) {
+ 562   2              FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
+ 563   2          } else {
+ 564   2              FillDateBuf(SysPara1.year, SysPara1.month, SysPara1.day);
+ 565   2          }
+ 566   1      }
+ 567          
+ 568          // 新增：重置自动轮换计数器（在进入设置模式时调用）
+ 569          void PCA_ResetAutoToggle(void) {
+ 570   1          autoToggleCounter = 0;
+ 571   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =   1764    ----
+   CODE SIZE        =   1632    ----
    CONSTANT SIZE    =     24    ----
    XDATA SIZE       =     13    ----
    PDATA SIZE       =   ----    ----
-   DATA SIZE        =     13      27
+   DATA SIZE        =     13      12
    IDATA SIZE       =   ----    ----
    BIT SIZE         =   ----    ----
 END OF MODULE INFORMATION.
