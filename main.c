@@ -187,6 +187,10 @@ void main(void) {
         FlowMeter_UpdateDisplay();
         UART_ProcessCommand();
         
+        PCA_ProcessTimeUpdate();
+        PCA_ProcessDisplayUpdate();
+        PCA_ProcessBlinkUpdate();
+
         delay_ms(10);
     }
 }

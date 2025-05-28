@@ -1,4 +1,4 @@
-C51 COMPILER V9.54   FLOWMETER                                                             05/28/2025 12:20:34 PAGE 1   
+C51 COMPILER V9.54   FLOWMETER                                                             05/28/2025 12:47:22 PAGE 1   
 
 
 C51 COMPILER V9.54, COMPILATION OF MODULE FLOWMETER
@@ -62,7 +62,7 @@ line level    source
   50          #define PULSE_FACTOR 1                   // 每个脉冲代表1毫升
   51          #define FLOW_UPDATE_INTERVAL 1           // 每秒更新一次流量值
   52          #define SAVE_INTERVAL 10                 // 每10秒保存一次到24C02
-C51 COMPILER V9.54   FLOWMETER                                                             05/28/2025 12:20:34 PAGE 2   
+C51 COMPILER V9.54   FLOWMETER                                                             05/28/2025 12:47:22 PAGE 2   
 
   53          #define IMMEDIATE_SAVE_THRESHOLD 50      // 累计差值超过50ml立即保存
   54          
@@ -126,7 +126,7 @@ line level    source
  112   1          
  113   1          UART_SendString(" ml\r\n");
  114   1          
-C51 COMPILER V9.54   FLOWMETER                                                             05/28/2025 12:20:34 PAGE 3   
+C51 COMPILER V9.54   FLOWMETER                                                             05/28/2025 12:47:22 PAGE 3   
 
  115   1          isRunning = 0;                     // 初始不运行
  116   1          flowMode = FLOW_MODE_OFF;          // 默认显示模式为关闭
@@ -190,7 +190,7 @@ line level    source
  171           *    │ 显示格式：XXXXX11                   │
  172           *    │ 含义：累计总流量，单位毫升           │
  173           *    │ 示例："012311" = 123毫升总流量      │
-C51 COMPILER V9.54   FLOWMETER                                                             05/28/2025 12:20:34 PAGE 4   
+C51 COMPILER V9.54   FLOWMETER                                                             05/28/2025 12:47:22 PAGE 4   
 
  174           *    │ 右侧"11"标识累计流量模式            │
  175           *    └────────────────────────────────�
@@ -254,7 +254,7 @@ line level    source
  230           *      例如：显示"250 5 "表示当前流量为250毫升/秒
  231           * 
  232           * 2. 累计流量显示模式（FLOW_MODE_TOTAL）:
-C51 COMPILER V9.54   FLOWMETER                                                             05/28/2025 12:20:34 PAGE 5   
+C51 COMPILER V9.54   FLOWMETER                                                             05/28/2025 12:47:22 PAGE 5   
 
  233           *    - 数码管从右到左依次为：位1-位6
  234           *    - 位1: 显示数字"1"，表示当前为累计流量显示模式
@@ -318,7 +318,7 @@ line level    source
  292   1          if (isRunning) {
  293   2              static BYTE displayToggle = 0;
  294   2              
-C51 COMPILER V9.54   FLOWMETER                                                             05/28/2025 12:20:34 PAGE 6   
+C51 COMPILER V9.54   FLOWMETER                                                             05/28/2025 12:47:22 PAGE 6   
 
  295   2              if (++displayToggle >= 3) {  
  296   3                  displayToggle = 0;
@@ -382,7 +382,7 @@ line level    source
  354   3              } else if (flowMode == FLOW_MODE_TOTAL) {
  355   3                  UpdateTotalFlowDisplay();
  356   3              }
-C51 COMPILER V9.54   FLOWMETER                                                             05/28/2025 12:20:34 PAGE 7   
+C51 COMPILER V9.54   FLOWMETER                                                             05/28/2025 12:47:22 PAGE 7   
 
  357   2          }
  358   1      }
@@ -446,7 +446,7 @@ line level    source
  416          // 外部中断0服务函数 - 用于脉冲计数
  417          void INT0_ISR() interrupt 0 {
  418   1          // 简单计数，每次下降沿中断增加计数
-C51 COMPILER V9.54   FLOWMETER                                                             05/28/2025 12:20:34 PAGE 8   
+C51 COMPILER V9.54   FLOWMETER                                                             05/28/2025 12:47:22 PAGE 8   
 
  419   1          // 如果这里被调用太频繁，可能是：
  420   1          // 1. T0频率过高

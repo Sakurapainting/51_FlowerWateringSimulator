@@ -82,4 +82,9 @@ BYTE PCA_GetDaysInMonth(WORD year, BYTE month); // 获取指定月份的天数
 bit PCA_IsLeapYear(WORD year);            // 判断是否为闰年
 void PCA_UpdateDateTime(void);            // 更新日期时间（内部调用）
 
+void PCA_ProcessTimeUpdate(void);     // 处理时间更新（在主循环中调用）
+void PCA_ProcessDisplayUpdate(void);  // 处理显示更新（在主循环中调用）
+void PCA_ProcessBlinkUpdate(void);
+
+
 #endif /* __PCA_H__ */

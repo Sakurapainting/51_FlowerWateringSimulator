@@ -35,6 +35,11 @@ BYTE cnt;
 WORD xdata value;
 WORD xdata value1;
 
+static bit time_update_flag = 0;
+static bit display_update_needed = 0;
+static bit watering_check_needed = 0;
+static bit blink_update_needed = 0;
+
 // 支持年月日的系统参数 - 初始化为2025年1月1日 00:00:00
 SYS_PARAMS SysPara1 = {2025, 1, 1, 0, 0, 0};
 
@@ -299,11 +304,6 @@ void PCA_SetDisplayMode(BYTE mode) {
     }
 }
 
-void PCA_ToggleDisplayMode(void) {
-    datetime_display_mode = (datetime_display_mode == DISPLAY_TIME_MODE) ? DISPLAY_DATE_MODE : DISPLAY_TIME_MODE;
-    PCA_SetDisplayMode(datetime_display_mode);
-}
-
 // 新增：日期计算辅助函数
 bit PCA_IsLeapYear(WORD year) {
     return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
@@ -357,7 +357,6 @@ void PCA_UpdateDateTime(void) {
     }
 }
 
-// 修改PCA中断服务函数，添加自动轮换显示逻辑
 void PCA_isr() interrupt 7
 {
     if(CCF1){
@@ -365,7 +364,7 @@ void PCA_isr() interrupt 7
         CCAP1L = value1;
         CCAP1H = value1 >> 8;
         value1 += T1000Hz;
-        disp();
+        disp();  // 只保留简单的显示扫描函数
     }
 
     if(CCF0){
@@ -379,67 +378,13 @@ void PCA_isr() interrupt 7
             cnt = 0;
             PCA_LED = !PCA_LED;
             
-            // 确保每1秒调用一次流量计算
-            FlowMeter_CalcFlow();  // 每秒调用一次，统计过去1秒的脉冲数
+            // 设置标志，在主循环中处理时间更新
+            time_update_flag = 1;
             
-            // 使用新的日期时间更新函数
-            PCA_UpdateDateTime();
-            
-            // 更新定时浇水状态 - 确保在时钟更新后立即调用
-            TimedWatering_Update();
-            
-            // 时间编辑模式闪烁控制
+            // 时间编辑模式闪烁控制 - 只改变闪烁状态，不更新显示
             if (timeEditMode > 0) {
                 blinkState = !blinkState;
-                
-                // 根据编辑的是日期还是时间来更新显示
-                if(timeEditMode <= DAY_POS) {
-                    // 编辑日期 (年月日) - 使用完整8位显示
-                    FillDateBuf(SysPara1.year, SysPara1.month, SysPara1.day);
-                    if (blinkState) {
-                        switch (timeEditMode) {
-                            case YEAR_POS:
-                                // 年份闪烁 - 4位全部闪烁
-                                dispbuff[4] = SEG_OFF;  // 年个位
-                                dispbuff[5] = SEG_OFF;  // 年十位
-                                dispbuff[6] = SEG_OFF;  // 年百位
-                                dispbuff[7] = SEG_OFF;  // 年千位
-                                break;
-                            case MONTH_POS:
-                                // 月份闪烁
-                                dispbuff[2] = SEG_OFF;  // 月个位
-                                dispbuff[3] = SEG_OFF;  // 月十位
-                                break;
-                            case DAY_POS:
-                                // 日期闪烁
-                                dispbuff[0] = SEG_OFF;  // 日个位
-                                dispbuff[1] = SEG_OFF;  // 日十位
-                                break;
-                        }
-                    }
-                } else {
-                    // 编辑时间 (时分秒) - 保持原来的6位显示
-                    FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
-                    if (blinkState) {
-                        switch (timeEditMode) {
-                            case HOUR_POS:
-                                // 小时闪烁
-                                dispbuff[4] = SEG_OFF;  // 小时个位
-                                dispbuff[5] = SEG_OFF;  // 小时十位
-                                break;
-                            case MIN_POS:
-                                // 分钟闪烁
-                                dispbuff[2] = SEG_OFF;  // 分钟个位
-                                dispbuff[3] = SEG_OFF;  // 分钟十位
-                                break;
-                            case SEC_POS:
-                                // 秒闪烁
-                                dispbuff[0] = SEG_OFF;  // 秒个位
-                                dispbuff[1] = SEG_OFF;  // 秒十位
-                                break;
-                        }
-                    }
-                }
+                blink_update_needed = 1;  // 设置闪烁更新标志
             }
             // 正常显示模式的逻辑
             else if (FlowMeter_GetMode() == FLOW_MODE_OFF) {
@@ -451,15 +396,12 @@ void PCA_isr() interrupt 7
                     // 每AUTO_TOGGLE_INTERVAL秒切换一次显示模式
                     if(autoToggleCounter >= AUTO_TOGGLE_INTERVAL) {
                         autoToggleCounter = 0;
-                        PCA_ToggleDisplayMode();
+                        datetime_display_mode = (datetime_display_mode == DISPLAY_TIME_MODE) ? 
+                                               DISPLAY_DATE_MODE : DISPLAY_TIME_MODE;
                     }
                     
-                    // 根据当前显示模式更新显示
-                    if(datetime_display_mode == DISPLAY_TIME_MODE) {
-                        FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
-                    } else {
-                        FillDateBuf(SysPara1.year, SysPara1.month, SysPara1.day);
-                    }
+                    // 设置显示更新标志
+                    display_update_needed = 1;
                 }
                 // 自动浇水参数显示模式：设置更新标志
                 else if(auto_display_mode == DISPLAY_MODE_AUTO) {
@@ -468,57 +410,9 @@ void PCA_isr() interrupt 7
             }
         }
         else if(cnt % 50 == 0 && timeEditMode > 0) {
-            // 0.5秒闪烁一次
+            // 0.5秒闪烁一次 - 只改变状态，不更新显示
             blinkState = !blinkState;
-            
-            // 根据编辑的是日期还是时间来更新显示
-            if(timeEditMode <= DAY_POS) {
-                // 编辑日期 (年月日) - 使用完整8位显示
-                FillDateBuf(SysPara1.year, SysPara1.month, SysPara1.day);
-                if (blinkState) {
-                    switch (timeEditMode) {
-                        case YEAR_POS:
-                            // 年份闪烁 - 4位全部闪烁
-                            dispbuff[4] = SEG_OFF;  // 年个位
-                            dispbuff[5] = SEG_OFF;  // 年十位
-                            dispbuff[6] = SEG_OFF;  // 年百位
-                            dispbuff[7] = SEG_OFF;  // 年千位
-                            break;
-                        case MONTH_POS:
-                            // 月份闪烁
-                            dispbuff[2] = SEG_OFF;  // 月个位
-                            dispbuff[3] = SEG_OFF;  // 月十位
-                            break;
-                        case DAY_POS:
-                            // 日期闪烁
-                            dispbuff[0] = SEG_OFF;  // 日个位
-                            dispbuff[1] = SEG_OFF;  // 日十位
-                            break;
-                    }
-                }
-            } else {
-                // 编辑时间 (时分秒) - 保持原来的6位显示
-                FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
-                if (blinkState) {
-                    switch (timeEditMode) {
-                        case HOUR_POS:
-                            // 小时闪烁
-                            dispbuff[4] = SEG_OFF;  // 小时个位
-                            dispbuff[5] = SEG_OFF;  // 小时十位
-                            break;
-                        case MIN_POS:
-                            // 分钟闪烁
-                            dispbuff[2] = SEG_OFF;  // 分钟个位
-                            dispbuff[3] = SEG_OFF;  // 分钟十位
-                            break;
-                        case SEC_POS:
-                            // 秒闪烁
-                            dispbuff[0] = SEG_OFF;  // 秒个位
-                            dispbuff[1] = SEG_OFF;  // 秒十位
-                            break;
-                    }
-                }
-            }
+            blink_update_needed = 1;  // 设置闪烁更新标志
         }
     }
 }
@@ -568,4 +462,87 @@ void PCA_Init(void)
 // 新增：重置自动轮换计数器（在进入设置模式时调用）
 void PCA_ResetAutoToggle(void) {
     autoToggleCounter = 0;
+}
+
+void PCA_ProcessBlinkUpdate(void) {
+    if(blink_update_needed) {
+        blink_update_needed = 0;
+        
+        // 根据编辑的是日期还是时间来更新显示
+        if(timeEditMode <= DAY_POS) {
+            // 编辑日期 (年月日) - 使用完整8位显示
+            FillDateBuf(SysPara1.year, SysPara1.month, SysPara1.day);
+            if (blinkState) {
+                switch (timeEditMode) {
+                    case YEAR_POS:
+                        // 年份闪烁 - 4位全部闪烁
+                        dispbuff[4] = SEG_OFF;  // 年个位
+                        dispbuff[5] = SEG_OFF;  // 年十位
+                        dispbuff[6] = SEG_OFF;  // 年百位
+                        dispbuff[7] = SEG_OFF;  // 年千位
+                        break;
+                    case MONTH_POS:
+                        // 月份闪烁
+                        dispbuff[2] = SEG_OFF;  // 月个位
+                        dispbuff[3] = SEG_OFF;  // 月十位
+                        break;
+                    case DAY_POS:
+                        // 日期闪烁
+                        dispbuff[0] = SEG_OFF;  // 日个位
+                        dispbuff[1] = SEG_OFF;  // 日十位
+                        break;
+                }
+            }
+        } else {
+            // 编辑时间 (时分秒) - 保持原来的6位显示
+            FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
+            if (blinkState) {
+                switch (timeEditMode) {
+                    case HOUR_POS:
+                        // 小时闪烁
+                        dispbuff[4] = SEG_OFF;  // 小时个位
+                        dispbuff[5] = SEG_OFF;  // 小时十位
+                        break;
+                    case MIN_POS:
+                        // 分钟闪烁
+                        dispbuff[2] = SEG_OFF;  // 分钟个位
+                        dispbuff[3] = SEG_OFF;  // 分钟十位
+                        break;
+                    case SEC_POS:
+                        // 秒闪烁
+                        dispbuff[0] = SEG_OFF;  // 秒个位
+                        dispbuff[1] = SEG_OFF;  // 秒十位
+                        break;
+                }
+            }
+        }
+    }
+}
+
+void PCA_ProcessTimeUpdate(void) {
+    if(time_update_flag) {
+        time_update_flag = 0;
+        
+        // 使用新的日期时间更新函数
+        PCA_UpdateDateTime();
+        
+        // 更新定时浇水状态 - 确保在时钟更新后立即调用
+        TimedWatering_Update();
+        
+        // 确保每1秒调用一次流量计算
+        FlowMeter_CalcFlow();  // 每秒调用一次，统计过去1秒的脉冲数
+    }
+}
+
+void PCA_ProcessDisplayUpdate(void) {
+    if(display_update_needed) {
+        display_update_needed = 0;
+        
+        // 根据当前显示模式更新显示
+        if(datetime_display_mode == DISPLAY_TIME_MODE) {
+            FillDispBuf(SysPara1.hour, SysPara1.min, SysPara1.sec);
+        } else {
+            FillDateBuf(SysPara1.year, SysPara1.month, SysPara1.day);
+        }
+    }
 }
