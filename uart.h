@@ -38,7 +38,7 @@ void UART_SendByte(BYTE dat);            // 发送一个字节
 void UART_SendString(char *s);           // 发送字符串
 void UART_ProcessCommand(void);          // 处理串口命令
 
-// 优化后的浇水记录输出函数 - 避免传参
+// 浇水记录输出函数 - 避免传参
 void UART_SendManualWateringRecord(void); // 发送手动浇水记录
 void UART_SendAutoWateringRecord(void);   // 发送自动浇水记录
 

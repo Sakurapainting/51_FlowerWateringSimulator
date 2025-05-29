@@ -1,5 +1,5 @@
 #include "relay.h"
-#include "pca.h"  // 添加pca.h以使用BYTE类型定义
+#include "pca.h"  
 
 // 继电器控制引脚定义
 sbit RELAY_CTRL = P1^1;  // 继电器控制引脚 - 低电平时继电器闭合

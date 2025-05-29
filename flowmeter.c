@@ -34,9 +34,8 @@
 // 流量计参数
 static BYTE flowMode = FLOW_MODE_OFF;     // 流量显示模式
 static WORD pulseCount = 0;               // 当前流量脉冲计数
-static unsigned long currentFlow = 0;              // 当前流量值（毫升/秒）- 改为unsigned long
-// 移除本地totalFlow声明，使用i2c.c中的全局变量
-// extern unsigned long totalFlow;          // 累计流量值（毫升）- 使用i2c.c中的全局变量
+static unsigned long currentFlow = 0;              // 当前流量值（毫升/秒）
+
 static bit isRunning = 0;                 // 流量计运行状态
 static bit needUpdateDisplay = 0;         // 显示更新标志
 static BYTE initialDisplayDelay = 0;      // 初始显示延迟计数器
@@ -44,7 +43,7 @@ static BYTE initialDisplayDelay = 0;      // 初始显示延迟计数器
 // 24C02存储控制变量
 static BYTE saveCounter = 0;              // 定期保存计数器
 static bit totalFlowChanged = 0;          // 累计流量变化标志
-static unsigned long xdata lastSavedFlow = 0;   // 上次保存的累计流量 - 移到xdata
+static unsigned long xdata lastSavedFlow = 0;   // 上次保存的累计流量
 
 // 流量计参数定义
 #define PULSE_FACTOR 1                   // 每个脉冲代表1毫升
@@ -61,7 +60,6 @@ void FlowMeter_Init(void) {
      * - P1.1: 继电器控制，控制水阀开关
      * - P2.0/P2.1: I2C接口，连接24C02存储芯片
      */
-    
 
     char flowStr[12];
     char temp[12];
@@ -72,8 +70,6 @@ void FlowMeter_Init(void) {
     EX0 = 1;                           // 使能INT0中断
     pulseCount = 0;                    // 初始化脉冲计数
     currentFlow = 0;                   // 初始化当前流量
-    
-
     
     // 从24C02读取累计流量数据
     totalFlow = AT24C02_ReadTotalFlow();
@@ -144,99 +140,8 @@ void FlowMeter_Stop(void) {
 void FlowMeter_Reset(void) {
     pulseCount = 0;                    // 重置脉冲计数
     currentFlow = 0;                   // 重置当前流量
-    // 注意：这里不重置totalFlow，因为累计流量应该是永久累计的
-    // 如果需要重置累计流量，应该提供单独的函数
+
 }
-
-/*
- * ========================================
- * 流量计显示功能详细说明
- * ========================================
- * 
- * 【数码管显示模式】
- * ==================
- * 
- * 浇水过程中，数码管会在两种模式间自动切换显示：
- * 
- * 1. 当前流量显示模式 (FLOW_MODE_CURR)：
- *    ┌─────────────────────────────────────┐
- *    │ 显示格式：XXXXX10                   │
- *    │ 含义：当前瞬时流量，单位毫升/秒      │
- *    │ 示例："000510" = 5毫升/秒           │
- *    │ 右侧"10"标识当前流量模式            │
- *    └─────────────────────────────────────┘
- * 
- * 2. 累计流量显示模式 (FLOW_MODE_TOTAL)：
- *    ┌─────────────────────────────────────┐
- *    │ 显示格式：XXXXX11                   │
- *    │ 含义：累计总流量，单位毫升           │
- *    │ 示例："012311" = 123毫升总流量      │
- *    │ 右侧"11"标识累计流量模式            │
- *    └─────────────────────────────────────┘
- * 
- * 【切换频率】
- * ============
- * - 每3秒自动切换一次显示模式
- * - 浇水期间持续轮流显示
- * - 停止浇水后关闭流量显示
- * 
- * 【定时浇水期间的显示】
- * ======================
- * 
- * 正在浇水时：
- * ┌─────────────────────────────────────┐
- * │ 显示：剩余毫升数 "XXXX05"            │
- * │ 示例："007505" = 还需浇75毫升       │
- * │ 实时减少，直到变为"000005"           │
- * └─────────────────────────────────────┘
- * 
- * 【流量计算原理】
- * ================
- * 
- * 脉冲计数：
- * - INT0下降沿触发中断
- * - 每个下降沿代表1毫升水流
- * - 5Hz频率 = 每秒5个脉冲 = 5毫升/秒
- * 
- * 累计流量：
- * - 每秒累加当前流量值
- * - 数据每10秒保存到24C02
- * - 断电后从24C02恢复数据
- * 
- * 【使用说明】
- * ============
- * 
- * 手动浇水时查看流量：
- * 1. 按P3.3开始手动浇水
- * 2. 观察数码管显示的当前流量和累计流量
- * 3. 再按P3.3停止浇水
- * 
- * 定时浇水时查看进度：
- * 1. 设置定时浇水并启动
- * 2. 浇水开始时观察剩余毫升数
- * 3. 数值逐渐减少到0时自动停止
- */
-
-/*
- * 数码管显示说明：
- * 浇水过程中数码管会轮流显示两种模式：当前流量和累计流量
- * 
- * 1. 当前流量显示模式（FLOW_MODE_CURR）:
- *    - 数码管从右到左依次为：位1-位6
- *    - 位1: 不显示
- *    - 位2: 显示数字"5"，表示当前为流量显示模式
- *    - 位3: 不显示
- *    - 位4-位6: 显示当前流量数值，单位为毫升/秒
- *      例如：显示"250 5 "表示当前流量为250毫升/秒
- * 
- * 2. 累计流量显示模式（FLOW_MODE_TOTAL）:
- *    - 数码管从右到左依次为：位1-位6
- *    - 位1: 显示数字"1"，表示当前为累计流量显示模式
- *    - 位2-位6: 显示累计流量数值，单位为毫升
- *      例如：显示"23501"表示累计流量为2350毫升
- * 
- * 注：系统会每3秒在这两种显示模式间自动切换
- */
 
 // 计算流量（每秒调用一次，由中断触发）
 void FlowMeter_CalcFlow(void) {
@@ -300,31 +205,6 @@ void FlowMeter_CalcFlow(void) {
     }
 }
 
-/*
- * ========================================
- * 24C02累计流量存储功能
- * ========================================
- * 
- * 【存储策略】
- * ============
- * 1. 定期保存：每10秒自动保存一次累计流量
- * 2. 即时保存：累计流量增加超过50ml时立即保存
- * 3. 智能保存：只有数据变化时才执行写入操作
- * 4. 掉电保护：断电重启后自动恢复累计流量数据
- * 
- * 【24C02地址分配】
- * ==================
- * 地址0x00-0x03: 累计流量数据 (4字节unsigned long)
- * 地址0x10-0x16: 定时浇水参数 (7字节)
- * 
- * 【数据格式】
- * ============
- * 累计流量按小端序存储：
- * - 0x00: 累计流量低字节  (totalFlow & 0xFF)
- * - 0x01: 累计流量第2字节 ((totalFlow >> 8) & 0xFF)  
- * - 0x02: 累计流量第3字节 ((totalFlow >> 16) & 0xFF)
- * - 0x03: 累计流量高字节  ((totalFlow >> 24) & 0xFF)
- */
 
 // 保存累计流量到24C02
 void SaveTotalFlowToEEPROM(void) {
@@ -334,16 +214,9 @@ void SaveTotalFlowToEEPROM(void) {
     // 更新保存状态
     lastSavedFlow = totalFlow;
     totalFlowChanged = 0;
-    
-    // 通过串口输出保存信息（调试用，可选）
-    #ifdef DEBUG_FLOW_SAVE
-    UART_SendString("累计流量已保存: ");
-    // 这里可以添加数值转换和输出代码
-    UART_SendString("毫升\r\n");
-    #endif
+
 }
 
-// 检查并更新显示（在主循环中调用，不在中断中）
 void FlowMeter_UpdateDisplay(void) {
     if (needUpdateDisplay) {
         needUpdateDisplay = 0;  // 清除标志
@@ -357,7 +230,6 @@ void FlowMeter_UpdateDisplay(void) {
     }
 }
 
-// 更新当前流量显示 - 扩展到8位数码管，支持7位流量值
 void UpdateCurrentFlowDisplay(void) {
     BYTE val1, val2, val3, val4, val5, val6, val7, val8;
     
@@ -386,7 +258,7 @@ void UpdateTotalFlowDisplay(void) {
     unsigned long flow_ml = totalFlow;
     
     // 构造8位显示数字 - 格式：XXXXXXX11（前7位流量值，最后1位模式标识11）
-    val1 = 11;  // 模式标识保持不变 - "11"表示累计流量
+    val1 = 11;  // "11"表示累计流量
     val2 = (BYTE)(flow_ml % 10);                 // 个位（毫升）
     val3 = (BYTE)((flow_ml / 10) % 10);          // 十位（毫升）
     val4 = (BYTE)((flow_ml / 100) % 10);         // 百位（毫升）
@@ -402,8 +274,7 @@ void UpdateTotalFlowDisplay(void) {
 // 设置流量显示模式
 void FlowMeter_SetMode(BYTE mode) {
     flowMode = mode;
-    
-    // 仅设置更新标志，实际显示在主循环中执行
+
     needUpdateDisplay = 1;
 }
 
@@ -419,10 +290,5 @@ unsigned long FlowMeter_GetTotalFlow(void) {
 
 // 外部中断0服务函数 - 用于脉冲计数
 void INT0_ISR() interrupt 0 {
-    // 简单计数，每次下降沿中断增加计数
-    // 如果这里被调用太频繁，可能是：
-    // 1. T0频率过高
-    // 2. 继电器触点抖动
-    // 3. 信号噪声
     pulseCount++;  // 每次中断增加脉冲计数
 }

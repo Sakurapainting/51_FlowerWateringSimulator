@@ -1,15 +1,12 @@
 #include "reg51.h"
 #include "intrins.h"
-#include "pca.h"     // 包含头文件
-#include "flowmeter.h" // 添加flowmeter.h以获取FLOW_MODE_OFF定义
-#include "keyboard_control.h" // 添加按键控制头文件
+#include "pca.h"     
+#include "flowmeter.h" 
+#include "keyboard_control.h" 
 
 #define FOSC    11059200L
 #define T100Hz  (FOSC / 12 / 100)
 #define T1000Hz (FOSC / 12 / 1000)
-
-// typedef unsigned char BYTE;
-// typedef unsigned int WORD;
 
 /*Declare SFR associated with the PCA */
 sfr CCON        =   0xD8;           //PCA control register
@@ -40,7 +37,7 @@ static bit display_update_needed = 0;
 static bit watering_check_needed = 0;
 static bit blink_update_needed = 0;
 
-// 支持年月日的系统参数 - 初始化为2025年1月1日 00:00:00
+// 初始化为2025年1月1日 00:00:00
 SYS_PARAMS SysPara1 = {2025, 1, 1, 0, 0, 0};
 
 // 显示相关引脚定义
@@ -52,7 +49,7 @@ sbit OE   = DISP_PORT^3;  // 输出使能(低有效)
 #define CURRENTFLOW_MODE 0x39 // 当前流量模式
 #define TOTALFLOW_MODE 0X71   // 累计流量模式
 
-/* 共阴极数码管段码定义 - 添加字母显示 */
+/* 共阴极数码管段码定义 */
 static code const unsigned char LED[] = {
     0x3F,  // 0
     0x06,  // 1
@@ -112,7 +109,7 @@ void FillDispBuf(BYTE hour, BYTE min, BYTE sec) {
     dispbuff[7] = LED[hour / 10];  // 时十位
 }
 
-// 修改：填充日期显示缓冲区 (YYYYMMDD格式，使用全部8位数码管)
+// 填充日期显示缓冲区 (YYYYMMDD格式，使用全部8位数码管)
 void FillDateBuf(WORD year, BYTE month, BYTE day) {
     Resetdispbuff();
     
@@ -131,7 +128,7 @@ void FillDateBuf(WORD year, BYTE month, BYTE day) {
     dispbuff[7] = LED[(year / 1000) % 10];  // 年千位
 }
 
-// 新增：8位自定义显示缓冲区填充函数
+// 8位自定义显示缓冲区填充函数
 void FillCustomDispBuf8(BYTE val1, BYTE val2, BYTE val3, BYTE val4, BYTE val5, BYTE val6, BYTE val7, BYTE val8) {
     Resetdispbuff();
     
@@ -146,7 +143,7 @@ void FillCustomDispBuf8(BYTE val1, BYTE val2, BYTE val3, BYTE val4, BYTE val5, B
     dispbuff[7] = LED[val8];
 }
 
-// 保持原有的6位函数用于兼容
+// 6位函数 兼容
 void FillCustomDispBuf(BYTE val1, BYTE val2, BYTE val3, BYTE val4, BYTE val5, BYTE val6) {
     Resetdispbuff();
     
@@ -211,7 +208,7 @@ void disp(void) {
 static BYTE timeEditMode = 0;  // 0: 正常显示, 1-6: 编辑年月日时分秒
 static BYTE blinkState = 0;    // 闪烁状态: 0 显示, 1 不显示
 
-// 新增：自动轮换显示相关变量
+// 自动轮换显示相关变量
 static BYTE xdata autoToggleCounter = 0;  // 自动切换计数器
 #define AUTO_TOGGLE_INTERVAL 5       // 每5秒切换一次显示模式
 
@@ -301,7 +298,7 @@ void PCA_SetTime(BYTE hour, BYTE min, BYTE sec) {
     }
 }
 
-// 新增：设置年月日
+// 设置年月日
 void PCA_SetDate(WORD year, BYTE month, BYTE day) {
     // 验证输入日期是否有效
     if(year >= 2000 && year <= 2099 && month >= 1 && month <= 12 && 
@@ -319,7 +316,7 @@ void PCA_SetDate(WORD year, BYTE month, BYTE day) {
     }
 }
 
-// 新增：获取时间相关函数
+// 获取时间相关函数
 WORD PCA_GetYear(void) { return SysPara1.year; }
 BYTE PCA_GetMonth(void) { return SysPara1.month; }
 BYTE PCA_GetDay(void) { return SysPara1.day; }
@@ -327,7 +324,7 @@ BYTE PCA_GetHour(void) { return SysPara1.hour; }
 BYTE PCA_GetMin(void) { return SysPara1.min; }
 BYTE PCA_GetSec(void) { return SysPara1.sec; }
 
-// 新增：显示模式控制函数
+// 显示模式控制函数
 void PCA_SetDisplayMode(BYTE mode) {
     datetime_display_mode = mode;
     if(timeEditMode == 0) {  // 非编辑模式下立即更新显示
@@ -339,7 +336,7 @@ void PCA_SetDisplayMode(BYTE mode) {
     }
 }
 
-// 新增：日期计算辅助函数
+// 日期计算辅助函数
 bit PCA_IsLeapYear(WORD year) {
     return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
 }
@@ -353,7 +350,7 @@ BYTE PCA_GetDaysInMonth(WORD year, BYTE month) {
     return daysInMonth[month - 1];
 }
 
-// 新增：更新日期时间（处理日期跨越）
+// 更新日期时间（处理日期跨越）
 void PCA_UpdateDateTime(void) {
     // 秒进位
     SysPara1.sec++;
@@ -399,7 +396,7 @@ void PCA_isr() interrupt 7
         CCAP1L = value1;
         CCAP1H = value1 >> 8;
         value1 += T1000Hz;
-        disp();  // 只保留简单的显示扫描函数
+        disp(); 
     }
 
     if(CCF0){
@@ -494,7 +491,7 @@ void PCA_Init(void)
     }
 }
 
-// 新增：重置自动轮换计数器（在进入设置模式时调用）
+// 重置自动轮换计数器（在进入设置模式时调用）
 void PCA_ResetAutoToggle(void) {
     autoToggleCounter = 0;
 }

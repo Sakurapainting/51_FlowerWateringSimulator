@@ -12,7 +12,7 @@
 typedef unsigned char BYTE;
 typedef unsigned int WORD;
 
-// 扩展的系统参数结构体定义 - 支持年月日
+// 扩展的系统参数结构体定义
 typedef struct {
     WORD year;      // 年份 (如 2025)
     BYTE month;     // 月份 (1-12)

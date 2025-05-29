@@ -1,7 +1,7 @@
 #include "keyboard_control.h"
 #include "relay.h"
 #include "flowmeter.h"
-#include "i2c.h"  // 添加I2C头文件
+#include "i2c.h"  
 
 // 定时浇水配置 - 默认值：6:00:01开始，浇100毫升
 TimedWatering xdata timed_watering = {0, 6, 0, 1, 100, 0, 0, 0, 0};
@@ -27,7 +27,7 @@ static void KeyDelay(void) {
     while(i--);
 }
 
-// 优化：开始手动浇水记录 - 避免传参，直接写死类型
+// 开始手动浇水记录 - 避免传参，直接写死类型
 void StartManualWateringRecord(void) {
     // 记录开始时间 - 直接写死手动类型
     manual_watering_record.type = WATERING_TYPE_MANUAL;
@@ -42,7 +42,7 @@ void StartManualWateringRecord(void) {
     manual_watering_record.total_flow = FlowMeter_GetTotalFlow();
 }
 
-// 优化：开始自动浇水记录 - 避免传参，直接写死类型
+// 开始自动浇水记录 - 避免传参，直接写死类型
 void StartAutoWateringRecord(void) {
     // 记录开始时间 - 直接写死自动类型
     timed_watering.current_record.type = WATERING_TYPE_AUTO;
@@ -57,7 +57,7 @@ void StartAutoWateringRecord(void) {
     timed_watering.start_total_flow = FlowMeter_GetTotalFlow();
 }
 
-// 优化：计算手动浇水持续时间 - 内联计算，避免传参
+// 计算手动浇水持续时间 - 内联计算，避免传参
 static void CalculateManualDuration(void) {
     unsigned int start_total_sec, end_total_sec, duration;
     
@@ -79,7 +79,7 @@ static void CalculateManualDuration(void) {
     manual_watering_record.duration_sec = duration % 60;
 }
 
-// 优化：计算自动浇水持续时间 - 内联计算，避免传参
+// 计算自动浇水持续时间 - 内联计算，避免传参
 static void CalculateAutoDuration(void) {
     unsigned int start_total_sec, end_total_sec, duration;
     
@@ -101,7 +101,7 @@ static void CalculateAutoDuration(void) {
     timed_watering.current_record.duration_sec = duration % 60;
 }
 
-// 优化：结束手动浇水记录 - 避免传参，直接访问全局变量
+// 结束手动浇水记录 - 避免传参，直接访问全局变量
 void EndManualWateringRecord(void) {
     unsigned long current_total_flow;
     
@@ -125,7 +125,7 @@ void EndManualWateringRecord(void) {
     UART_SendManualWateringRecord();
 }
 
-// 优化：结束自动浇水记录 - 避免传参，直接访问全局变量
+// 结束自动浇水记录 - 避免传参，直接访问全局变量
 void EndAutoWateringRecord(void) {
     unsigned long current_total_flow;
     
@@ -157,7 +157,7 @@ void KeyboardControl_Init(void) {
     // 初始化I2C和24C02
     I2C_Init();
     
-    // 初始化定时浇水参数为默认值（不从24C02加载）
+    // 初始化定时浇水参数为默认值
     timed_watering.enabled = 0;
     timed_watering.start_hour = 6;      // 默认6点
     timed_watering.start_min = 0;       // 0分
@@ -171,110 +171,6 @@ void KeyboardControl_Init(void) {
     auto_display_mode = DISPLAY_MODE_CLOCK;
     param_mode = PARAM_MODE_HOUR;
 }
-
-/*
- * ========================================
- * 定时定量浇花功能详细使用说明
- * ========================================
- * 
- * 功能概述：
- * 本系统可以设置在指定时间点自动开始浇水，并按设定的毫升数定量浇水。
- * 累计流量数据保存在24C02中，掉电不丢失。
- * 
- * 【第一步：参数设置】
- * ==================
- * 
- * 1. 设置开始浇水时间：
- *    操作：按P1.7 (KEY_MODE) 切换到时间设置模式
- *    显示：数码管右侧显示模式标识符
- *    
- *    a) 设置小时：
- *       - 数码管显示格式："HH0003" (例如："060003"表示6点)
- *       - 按P1.3 (KEY_TIME_UP) 增加小时 (0-23)
- *       - 按P1.4 (KEY_TIME_DOWN) 减少小时
- *       - 右侧显示"03"表示当前在设置小时
- *    
- *    b) 设置分钟：
- *       - 再按P1.7切换到分钟设置
- *       - 数码管显示格式："MM0002" (例如："000002"表示0分)
- *       - 按P1.3/P1.4调节分钟数 (0-59)
- *       - 右侧显示"02"表示当前在设置分钟
- *    
- *    c) 设置秒：
- *       - 再按P1.7切换到秒设置
- *       - 数码管显示格式："SS0001" (例如："010001"表示1秒)
- *       - 按P1.3/P1.4调节秒数 (0-59)
- *       - 右侧显示"01"表示当前在设置秒
- * 
- * 2. 设置浇水量：
- *    - 再按P1.7切换到毫升设置
- *    - 数码管显示格式："MMMM05" (例如："010005"表示100毫升)
- *    - 按P1.3 (KEY_TIME_UP) 增加毫升数，每次+50ml
- *    - 按P1.4 (KEY_TIME_DOWN) 减少毫升数，每次-50ml
- *    - 范围：50-9999毫升
- *    - 右侧显示"05"表示当前在设置毫升数
- * 
- * 【第二步：启动定时浇水】
- * ====================
- * 
- * 操作：按P1.2 (KEY_AUTO) 启动定时浇水功能
- * 结果：系统进入定时浇水模式，等待设定时间到达
- * 显示：数码管显示当前设置的参数并闪烁
- * 
- * 【第三步：系统自动运行】
- * ====================
- * 
- * 1. 等待阶段：
- *    - 系统持续监控当前时间
- *    - 数码管轮流显示设置的参数
- *    - 当到达设定时间点时，自动开始浇水
- * 
- * 2. 浇水阶段：
- *    - 继电器自动闭合，开始浇水
- *    - 流量计开始计数脉冲
- *    - 数码管显示剩余毫升数："XXXX05"
- *    - 每个脉冲代表1毫升水流
- * 
- * 3. 停止阶段：
- *    - 当累计流量达到设定毫升数时
- *    - 继电器自动断开，停止浇水
- *    - 标记今天已完成浇水，明天同一时间再次触发
- * 
- * 【第四步：数据保存】
- * ==================
- * 
- * - 累计流量每10秒自动保存到24C02
- * - 断电重启后累计流量数据不丢失
- * - 定时设置保存在内存中，断电后需重新设置
- * 
- * 【使用示例】
- * ============
- * 
- * 目标：设置每天早上6:00:01自动浇水100毫升
- * 
- * 操作步骤：
- * 1. 按P1.7，显示"060003" → 用P1.3/P1.4设置为6点
- * 2. 按P1.7，显示"000002" → 用P1.3/P1.4设置为0分
- * 3. 按P1.7，显示"010001" → 用P1.3/P1.4设置为1秒
- * 4. 按P1.7，显示"010005" → 用P1.3/P1.4设置为100毫升
- * 5. 按P1.2启动定时浇水
- * 6. 系统将在每天6:00:01自动浇水100毫升
- * 
- * 【停止定时浇水】
- * ==============
- * 
- * 操作：再次按P1.2 (KEY_AUTO)
- * 结果：停止定时浇水功能，返回时钟显示模式
- * 
- * 【注意事项】
- * ============
- * 
- * 1. 每天只触发一次，避免重复浇水
- * 2. 如果当天已经浇过水，不会再次触发
- * 3. 过了午夜(00:00:00)会重置触发标志
- * 4. 手动浇水不影响定时浇水功能
- * 5. 定时浇水进行中时，手动按键无效
- */
 
 // 按键扫描
 void KeyboardControl_Scan(void) {
@@ -467,14 +363,14 @@ void TimedWatering_Update(void) {
     }
 }
 
-// 显示自动浇水参数 - 扩展到8位数码管
+// 显示自动浇水参数
 void DisplayAutoWateringParams(void) {
     BYTE val1, val2, val3, val4, val5, val6, val7, val8;
     
     if(timed_watering.is_watering) {
         // 显示剩余毫升数 - 格式：XXXXXXXd（前7位剩余量，最后1位标识d）
         unsigned int remaining = timed_watering.watering_volume_left;
-        val1 = 12;  // 模式标识改为 "d" (使用LED数组索引12)
+        val1 = 12;  // 模式标识 "d" (使用LED数组索引12)
         val2 = remaining % 10;
         val3 = (remaining / 10) % 10;
         val4 = (remaining / 100) % 10;
@@ -487,7 +383,7 @@ void DisplayAutoWateringParams(void) {
         switch(param_mode) {
             case PARAM_MODE_HOUR:
                 // 显示开始小时 - 格式：000000Hc（前6位填零，H为小时值，最后1位标识c）
-                val1 = 15;  // 模式标识改为 "c" (使用LED数组索引15)
+                val1 = 15;  // 模式标识 "c" (使用LED数组索引15)
                 val2 = timed_watering.start_hour % 10;           // 小时个位
                 val3 = (timed_watering.start_hour / 10) % 10;    // 小时十位
                 val4 = val5 = val6 = val7 = val8 = 0;           // 其余位填零
@@ -495,7 +391,7 @@ void DisplayAutoWateringParams(void) {
                 
             case PARAM_MODE_MIN:
                 // 显示开始分钟 - 格式：000000MB（前6位填零，M为分钟值，最后1位标识B）
-                val1 = 14;  // 模式标识改为 "B" (使用LED数组索引14)
+                val1 = 14;  // 模式标识 "B" (使用LED数组索引14)
                 val2 = timed_watering.start_min % 10;           // 分钟个位
                 val3 = (timed_watering.start_min / 10) % 10;    // 分钟十位
                 val4 = val5 = val6 = val7 = val8 = 0;          // 其余位填零
@@ -503,7 +399,7 @@ void DisplayAutoWateringParams(void) {
                 
             case PARAM_MODE_SEC:
                 // 显示开始秒 - 格式：000000SA（前6位填零，S为秒值，最后1位标识A）
-                val1 = 13;  // 模式标识改为 "A" (使用LED数组索引13)
+                val1 = 13;  // 模式标识 "A" (使用LED数组索引13)
                 val2 = timed_watering.start_sec % 10;           // 秒个位
                 val3 = (timed_watering.start_sec / 10) % 10;    // 秒十位
                 val4 = val5 = val6 = val7 = val8 = 0;          // 其余位填零
@@ -513,7 +409,7 @@ void DisplayAutoWateringParams(void) {
                 {  // 添加大括号创建新作用域
                     // 显示浇水毫升数 - 格式：XXXXXXXd（前7位毫升数，最后1位标识d）
                     unsigned int volume = timed_watering.water_volume_ml;
-                    val1 = 12;  // 模式标识改为 "d" (使用LED数组索引12)
+                    val1 = 12;  // 模式标识 "d" (使用LED数组索引12)
                     val2 = volume % 10;
                     val3 = (volume / 10) % 10;
                     val4 = (volume / 100) % 10;

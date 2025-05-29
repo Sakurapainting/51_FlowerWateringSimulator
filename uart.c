@@ -54,7 +54,7 @@ void UART_SendString(char *s) {
     }
 }
 
-// 优化：内联数值输出，避免函数调用开销
+// 内联数值输出，避免函数调用开销
 static void SendNumber(unsigned long num) {
     if(num == 0) {
         UART_SendByte('0');
@@ -69,13 +69,13 @@ static void SendNumber(unsigned long num) {
     UART_SendByte('0' + num % 10);
 }
 
-// 优化：内联两位数输出
+// 内联两位数输出
 static void Send2Digits(BYTE num) {
     UART_SendByte('0' + (num / 10));
     UART_SendByte('0' + (num % 10));
 }
 
-// 优化后的手动浇水记录输出 - 避免传参，直接访问全局变量
+// 避免传参，直接访问全局变量
 void UART_SendManualWateringRecord(void) {
     UART_SendString("\r\n=== Watering Record ===\r\n");
     UART_SendString("Type: Manual Watering\r\n");
@@ -132,7 +132,7 @@ void UART_SendManualWateringRecord(void) {
     UART_SendString("=======================\r\n");
 }
 
-// 优化后的自动浇水记录输出 - 避免传参，直接访问全局变量
+// 自动浇水记录输出 - 避免传参，直接访问全局变量
 void UART_SendAutoWateringRecord(void) {
     UART_SendString("\r\n=== Watering Record ===\r\n");
     UART_SendString("Type: Auto Watering\r\n");

@@ -28,7 +28,7 @@ sbit KEY = P3^3;            // 按键连接到P3.3
 bit keyPressed = 0;         // 按键按下标志
 bit justEnteredSetMode = 0; // 标志是否刚刚进入设置模式
 unsigned int xdata keyPressTime = 0; // 按键按下持续时间（以10ms为单位）
-#define LONG_PRESS_TIME 100   // 长按时间阈值（约1秒，调整为合理值）
+#define LONG_PRESS_TIME 100   // 长按时间阈值
 
 // 按键处理函数
 void processKey() {
@@ -57,7 +57,7 @@ void processKey() {
                     if(!timed_watering.enabled || !timed_watering.is_watering) {
                         sysState = SYS_STATE_WATERING;
                         
-                        // 开始手动浇水记录 - 优化后无需传参
+                        // 开始手动浇水记录
                         StartManualWateringRecord();
                         
                         Relay_On();
@@ -75,7 +75,7 @@ void processKey() {
                     FlowMeter_Stop();
                     FlowMeter_SetMode(FLOW_MODE_OFF);
                     
-                    // 结束手动浇水记录 - 优化后无需传参
+                    // 结束手动浇水记录
                     EndManualWateringRecord();
                     break;
                     
@@ -178,7 +178,7 @@ void main(void) {
     UART_SendString("Date Format: YYYYMMDD (8-digit full display)\r\n");
     UART_SendString("Time Format: HH-MM-SS (8-digit full display)\r\n");
     UART_SendString("Flow Format: XXXXXXX10/11 (8-digit, 7-digit flow value)\r\n");
-    UART_SendString("Auto Format: XXXXXXXA/B/c/d (8-digit param display)\r\n");  // 更新说明
+    UART_SendString("Auto Format: XXXXXXXA/B/c/d (8-digit param display)\r\n");
     UART_SendString("P3.3 Key: Long press to set date/time\r\n");
     UART_SendString("Setting order: Year->Month->Day->Hour->Min->Sec\r\n");
     

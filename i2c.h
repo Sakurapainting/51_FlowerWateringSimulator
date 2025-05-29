@@ -4,13 +4,13 @@
 #include "reg51.h"
 #include "pca.h"
 
-// I2C引脚定义 - 保持原有引脚不变
+// I2C引脚定义
 sbit SDA = P2^5;  // I2C数据线
 sbit SCL = P2^6;  // I2C时钟线
 
 // 24C02参数定义
 #define AT24C02_ADDR 0xA0  // 24C02器件地址
-#define EEPROM_ADDR 0xA0   // 兼容24C02.c中的定义
+#define EEPROM_ADDR 0xA0   // 兼容
 
 // 累计流量存储地址定义
 #define TOTAL_FLOW_ADDR_0 0x00  // 累计流量低字节
@@ -18,7 +18,7 @@ sbit SCL = P2^6;  // I2C时钟线
 #define TOTAL_FLOW_ADDR_2 0x02  // 累计流量第3字节
 #define TOTAL_FLOW_ADDR_3 0x03  // 累计流量高字节
 
-// 24C02.c中的地址定义
+
 #define EEPROM_HOUR_ADR 0x10    // 闹钟小时存储地址
 #define EEPROM_MIN_ADR 0x11     // 闹钟分钟存储地址
 #define EEPROM_SEC_ADR 0x12     // 闹钟秒存储地址
@@ -26,7 +26,7 @@ sbit SCL = P2^6;  // I2C时钟线
 #define INIT_FLAG_ADDR 0x20     // 初始化标志地址
 #define INIT_FLAG_VALUE 0x55    // 初始化标志值
 
-// 24C02.c中的基础I2C函数声明
+
 void I2C_Start(void);                          // 发送起始信号
 void I2C_Stop(void);                           // 发送停止信号
 void I2C_SendAck(bit ack);                     // 发送应答信号
@@ -42,16 +42,15 @@ unsigned long EEPROM_ReadULong(unsigned char addr);       // 读unsigned long数
 bit IsFirstPowerOn(void);                      // 检测是否为第一次上电
 void SetInitializedFlag(void);                 // 标记已初始化
 
-// 兼容原有接口的函数声明
 void I2C_Init(void);                           // I2C初始化
-bit I2C_SendByte(BYTE dat);                    // 发送一个字节(兼容接口)
-BYTE I2C_ReceiveByte(bit ack);                 // 接收一个字节(兼容接口)
+bit I2C_SendByte(BYTE dat);                    // 发送一个字节(兼容)
+BYTE I2C_ReceiveByte(bit ack);                 // 接收一个字节(兼容)
 void AT24C02_WriteByte(BYTE addr, BYTE dat);   // 写一个字节到24C02
 BYTE AT24C02_ReadByte(BYTE addr);              // 从24C02读一个字节
 void AT24C02_WriteTotalFlow(unsigned long flow); // 写累计流量到24C02
 unsigned long AT24C02_ReadTotalFlow(void);    // 从24C02读累计流量
 
-// 24C02.c中的应用层函数声明
+
 void SaveAlarmToEEPROM(void);                  // 保存闹钟时间到EEPROM
 void ReadAlarmFromEEPROM(void);                // 从EEPROM读取闹钟时间
 void SaveWateringToEEPROM(void);               // 保存浇水量到EEPROM
