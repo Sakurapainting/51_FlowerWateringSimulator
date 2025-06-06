@@ -10,7 +10,7 @@
 
 #define multiplier 1.085
 
-// 系统状态定义 - 扩展支持年月日设置
+// 系统状态定义
 #define SYS_STATE_OFF      0  // 系统关闭
 #define SYS_STATE_WATERING 1  // 系统浇水中
 #define SYS_STATE_SET_YEAR 2  // 设置年份
